@@ -1,4 +1,4 @@
-module createbytearrays
+module processhashes
 
 go 1.23
 
