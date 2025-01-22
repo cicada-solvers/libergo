@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
@@ -13,6 +14,26 @@ import (
 	"sync"
 	"time"
 )
+
+type Config struct {
+	NumWorkers int `json:"num_workers"`
+}
+
+func loadConfig(filePath string) (*Config, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening config file: %v", err)
+	}
+	defer file.Close()
+
+	var config Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		return nil, fmt.Errorf("error decoding config file: %v", err)
+	}
+
+	return &config, nil
+}
 
 type Program struct {
 	tasks chan []byte
@@ -206,6 +227,12 @@ func main() {
 		return
 	}
 
+	config, err := loadConfig("appsettings.json")
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
+
 	fileName := os.Args[1]
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -240,7 +267,7 @@ func main() {
 	existingHash := string(existingHashBytes)
 
 	var wg sync.WaitGroup
-	numWorkers := 10
+	numWorkers := config.NumWorkers
 	wg.Add(numWorkers)
 
 	done := make(chan struct{})
