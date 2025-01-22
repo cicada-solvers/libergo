@@ -6,4 +6,6 @@ find . -type f -name 'permutation*' | while read -r file; do
   echo "Processing file: $file"
   # Call processhashes with the file name
   ./processhashes "$file"
+  # Delete the file after processing
+  rm -vf "$file"
 done
