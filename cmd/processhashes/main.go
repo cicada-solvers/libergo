@@ -16,7 +16,8 @@ import (
 )
 
 type Config struct {
-	NumWorkers int `json:"num_workers"`
+	NumWorkers   int    `json:"num_workers"`
+	ExistingHash string `json:"existing_hash"`
 }
 
 func loadConfig(filePath string) (*Config, error) {
@@ -258,14 +259,6 @@ func main() {
 
 	program := NewProgram()
 
-	// Read the existing hash from file
-	existingHashBytes, err := os.ReadFile("existinghash.txt")
-	if err != nil {
-		fmt.Printf("Error reading existing hash: %v\n", err)
-		return
-	}
-	existingHash := string(existingHashBytes)
-
 	var wg sync.WaitGroup
 	numWorkers := config.NumWorkers
 	wg.Add(numWorkers)
@@ -274,7 +267,7 @@ func main() {
 	var once sync.Once
 
 	for i := 0; i < numWorkers; i++ {
-		go processTasks(program.tasks, &wg, existingHash, done, &once)
+		go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
 	}
 
 	program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
