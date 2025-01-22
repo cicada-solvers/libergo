@@ -5,7 +5,6 @@ GOCMD=go
 
 # Directories
 CMD_DIR=cmd
-BIN_DIR=bin
 
 # Function to clean binaries
 clean_binaries() {
@@ -22,7 +21,6 @@ clean_binaries() {
 
 # Function to build binaries
 build_binaries() {
-  mkdir -p $BIN_DIR
   for dir in $CMD_DIR/*; do
     if [ -d "$dir" ]; then
       BINARY_NAME=$(basename "$dir")
@@ -39,27 +37,8 @@ build_binaries() {
   echo "All binaries built successfully."
 }
 
-# Function to install binaries
-install_binaries() {
-  if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root to install binaries."
-    exit 1
-  fi
-  for binary in $BIN_DIR/*; do
-    if [ -f "$binary" ]; then
-      echo "Installing $(basename "$binary") to /usr/bin..."
-      cp "$binary" /usr/bin/
-      if [ $? -ne 0 ]; then
-        echo "Failed to install $(basename "$binary")"
-        exit 1
-      fi
-    fi
-  done
-  echo "All binaries installed successfully."
-}
-
 # Ask the user for the action
-echo "Choose an action: 1. clean, 2. build, or 3. install"
+echo "Choose an action: 1. clean, 2. build"
 read action
 
 case $action in
@@ -69,11 +48,8 @@ case $action in
   2)
     build_binaries
     ;;
-  3)
-    install_binaries
-    ;;
   *)
-    echo "Invalid action. Please choose clean, build, or install."
+    echo "Invalid action. Please choose clean or build."
     exit 1
     ;;
 esac

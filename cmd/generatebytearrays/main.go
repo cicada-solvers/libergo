@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
@@ -10,7 +11,33 @@ import (
 	"sync"
 )
 
+type Config struct {
+	NumWorkers int `json:"num_workers"`
+}
+
+func loadConfig(filePath string) (*Config, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening config file: %v", err)
+	}
+	defer file.Close()
+
+	var config Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		return nil, fmt.Errorf("error decoding config file: %v", err)
+	}
+
+	return &config, nil
+}
+
 func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
+	config, err := loadConfig("appsettings.json")
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
+
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
@@ -36,7 +63,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
 	}
 	close(fileChan)
 
-	for i := 0; i < 4; i++ { // Number of concurrent workers
+	for i := 0; i < config.NumWorkers; i++ { // Use the number of workers from the config
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
