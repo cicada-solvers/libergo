@@ -45,8 +45,8 @@ func (p *Program) GenerateByteArrays(maxArrayLength, currentArrayLevel int, pass
 			currentArray[currentArrayLevel-1] = byte(i)
 			p.tasks <- append([]byte(nil), currentArray...) // Send a copy to avoid data race
 			if compareArrays(currentArray, stopArray) == 0 {
-				fmt.Printf("Stopped on: %v\n", currentArray)
 				fmt.Printf("Stop Array Was: %v\n", stopArray)
+				fmt.Printf("Finished processing: %v\n", currentArray)
 				return false
 			}
 		}
@@ -136,7 +136,6 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 				return
 			}
 			taskLen = len(task)
-			fmt.Printf("Hashing: %v\n", task)
 			hashes := generateHashes(task)
 			for hashName, hash := range hashes {
 				hashCount++
