@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -23,34 +24,70 @@ func NewProgram() *Program {
 	}
 }
 
-func (p *Program) GenerateAllByteArrays(maxArrayLength int) {
-	p.GenerateByteArrays(maxArrayLength, 1, nil)
+func (p *Program) GenerateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
+	currentArray := make([]byte, len(startArray))
+	copy(currentArray, startArray)
+	p.GenerateByteArrays(maxArrayLength, 1, currentArray, stopArray)
 	close(p.tasks)
 }
 
-func (p *Program) GenerateByteArrays(maxArrayLength, currentArrayLevel int, passedArray []byte) {
+func (p *Program) GenerateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
+	startForValue := int(passedArray[currentArrayLevel-1])
+
 	if currentArrayLevel == maxArrayLength {
-		currentArray := make([]byte, currentArrayLevel)
+		currentArray := make([]byte, maxArrayLength)
+
 		if passedArray != nil {
 			copy(currentArray, passedArray)
 		}
-		for i := 0; i < 256; i++ {
+
+		for i := startForValue; i < 256; i++ {
 			currentArray[currentArrayLevel-1] = byte(i)
 			p.tasks <- append([]byte(nil), currentArray...) // Send a copy to avoid data race
+			if compareArrays(currentArray, stopArray) == 0 {
+				fmt.Printf("Stopped on: %v\n", currentArray)
+				fmt.Printf("Stop Array Was: %v\n", stopArray)
+				return false
+			}
 		}
 	} else {
-		currentArray := make([]byte, currentArrayLevel)
+		currentArray := make([]byte, maxArrayLength)
 		if passedArray != nil {
 			copy(currentArray, passedArray)
 		}
-		for i := 0; i < 256; i++ {
+		for i := startForValue; i < 256; i++ {
 			currentArray[currentArrayLevel-1] = byte(i)
-			p.GenerateByteArrays(maxArrayLength, currentArrayLevel+1, currentArray)
+			shouldContinue := p.GenerateByteArrays(maxArrayLength, currentArrayLevel+1, currentArray, stopArray)
+
+			if shouldContinue == false {
+				return false
+			}
+
+			// This resets that byte to zero of the next one up.
+			currentArray[currentArrayLevel] = 0
 		}
 	}
+
+	return true
 }
 
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, totalTasks *big.Int, totalTasksMutex *sync.Mutex, done chan struct{}, once *sync.Once) {
+func compareArrays(a, b []byte) int {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i] < b[i] {
+			return -1
+		} else if a[i] > b[i] {
+			return 1
+		}
+	}
+	if len(a) < len(b) {
+		return -1
+	} else if len(a) > len(b) {
+		return 1
+	}
+	return 0
+}
+
+func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once) {
 	defer wg.Done()
 
 	// Open the file in append mode
@@ -78,9 +115,9 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, to
 		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m"} // Red, Green, Yellow, Blue, Magenta, Cyan
 		colorIndex := 0
 		for range ticker.C {
-			totalTasksMutex.Lock()
-			fmt.Printf("%sHashes per minute: %d, Remaining permutations: %d, Array size: %d\033[0m\n", colors[colorIndex], hashCount, totalTasks, taskLen)
-			totalTasksMutex.Unlock()
+
+			fmt.Printf("%sHashes per minute: %d, Array size: %d\033[0m\n", colors[colorIndex], hashCount, taskLen)
+
 			hashCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
 		}
@@ -99,9 +136,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, to
 				return
 			}
 			taskLen = len(task)
-			totalTasksMutex.Lock()
-			totalTasks.Sub(totalTasks, big.NewInt(1))
-			totalTasksMutex.Unlock()
+			fmt.Printf("Hashing: %v\n", task)
 			hashes := generateHashes(task)
 			for hashName, hash := range hashes {
 				hashCount++
@@ -152,11 +187,49 @@ func generateHashes(data []byte) map[string]string {
 	return hashes
 }
 
-func main() {
-	length := 50
-	if len(os.Args) > 1 {
-		length, _ = strconv.Atoi(os.Args[1])
+func stringToByteArray(s string) []byte {
+	parts := strings.Split(s, ",")
+	array := make([]byte, len(parts))
+	for i, part := range parts {
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			fmt.Printf("Error converting string to byte: %v\n", err)
+			return nil
+		}
+		array[i] = byte(val)
 	}
+	return array
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./processhashes <filename>")
+		return
+	}
+
+	fileName := os.Args[1]
+	file, err := os.Open(fileName)
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	var startArray, stopArray []byte
+	scanner := bufio.NewScanner(file)
+	if scanner.Scan() {
+		startArray = stringToByteArray(scanner.Text())
+	}
+	if scanner.Scan() {
+		stopArray = stringToByteArray(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
+
 	program := NewProgram()
 
 	// Read the existing hash from file
@@ -171,20 +244,13 @@ func main() {
 	numWorkers := 10
 	wg.Add(numWorkers)
 
-	// Calculate the total number of tasks
-	totalTasks := big.NewInt(1)
-	for i := 0; i < length; i++ {
-		totalTasks.Mul(totalTasks, big.NewInt(256))
-	}
-
 	done := make(chan struct{})
 	var once sync.Once
-	var totalTasksMutex sync.Mutex
 
 	for i := 0; i < numWorkers; i++ {
-		go processTasks(program.tasks, &wg, existingHash, totalTasks, &totalTasksMutex, done, &once)
+		go processTasks(program.tasks, &wg, existingHash, done, &once)
 	}
 
-	program.GenerateAllByteArrays(length)
+	program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
 	wg.Wait()
 }
