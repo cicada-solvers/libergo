@@ -16,6 +16,7 @@ clean_binaries() {
       rm -vf "$dir/$BINARY_NAME"
     fi
   done
+  rm -rvf dist
   echo "Binaries cleaned."
 }
 
@@ -49,42 +50,50 @@ dist_binaries() {
       echo "Building $BINARY_NAME for Linux..."
       cd "$dir"
       BINARY_DIR="$DIST_DIR/linux/$BINARY_NAME"
-      mkdir -p "$BINARY_DIR"
-      GOOS=linux GOARCH=amd64 $GOCMD build -o "$BINARY_DIR/$BINARY_NAME"
+      GOOS=linux GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
       if [ $? -ne 0 ]; then
         echo "Failed to build $BINARY_NAME for Linux"
         exit 1
       fi
-      cp "$dir\appsettings.json" "$BINARY_DIR/"
+      [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
+      cp ./*.sh "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Mac..."
       BINARY_DIR="$DIST_DIR/mac/$BINARY_NAME"
-      mkdir -p "$BINARY_DIR"
-      GOOS=darwin GOARCH=amd64 $GOCMD build -o "$BINARY_DIR/$BINARY_NAME"
+      GOOS=darwin GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
       if [ $? -ne 0 ]; then
         echo "Failed to build $BINARY_NAME for Mac"
         exit 1
       fi
-      cp "$dir\appsettings.json" "$BINARY_DIR/"
+      [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
+      cp ./*.sh "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Windows..."
       BINARY_DIR="$DIST_DIR/windows/$BINARY_NAME"
-      mkdir -p "$BINARY_DIR"
-      GOOS=windows GOARCH=amd64 $GOCMD build -o "$BINARY_DIR/$BINARY_NAME.exe"
+      GOOS=windows GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME.exe"
       if [ $? -ne 0 ]; then
         echo "Failed to build $BINARY_NAME for Windows"
         exit 1
       fi
-      cp "$dir\appsettings.json" "$BINARY_DIR/"
+      [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
+      cp ./*.sh "../../$BINARY_DIR/"
       cd - > /dev/null
     fi
   done
-  echo "All distribution binaries built successfully."
+
+  echo "Compressing directories..."
+  zip -r "$DIST_DIR/linux.zip" "$DIST_DIR/linux"
+  zip -r "$DIST_DIR/mac.zip" "$DIST_DIR/mac"
+  zip -r "$DIST_DIR/windows.zip" "$DIST_DIR/windows"
+
+  echo "Removing uncompressed directories..."
+  rm -rf "$DIST_DIR/linux" "$DIST_DIR/mac" "$DIST_DIR/windows"
+
+  echo "All distribution binaries built, compressed, and cleaned up successfully."
 }
 
 # Ask the user for the action
-echo "Choose an action: 1. clean, 2. build, 3. dist"
-read action
+read -p "Choose an action: 1) Clean, 2) Build, 3) Dist: " action
 
 case $action in
   1)
