@@ -12,7 +12,8 @@ import (
 )
 
 type Config struct {
-	NumWorkers int `json:"num_workers"`
+	NumWorkers             int   `json:"num_workers"`
+	MaxPermutationsPerFile int64 `json:"max_permutations_per_file"`
 }
 
 func loadConfig(filePath string) (*Config, error) {
@@ -131,6 +132,12 @@ func main() {
 		return
 	}
 
-	maxPermutationsPerFile := int64(5000000000)
+	config, err := loadConfig("appsettings.json")
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
+
+	maxPermutationsPerFile := config.MaxPermutationsPerFile
 	calculatePermutationRanges(length, maxPermutationsPerFile)
 }
