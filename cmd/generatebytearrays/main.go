@@ -13,6 +13,7 @@ import (
 
 type Config struct {
 	NumWorkers             int   `json:"num_workers"`
+	MaxPermutationsPerLine int64 `json:"max_permutations_per_line"`
 	MaxPermutationsPerFile int64 `json:"max_permutations_per_file"`
 }
 
@@ -32,7 +33,7 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
+func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64) {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
@@ -44,8 +45,8 @@ func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
 	}
 
-	numFiles := new(big.Int).Div(totalPermutations, big.NewInt(maxPermutationsPerFile))
-	if new(big.Int).Mod(totalPermutations, big.NewInt(maxPermutationsPerFile)).Cmp(big.NewInt(0)) != 0 {
+	numFiles := new(big.Int).Div(totalPermutations, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+	if new(big.Int).Mod(totalPermutations, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile)).Cmp(big.NewInt(0)) != 0 {
 		numFiles.Add(numFiles, big.NewInt(1))
 	}
 
@@ -69,8 +70,8 @@ func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
 		go func() {
 			defer wg.Done()
 			for i := range fileChan {
-				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerFile))
-				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerFile))
+				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
 				if end.Cmp(totalPermutations) > 0 {
 					end = totalPermutations
 				}
@@ -83,12 +84,24 @@ func calculatePermutationRanges(length int, maxPermutationsPerFile int64) {
 					return
 				}
 
-				startArray := indexToArray(start, length)
-				endArray := indexToArray(new(big.Int).Sub(end, big.NewInt(1)), length)
+				for j := int64(0); j < maxPermutationsPerFile; j++ {
+					lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
+					lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))
+					if lineEnd.Cmp(totalPermutations) > 0 {
+						lineEnd = totalPermutations
+					}
 
-				_, err = file.WriteString(fmt.Sprintf("%s\n%s\n", arrayToString(startArray), arrayToString(endArray)))
-				if err != nil {
-					fmt.Printf("Error writing to file: %v\n", err)
+					startArray := indexToArray(lineStart, length)
+					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
+
+					_, err = file.WriteString(fmt.Sprintf("%s-%s\n", arrayToString(startArray), arrayToString(endArray)))
+					if err != nil {
+						fmt.Printf("Error writing to file: %v\n", err)
+					}
+
+					if lineEnd.Cmp(totalPermutations) == 0 {
+						break
+					}
 				}
 
 				err = file.Close()
@@ -138,6 +151,7 @@ func main() {
 		return
 	}
 
+	maxPermutationsPerLine := config.MaxPermutationsPerLine
 	maxPermutationsPerFile := config.MaxPermutationsPerFile
-	calculatePermutationRanges(length, maxPermutationsPerFile)
+	calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile)
 }

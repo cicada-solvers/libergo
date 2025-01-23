@@ -47,9 +47,8 @@ elif [ "$choice" -eq 2 ]; then
   for i in $(seq "$start" "$end"); do
     echo "Creating byte arrays for $i"
     ./generatebytearrays "$i"
-  done
 
-  for i in $(seq "$start" "$end"); do
+    # Compress the files in the directory after generatebytearrays runs
     package_count=1
     folder=$(printf "%010d" "$i")
     cd "$folder" || exit
@@ -70,6 +69,8 @@ elif [ "$choice" -eq 3 ]; then
   files_per_package=10000
   echo "Creating byte arrays for $number"
   ./generatebytearrays "$number"
+
+  # Compress the files in the directory after generatebytearrays runs
   folder=$(printf "%010d" "$number")
   package_count=1
   cd "$folder" || exit
