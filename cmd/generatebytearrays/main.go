@@ -110,7 +110,7 @@ func (zw *ZipWriter) closeCurrentZip() error {
 }
 
 func (zw *ZipWriter) createNewZip(folder string) error {
-	zipFileName := fmt.Sprintf("archive_%d.zip", zw.zipFileIndex)
+	zipFileName := fmt.Sprintf("package_%d.zip", zw.zipFileIndex)
 	zipFilePath := filepath.Join(folder, zipFileName)
 	fmt.Printf("Creating new zip file: %s\n", zipFilePath)
 	zipFile, err := os.Create(zipFilePath)
