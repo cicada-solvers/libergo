@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"compress/flate"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -119,6 +120,9 @@ func (zw *ZipWriter) createNewZip(folder string) error {
 	}
 
 	zw.currentZipFile = zip.NewWriter(zipFile)
+	zw.currentZipFile.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(out, flate.BestCompression)
+	})
 	zw.currentZipFileHandle = zipFile
 	zw.currentFileCount = 0
 	zw.zipFileIndex++
