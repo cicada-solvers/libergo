@@ -379,6 +379,27 @@ func processTextFile(fileName string, config *Config) {
 	}
 }
 
+// GetAllPermutationFiles returns a list of all permutation text files in the specified directory and its subdirectories.
+func GetAllPermutationFiles(rootDir string) ([]string, error) {
+	var permFiles []string
+
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.Contains(info.Name(), "permutation") && strings.HasSuffix(info.Name(), ".txt") {
+			permFiles = append(permFiles, path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return permFiles, nil
+}
+
 func main() {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
@@ -386,6 +407,19 @@ func main() {
 		return
 	}
 
+	// Process existing permutation text files first
+	permFiles, err := GetAllPermutationFiles(".")
+	if err != nil {
+		fmt.Printf("Error getting permutation files: %v\n", err)
+		return
+	}
+
+	for _, permFile := range permFiles {
+		fmt.Printf("Processing permutation file: %v\n", permFile)
+		processTextFile(permFile, config)
+	}
+
+	// Process zip files
 	zipFiles, err := GetAllZipFiles(".")
 	if err != nil {
 		fmt.Printf("Error getting zip files: %v\n", err)
