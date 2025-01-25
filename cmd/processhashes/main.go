@@ -393,14 +393,17 @@ func processTextFile(fileName string, config *Config) {
 		}
 
 		program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
+
+		// Successfully processed, remove the line from the file
+		if err := removeLineFromFile(fileName, line); err != nil {
+			fmt.Printf("Error removing line from file: %v\n", err)
+		}
+
 		wg.Wait()
 
 		select {
 		case <-done:
-			// Successfully processed, remove the line from the file
-			if err := removeLineFromFile(fileName, line); err != nil {
-				fmt.Printf("Error removing line from file: %v\n", err)
-			}
+			// Do nothing
 		default:
 			// Not processed, do nothing
 		}
