@@ -322,20 +322,10 @@ func processTextFile(fileName string, config *Config) {
 	}
 	defer file.Close()
 
-	var startArray, stopArray []byte
-	var remainingLines []string
+	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		if startArray == nil && stopArray == nil {
-			startArray, stopArray, err = stringToByteArray(line)
-			if err != nil {
-				fmt.Printf("Error processing line: %v\n", err)
-				return
-			}
-		} else {
-			remainingLines = append(remainingLines, line)
-		}
+		lines = append(lines, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -343,39 +333,47 @@ func processTextFile(fileName string, config *Config) {
 		return
 	}
 
-	if startArray == nil || stopArray == nil {
-		fmt.Printf("Invalid range in file: %v\n", fileName)
-		return
+	var unprocessedLines []string
+
+	for _, line := range lines {
+		startArray, stopArray, err := stringToByteArray(line)
+		if err != nil {
+			fmt.Printf("Error processing line: %v\n", err)
+			unprocessedLines = append(unprocessedLines, line)
+			continue
+		}
+
+		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
+
+		program := NewProgram()
+
+		var wg sync.WaitGroup
+		numWorkers := config.NumWorkers
+		wg.Add(numWorkers)
+
+		done := make(chan struct{})
+		var once sync.Once
+
+		for i := 0; i < numWorkers; i++ {
+			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
+		}
+
+		program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
+		wg.Wait()
+
+		select {
+		case <-done:
+			// Successfully processed, do not add to unprocessedLines
+		default:
+			// Not processed, add to unprocessedLines
+			unprocessedLines = append(unprocessedLines, line)
+		}
 	}
 
-	fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
-
-	program := NewProgram()
-
-	var wg sync.WaitGroup
-	numWorkers := config.NumWorkers
-	wg.Add(numWorkers)
-
-	done := make(chan struct{})
-	var once sync.Once
-
-	for i := 0; i < numWorkers; i++ {
-		go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
-	}
-
-	program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
-	wg.Wait()
-
-	if len(remainingLines) > 0 {
-		err = os.WriteFile(fileName, []byte(strings.Join(remainingLines, "\n")), 0644)
-		if err != nil {
-			fmt.Printf("Error writing remaining lines to file: %v\n", err)
-		}
-	} else {
-		err = os.Remove(fileName)
-		if err != nil {
-			fmt.Printf("Error deleting file: %v\n", err)
-		}
+	// Rewrite the file with unprocessed lines
+	err = os.WriteFile(fileName, []byte(strings.Join(unprocessedLines, "\n")), 0644)
+	if err != nil {
+		fmt.Printf("Error writing file: %v\n", err)
 	}
 }
 
