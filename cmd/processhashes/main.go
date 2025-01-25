@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
@@ -8,7 +9,9 @@ import (
 	"fmt"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
+	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -208,33 +211,110 @@ func generateHashes(data []byte) map[string]string {
 	return hashes
 }
 
-func stringToByteArray(s string) []byte {
-	parts := strings.Split(s, ",")
-	array := make([]byte, len(parts))
-	for i, part := range parts {
-		val, err := strconv.Atoi(part)
-		if err != nil {
-			fmt.Printf("Error converting string to byte: %v\n", err)
-			return nil
-		}
-		array[i] = byte(val)
+func stringToByteArray(s string) ([]byte, []byte, error) {
+	parts := strings.Split(s, "-")
+	if len(parts) != 2 {
+		return nil, nil, fmt.Errorf("invalid format: expected one hyphen separating start and end arrays")
 	}
-	return array
+
+	startArray, err := convertToByteArray(parts[0])
+	if err != nil {
+		return nil, nil, fmt.Errorf("error converting start array: %v", err)
+	}
+
+	stopArray, err := convertToByteArray(parts[1])
+	if err != nil {
+		return nil, nil, fmt.Errorf("error converting stop array: %v", err)
+	}
+
+	return startArray, stopArray, nil
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./processhashes <filename>")
-		return
+func convertToByteArray(part string) ([]byte, error) {
+	subParts := strings.Split(part, ",")
+	var array []byte
+	for _, subPart := range subParts {
+		val, err := strconv.Atoi(subPart)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to byte: %v", err)
+		}
+		array = append(array, byte(val))
 	}
+	return array, nil
+}
 
-	config, err := loadConfig("appsettings.json")
+// GetAllZipFiles returns a list of all zip files in the specified directory and its subdirectories.
+func GetAllZipFiles(rootDir string) ([]string, error) {
+	var zipFiles []string
+
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".zip") {
+			zipFiles = append(zipFiles, path)
+		}
+		return nil
+	})
+
 	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
+		return nil, err
 	}
 
-	fileName := os.Args[1]
+	return zipFiles, nil
+}
+
+// ExtractZip extracts a zip file and returns the list of extracted files.
+func ExtractZip(src string) ([]string, error) {
+	var extractedFiles []string
+
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return nil, fmt.Errorf("error opening zip file: %v", err)
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		fpath := f.Name
+
+		if f.FileInfo().IsDir() {
+			// Create directory
+			if err := os.MkdirAll(fpath, os.ModePerm); err != nil {
+				return nil, fmt.Errorf("error creating directory: %v", err)
+			}
+			continue
+		}
+
+		// Create file
+		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			return nil, fmt.Errorf("error creating directory: %v", err)
+		}
+
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return nil, fmt.Errorf("error creating file: %v", err)
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			return nil, fmt.Errorf("error opening file in zip: %v", err)
+		}
+
+		_, err = io.Copy(outFile, rc)
+		if err != nil {
+			return nil, fmt.Errorf("error copying file content: %v", err)
+		}
+
+		outFile.Close()
+		rc.Close()
+
+		extractedFiles = append(extractedFiles, fpath)
+	}
+
+	return extractedFiles, nil
+}
+
+func processTextFile(fileName string, config *Config) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		fmt.Printf("Error opening file: %v\n", err)
@@ -243,15 +323,28 @@ func main() {
 	defer file.Close()
 
 	var startArray, stopArray []byte
+	var remainingLines []string
 	scanner := bufio.NewScanner(file)
-	if scanner.Scan() {
-		startArray = stringToByteArray(scanner.Text())
+	for scanner.Scan() {
+		line := scanner.Text()
+		if startArray == nil && stopArray == nil {
+			startArray, stopArray, err = stringToByteArray(line)
+			if err != nil {
+				fmt.Printf("Error processing line: %v\n", err)
+				return
+			}
+		} else {
+			remainingLines = append(remainingLines, line)
+		}
 	}
-	if scanner.Scan() {
-		stopArray = stringToByteArray(scanner.Text())
-	}
+
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
+		return
+	}
+
+	if startArray == nil || stopArray == nil {
+		fmt.Printf("Invalid range in file: %v\n", fileName)
 		return
 	}
 
@@ -272,4 +365,54 @@ func main() {
 
 	program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
 	wg.Wait()
+
+	if len(remainingLines) > 0 {
+		err = os.WriteFile(fileName, []byte(strings.Join(remainingLines, "\n")), 0644)
+		if err != nil {
+			fmt.Printf("Error writing remaining lines to file: %v\n", err)
+		}
+	} else {
+		err = os.Remove(fileName)
+		if err != nil {
+			fmt.Printf("Error deleting file: %v\n", err)
+		}
+	}
+}
+
+func main() {
+	config, err := loadConfig("appsettings.json")
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
+
+	zipFiles, err := GetAllZipFiles(".")
+	if err != nil {
+		fmt.Printf("Error getting zip files: %v\n", err)
+		return
+	}
+
+	for _, zipFile := range zipFiles {
+		fmt.Printf("Processing zip file: %v\n", zipFile)
+		extractedFiles, err := ExtractZip(zipFile)
+		if err != nil {
+			fmt.Printf("Error extracting zip file: %v\n", err)
+			continue
+		}
+
+		for _, extractedFile := range extractedFiles {
+			if strings.HasSuffix(extractedFile, ".txt") {
+				fmt.Printf("Processing permutation file: %v\n", extractedFile)
+				processTextFile(extractedFile, config)
+			}
+		}
+
+		// Remove the zip file after processing
+		err = os.Remove(zipFile)
+		if err != nil {
+			fmt.Printf("Error removing zip file: %v\n", err)
+		} else {
+			fmt.Printf("Removed zip file: %v\n", zipFile)
+		}
+	}
 }
