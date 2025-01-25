@@ -1,0 +1,12 @@
+go 1.23
+
+use (
+	pkg/utility/characterrepo
+	pkg/utility/sequences
+	pkg/utility/runer
+	cmd/processhashes
+	cmd/genseq
+	cmd/isprime
+	cmd/rencode
+	cmd/generatebytearrays
+)
