@@ -314,11 +314,10 @@ func ExtractZip(src string) ([]string, error) {
 	return extractedFiles, nil
 }
 
-func processTextFile(fileName string, config *Config) {
+func removeLineFromFile(fileName string, lineContent string) error {
 	file, err := os.Open(fileName)
 	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return
+		return fmt.Errorf("error opening file: %v", err)
 	}
 	defer file.Close()
 
@@ -329,17 +328,52 @@ func processTextFile(fileName string, config *Config) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
+		return fmt.Errorf("error reading file: %v", err)
+	}
+
+	// Filter out the line that matches the lineContent
+	var newLines []string
+	for _, line := range lines {
+		if !strings.Contains(line, lineContent) {
+			newLines = append(newLines, line)
+		}
+	}
+
+	// Rewrite the file without the specified line
+	err = os.WriteFile(fileName, []byte(strings.Join(newLines, "\n")), 0644)
+	if err != nil {
+		return fmt.Errorf("error writing file: %v", err)
+	}
+
+	fmt.Printf("Successfully removed line '%s' from file %s\n", lineContent, fileName)
+	return nil
+}
+
+func processTextFile(fileName string, config *Config) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
 		return
 	}
 
-	var unprocessedLines []string
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
+		file.Close()
+		return
+	}
+
+	file.Close()
 
 	for _, line := range lines {
 		startArray, stopArray, err := stringToByteArray(line)
 		if err != nil {
 			fmt.Printf("Error processing line: %v\n", err)
-			unprocessedLines = append(unprocessedLines, line)
 			continue
 		}
 
@@ -354,7 +388,7 @@ func processTextFile(fileName string, config *Config) {
 		done := make(chan struct{})
 		var once sync.Once
 
-		for i := 0; i < numWorkers; i++ {
+		for j := 0; j < numWorkers; j++ {
 			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
 		}
 
@@ -363,17 +397,13 @@ func processTextFile(fileName string, config *Config) {
 
 		select {
 		case <-done:
-			// Successfully processed, do not add to unprocessedLines
+			// Successfully processed, remove the line from the file
+			if err := removeLineFromFile(fileName, line); err != nil {
+				fmt.Printf("Error removing line from file: %v\n", err)
+			}
 		default:
-			// Not processed, add to unprocessedLines
-			unprocessedLines = append(unprocessedLines, line)
+			// Not processed, do nothing
 		}
-	}
-
-	// Rewrite the file with unprocessed lines
-	err = os.WriteFile(fileName, []byte(strings.Join(unprocessedLines, "\n")), 0644)
-	if err != nil {
-		fmt.Printf("Error writing file: %v\n", err)
 	}
 }
 
