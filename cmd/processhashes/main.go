@@ -7,15 +7,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/sha3"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 type Config struct {
@@ -49,14 +50,14 @@ func NewProgram() *Program {
 	}
 }
 
-func (p *Program) GenerateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
+func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
 	currentArray := make([]byte, len(startArray))
 	copy(currentArray, startArray)
-	p.GenerateByteArrays(maxArrayLength, 1, currentArray, stopArray)
+	p.generateByteArrays(maxArrayLength, 1, currentArray, stopArray)
 	close(p.tasks)
 }
 
-func (p *Program) GenerateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
+func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
 	startForValue := int(passedArray[currentArrayLevel-1])
 
 	if currentArrayLevel == maxArrayLength {
@@ -82,7 +83,7 @@ func (p *Program) GenerateByteArrays(maxArrayLength, currentArrayLevel int, pass
 		}
 		for i := startForValue; i < 256; i++ {
 			currentArray[currentArrayLevel-1] = byte(i)
-			shouldContinue := p.GenerateByteArrays(maxArrayLength, currentArrayLevel+1, currentArray, stopArray)
+			shouldContinue := p.generateByteArrays(maxArrayLength, currentArrayLevel+1, currentArray, stopArray)
 
 			if shouldContinue == false {
 				return false
@@ -112,7 +113,7 @@ func compareArrays(a, b []byte) int {
 	return 0
 }
 
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once) {
+func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int) {
 	defer wg.Done()
 
 	// Open the file in append mode
@@ -133,15 +134,16 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 
 	hashCount := 0
 	taskLen := 0
+	processedPermutations := big.NewInt(0)
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
 	go func() {
-		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m"} // Red, Green, Yellow, Blue, Magenta, Cyan
+		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[90m", "\033[91m", "\033[92m"} // Red, Green, Yellow, Blue, Magenta, Cyan, White, Bright Black, Bright Red, Bright Green
 		colorIndex := 0
 		for range ticker.C {
-
-			fmt.Printf("%sHashes per minute: %d, Array size: %d\033[0m\n", colors[colorIndex], hashCount, taskLen)
+			remainingPermutations := new(big.Int).Sub(totalPermutations, processedPermutations)
+			fmt.Printf("%sHashes per minute: %d, Array size: %d, Remaining permutations: %s\033[0m\n", colors[colorIndex], hashCount, taskLen, remainingPermutations.String())
 
 			hashCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
@@ -162,8 +164,14 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 			}
 			taskLen = len(task)
 			hashes := generateHashes(task)
+			internalCounter := 0
 			for hashName, hash := range hashes {
 				hashCount++
+				internalCounter++
+				if internalCounter == 1 {
+					processedPermutations.Add(processedPermutations, big.NewInt(1))
+					internalCounter = 0
+				}
 				if hash == existingHash {
 					// Convert byte array to comma-separated string
 					var taskStr string
@@ -200,9 +208,9 @@ func generateHashes(data []byte) map[string]string {
 	sha512Hash := sha512.Sum512(data)
 	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
 
-	// SHA3-512
-	sha3Hash := sha3.Sum512(data)
-	hashes["SHA3-512"] = hex.EncodeToString(sha3Hash[:])
+	// SHA3-512 - Was not out in 2014.
+	//sha3Hash := sha3.Sum512(data)
+	//hashes["SHA3-512"] = hex.EncodeToString(sha3Hash[:])
 
 	// Blake2b-512
 	blake2bHash := blake2b.Sum512(data)
@@ -243,8 +251,8 @@ func convertToByteArray(part string) ([]byte, error) {
 	return array, nil
 }
 
-// GetAllZipFiles returns a list of all zip files in the specified directory and its subdirectories.
-func GetAllZipFiles(rootDir string) ([]string, error) {
+// getAllZipFiles returns a list of all zip files in the specified directory and its subdirectories.
+func getAllZipFiles(rootDir string) ([]string, error) {
 	var zipFiles []string
 
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
@@ -264,8 +272,8 @@ func GetAllZipFiles(rootDir string) ([]string, error) {
 	return zipFiles, nil
 }
 
-// ExtractZip extracts a zip file and returns the list of extracted files.
-func ExtractZip(src string) ([]string, error) {
+// extractZip extracts a zip file and returns the list of extracted files.
+func extractZip(src string) ([]string, error) {
 	var extractedFiles []string
 
 	r, err := zip.OpenReader(src)
@@ -377,6 +385,8 @@ func processTextFile(fileName string, config *Config) {
 			continue
 		}
 
+		totalPermutations := calculateTotalPermutations(startArray, stopArray)
+
 		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
 
 		program := NewProgram()
@@ -389,10 +399,10 @@ func processTextFile(fileName string, config *Config) {
 		var once sync.Once
 
 		for j := 0; j < numWorkers; j++ {
-			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
+			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations)
 		}
 
-		program.GenerateAllByteArrays(len(startArray), startArray, stopArray)
+		program.generateAllByteArrays(len(startArray), startArray, stopArray)
 
 		// Successfully processed, remove the line from the file
 		if err := removeLineFromFile(fileName, line); err != nil {
@@ -410,8 +420,8 @@ func processTextFile(fileName string, config *Config) {
 	}
 }
 
-// GetAllPermutationFiles returns a list of all permutation text files in the specified directory and its subdirectories.
-func GetAllPermutationFiles(rootDir string) ([]string, error) {
+// getAllPermutationFiles returns a list of all permutation text files in the specified directory and its subdirectories.
+func getAllPermutationFiles(rootDir string) ([]string, error) {
 	var permFiles []string
 
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
@@ -431,6 +441,23 @@ func GetAllPermutationFiles(rootDir string) ([]string, error) {
 	return permFiles, nil
 }
 
+// calculateTotalPermutations calculates the total number of permutations for an array of given length
+func calculateTotalPermutations(startArray, stopArray []byte) *big.Int {
+	totalPermutations := big.NewInt(1)
+
+	for i := 0; i < len(startArray); i++ {
+		start := int(startArray[i])
+		stop := int(stopArray[i])
+		if stop < start {
+			stop += 256
+		}
+		rangeSize := big.NewInt(int64(stop - start + 1))
+		totalPermutations.Mul(totalPermutations, rangeSize)
+	}
+
+	return totalPermutations
+}
+
 func main() {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
@@ -439,7 +466,7 @@ func main() {
 	}
 
 	// Process existing permutation text files first
-	permFiles, err := GetAllPermutationFiles(".")
+	permFiles, err := getAllPermutationFiles(".")
 	if err != nil {
 		fmt.Printf("Error getting permutation files: %v\n", err)
 		return
@@ -451,7 +478,7 @@ func main() {
 	}
 
 	// Process zip files
-	zipFiles, err := GetAllZipFiles(".")
+	zipFiles, err := getAllZipFiles(".")
 	if err != nil {
 		fmt.Printf("Error getting zip files: %v\n", err)
 		return
@@ -459,7 +486,7 @@ func main() {
 
 	for _, zipFile := range zipFiles {
 		fmt.Printf("Processing zip file: %v\n", zipFile)
-		extractedFiles, err := ExtractZip(zipFile)
+		extractedFiles, err := extractZip(zipFile)
 		if err != nil {
 			fmt.Printf("Error extracting zip file: %v\n", err)
 			continue
