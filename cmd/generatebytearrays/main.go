@@ -45,12 +45,14 @@ type ZipWriter struct {
 	currentFileCount     int64
 	zipFileIndex         int
 	mu                   sync.Mutex
+	totalZipFiles        *big.Int
+	ArrayLength          int
 }
 
 func NewZipWriter(maxFilesPerZip int64) *ZipWriter {
 	return &ZipWriter{
 		MaxFilesPerZip: maxFilesPerZip,
-		zipFileIndex:   0,
+		zipFileIndex:   1,
 	}
 }
 
@@ -112,7 +114,7 @@ func (zw *ZipWriter) closeCurrentZip() error {
 }
 
 func (zw *ZipWriter) createNewZip(folder string) error {
-	zipFileName := fmt.Sprintf("package_%d.zip", zw.zipFileIndex)
+	zipFileName := fmt.Sprintf("package_l%d_%d_of_%s.zip", zw.ArrayLength, zw.zipFileIndex, zw.totalZipFiles.String())
 	zipFilePath := filepath.Join(folder, zipFileName)
 	fmt.Printf("Creating new zip file: %s\n", zipFilePath)
 	zipFile, err := os.Create(zipFilePath)
@@ -136,6 +138,14 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		fmt.Printf("Error loading config: %v\n", err)
 		return
 	}
+
+	totalZipFiles, err := calculateNumberOfZipFiles(length, maxPermutationsPerLine, maxPermutationsPerFile, config.MaxFilesPerZip)
+	if err != nil {
+		fmt.Printf("Error calculating number of zip files: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Total number of zip files: %s\n", totalZipFiles.String())
 
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
@@ -163,6 +173,8 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	}()
 
 	zipWriter := NewZipWriter(config.MaxFilesPerZip)
+	zipWriter.totalZipFiles = totalZipFiles
+	zipWriter.ArrayLength = length
 
 	for i := 0; i < config.NumWorkers; i++ {
 		wg.Add(1)
@@ -246,6 +258,26 @@ func arrayToString(array []byte) string {
 		strArray[i] = fmt.Sprintf("%d", b)
 	}
 	return strings.Join(strArray, ",")
+}
+
+func calculateNumberOfZipFiles(length int, maxPermutationsPerLine, maxPermutationsPerFile, maxFilesPerZip int64) (*big.Int, error) {
+	totalPermutations := big.NewInt(1)
+	for i := 0; i < length; i++ {
+		totalPermutations.Mul(totalPermutations, big.NewInt(256))
+	}
+
+	permutationsPerFile := big.NewInt(maxPermutationsPerLine * maxPermutationsPerFile)
+	totalFiles := new(big.Int).Div(totalPermutations, permutationsPerFile)
+	if new(big.Int).Mod(totalPermutations, permutationsPerFile).Cmp(big.NewInt(0)) != 0 {
+		totalFiles.Add(totalFiles, big.NewInt(1))
+	}
+
+	totalZipFiles := new(big.Int).Div(totalFiles, big.NewInt(maxFilesPerZip))
+	if new(big.Int).Mod(totalFiles, big.NewInt(maxFilesPerZip)).Cmp(big.NewInt(0)) != 0 {
+		totalZipFiles.Add(totalZipFiles, big.NewInt(1))
+	}
+
+	return totalZipFiles, nil
 }
 
 func main() {
