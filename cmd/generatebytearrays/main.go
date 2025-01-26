@@ -184,6 +184,12 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 				}
 
 				bufferedWriter := bufio.NewWriter(file)
+				// Write MaxPermutationsPerLine as the first line
+				_, err = bufferedWriter.WriteString(fmt.Sprintf("%d\n", maxPermutationsPerLine))
+				if err != nil {
+					fmt.Printf("Error writing to file: %v\n", err)
+				}
+
 				for j := int64(0); j < maxPermutationsPerFile; j++ {
 					lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
 					lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))

@@ -165,14 +165,11 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 			}
 			taskLen = len(task)
 			hashes := generateHashes(task)
-			internalCounter := 0
+
 			for hashName, hash := range hashes {
 				hashCount++
-				internalCounter++
-				if internalCounter == 3 {
-					processedPermutations.Add(processedPermutations, big.NewInt(1))
-					internalCounter = 0
-				}
+				processedPermutations.Add(processedPermutations, big.NewInt(1))
+
 				if hash == existingHash {
 					// Convert byte array to comma-separated string
 					var taskStr string
@@ -366,20 +363,28 @@ func processTextFile(fileName string, config *Config) {
 		fmt.Printf("Error opening file: %v\n", err)
 		return
 	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	// Read the first line for totalPermutations
+	if !scanner.Scan() {
+		fmt.Printf("Error reading totalPermutations from file: %v\n", err)
+		return
+	}
+	totalPermutations := new(big.Int)
+	totalPermutations.SetString(scanner.Text(), 10)
+	totalPermutations = totalPermutations.Mul(totalPermutations, big.NewInt(3))
 
 	var lines []string
-	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
-		file.Close()
 		return
 	}
-
-	file.Close()
 
 	for _, line := range lines {
 		startArray, stopArray, err := stringToByteArray(line)
@@ -387,8 +392,6 @@ func processTextFile(fileName string, config *Config) {
 			fmt.Printf("Error processing line: %v\n", err)
 			continue
 		}
-
-		totalPermutations := calculateTotalPermutations(startArray, stopArray)
 
 		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
 
@@ -442,23 +445,6 @@ func getAllPermutationFiles(rootDir string) ([]string, error) {
 	}
 
 	return permFiles, nil
-}
-
-// calculateTotalPermutations calculates the total number of permutations for an array of given length
-func calculateTotalPermutations(startArray, stopArray []byte) *big.Int {
-	totalPermutations := big.NewInt(1)
-
-	for i := 0; i < len(startArray); i++ {
-		start := int(startArray[i])
-		stop := int(stopArray[i])
-		if stop < start {
-			stop += 256
-		}
-		rangeSize := big.NewInt(int64(stop - start + 1))
-		totalPermutations.Mul(totalPermutations, rangeSize)
-	}
-
-	return totalPermutations
 }
 
 func main() {
