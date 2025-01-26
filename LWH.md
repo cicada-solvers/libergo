@@ -1,6 +1,6 @@
 # LWH - Large Web Hash
 ## Large Web Hash - Brute Force Description
-The Large Web Hash (LWH) is a hash that is used in the Liber Primus on page 56 ().  
+The Large Web Hash (LWH) is a hash that is used in the Liber Primus on page 56 (https://uncovering-cicada.fandom.com/wiki/PAGE_56).  
 The hash is a 512 hash that is generated from some we don't know at this time.
 
 Since we do not know what the source of the has is, we are going to have to brute for the byte arrays to fine one that 
@@ -8,7 +8,7 @@ fits the hash.
 
 ### LWH - Brute force toolset
 Download the latest release from the releases are of this GitHub.
-In the release, there will be 5 files you will need to use.  You do not have to worry about running this.
+In the release, there will be 5 files you will need to use.  You do not have to worry about generating arrays.
 I am in the process of getting a site ready to give the files to you.
 
 1. generatebytearrays - This is used to generate the byte arrays that are used in the brute force process.
