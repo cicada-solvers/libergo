@@ -200,39 +200,22 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 }
 
 func generateHashes(data []byte) map[string]string {
-	hashes := make(map[string]string, 3) // Preallocate memory for 3 hash functions
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	hashes := make(map[string]string)
 
-	wg.Add(3)
+	// SHA-512
+	sha512Hash := sha512.Sum512(data)
+	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
 
-	go func() {
-		defer wg.Done()
-		sha512Hash := sha512.Sum512(data)
-		mu.Lock()
-		hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
-		mu.Unlock()
-	}()
+	// Whirlpool
+	whirlpoolHash := whirlpool.New()
+	whirlpoolHash.Write(data)
+	whirlHash := whirlpoolHash.Sum(nil)
+	hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
 
-	go func() {
-		defer wg.Done()
-		whirlpoolHash := whirlpool.New()
-		whirlpoolHash.Write(data)
-		whirlHash := whirlpoolHash.Sum(nil)
-		mu.Lock()
-		hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
-		mu.Unlock()
-	}()
+	// Blake2b-512
+	blake2bHash := blake2b.Sum512(data)
+	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
 
-	go func() {
-		defer wg.Done()
-		blake2bHash := blake2b.Sum512(data)
-		mu.Lock()
-		hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
-		mu.Unlock()
-	}()
-
-	wg.Wait()
 	return hashes
 }
 
