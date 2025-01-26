@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
 	"compress/flate"
 	"encoding/json"
 	"fmt"
@@ -74,19 +75,19 @@ func (zw *ZipWriter) AddFileToZip(folder, filePath string) error {
 	}
 	defer file.Close()
 
-	//fmt.Printf("Adding file %s to zip\n", filePath)
 	w, err := zw.currentZipFile.Create(filepath.Base(filePath))
 	if err != nil {
 		return fmt.Errorf("error creating zip entry: %v", err)
 	}
 
-	if _, err := io.Copy(w, file); err != nil {
+	bufferedWriter := bufio.NewWriter(w)
+	if _, err := io.Copy(bufferedWriter, file); err != nil {
 		return fmt.Errorf("error writing file to zip: %v", err)
 	}
+	bufferedWriter.Flush()
 
 	zw.currentFileCount++
 
-	// Delete the original file after adding it to the zip archive
 	if err := os.Remove(filePath); err != nil {
 		return fmt.Errorf("error deleting file: %v", err)
 	}
@@ -141,12 +142,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
 	}
 
-	numFiles := new(big.Int).Div(totalPermutations, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
-	if new(big.Int).Mod(totalPermutations, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile)).Cmp(big.NewInt(0)) != 0 {
-		numFiles.Add(numFiles, big.NewInt(1))
-	}
-
-	// Create the subdirectory
 	folder := fmt.Sprintf("%010d", length)
 	if err := os.MkdirAll(folder, os.ModePerm); err != nil {
 		fmt.Printf("Error creating folder: %v\n", err)
@@ -154,16 +149,22 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	}
 
 	var wg sync.WaitGroup
-	fileChan := make(chan int64, numFiles.Int64())
+	fileChan := make(chan int64)
 
-	for i := int64(0); i < numFiles.Int64(); i++ {
-		fileChan <- i
-	}
-	close(fileChan)
+	go func() {
+		for i := int64(0); ; i++ {
+			start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+			if start.Cmp(totalPermutations) >= 0 {
+				break
+			}
+			fileChan <- i
+		}
+		close(fileChan)
+	}()
 
 	zipWriter := NewZipWriter(config.MaxFilesPerZip)
 
-	for i := 0; i < config.NumWorkers; i++ { // Use the number of workers from the config
+	for i := 0; i < config.NumWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -182,6 +183,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					return
 				}
 
+				bufferedWriter := bufio.NewWriter(file)
 				for j := int64(0); j < maxPermutationsPerFile; j++ {
 					lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
 					lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))
@@ -192,7 +194,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					startArray := indexToArray(lineStart, length)
 					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
 
-					_, err = file.WriteString(fmt.Sprintf("%s-%s\n", arrayToString(startArray), arrayToString(endArray)))
+					_, err = bufferedWriter.WriteString(fmt.Sprintf("%s-%s\n", arrayToString(startArray), arrayToString(endArray)))
 					if err != nil {
 						fmt.Printf("Error writing to file: %v\n", err)
 					}
@@ -201,13 +203,13 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 						break
 					}
 				}
+				bufferedWriter.Flush()
 
 				err = file.Close()
 				if err != nil {
 					fmt.Printf("Error closing file: %v\n", err)
 				}
 
-				// Add the file to the zip archive
 				if err := zipWriter.AddFileToZip(folder, filePath); err != nil {
 					fmt.Printf("Error adding file to zip: %v\n", err)
 				}
@@ -217,7 +219,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 
 	wg.Wait()
 
-	// Close the current zip file after all files have been added
 	if err := zipWriter.closeCurrentZip(); err != nil {
 		fmt.Printf("Error closing zip file: %v\n", err)
 	}
