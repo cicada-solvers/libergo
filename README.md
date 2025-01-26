@@ -5,12 +5,12 @@ There were some desires for people to be able to use some of the utilities in th
 that I had been working on.  This is simpler tool written in Go for performance reasons.
 
 ## Tools
-genseq - This is used for generating a series of numeric sequences.
-isprime - This is used for checking if a number is prime.
-rencode - This is used for encoding and decoding runes to latin characters.
+- genseq - This is used for generating a series of numeric sequences.
+- isprime - This is used for checking if a number is prime.
+- rencode - This is used for encoding and decoding runes to latin characters.
 
-## LWH Processing
-[For more information on how to process the large web hash files](LWH.md)
+## Deep Web Hash Processing
+[For more information on how to process the deep web hash files](LWH.md)
 
 ## Upcoming Tools available in LPAT
 - gem sum utility
