@@ -114,7 +114,7 @@ func compareArrays(a, b []byte) int {
 	return 0
 }
 
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int) {
+func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int, mu *sync.Mutex) {
 	defer wg.Done()
 
 	// Open the file in append mode
@@ -143,7 +143,9 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[90m", "\033[91m", "\033[92m"} // Red, Green, Yellow, Blue, Magenta, Cyan, White, Bright Black, Bright Red, Bright Green
 		colorIndex := 0
 		for range ticker.C {
+			mu.Lock()
 			remainingPermutations := new(big.Int).Sub(totalPermutations, processedPermutations)
+			mu.Unlock()
 			fmt.Printf("%sHashes per minute: %d, Array size: %d, Remaining permutations: %s\033[0m\n", colors[colorIndex], hashCount, taskLen, remainingPermutations.String())
 
 			hashCount = 0
@@ -168,7 +170,9 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 
 			for hashName, hash := range hashes {
 				hashCount++
+				mu.Lock()
 				processedPermutations.Add(processedPermutations, big.NewInt(1))
+				mu.Unlock()
 
 				if hash == existingHash {
 					// Convert byte array to comma-separated string
@@ -404,8 +408,10 @@ func processTextFile(fileName string, config *Config) {
 		done := make(chan struct{})
 		var once sync.Once
 
+		var mu sync.Mutex
+
 		for j := 0; j < numWorkers; j++ {
-			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations)
+			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations, &mu)
 		}
 
 		program.generateAllByteArrays(len(startArray), startArray, stopArray)
