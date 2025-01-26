@@ -54,7 +54,7 @@ func NewZipWriter(maxFilesPerZip int64) *ZipWriter {
 	}
 }
 
-func (zw *ZipWriter) AddFileToZip(folder, filePath string) error {
+func (zw *ZipWriter) addFileToZip(folder, filePath string) error {
 	zw.mu.Lock()
 	defer zw.mu.Unlock()
 
@@ -210,7 +210,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					fmt.Printf("Error closing file: %v\n", err)
 				}
 
-				if err := zipWriter.AddFileToZip(folder, filePath); err != nil {
+				if err := zipWriter.addFileToZip(folder, filePath); err != nil {
 					fmt.Printf("Error adding file to zip: %v\n", err)
 				}
 			}
