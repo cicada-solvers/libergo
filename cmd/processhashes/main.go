@@ -146,7 +146,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 			mu.Lock()
 			remainingPermutations := new(big.Int).Sub(totalPermutations, processedPermutations)
 			mu.Unlock()
-			fmt.Printf("%sHashes per minute: %d, Array size: %d, Remaining permutations: %s\033[0m\n", colors[colorIndex], hashCount, taskLen, remainingPermutations.String())
+			fmt.Printf("%sHashes per minute: %d, Array size: %d, Remaining hashes: %s\033[0m\n", colors[colorIndex], hashCount, taskLen, remainingPermutations.String())
 
 			hashCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
