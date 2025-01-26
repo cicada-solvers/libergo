@@ -2,7 +2,7 @@
 
 ## Description
 There were some desires for people to be able to use some of the utilities in the LPAT (Liber Primus Analysis Tool)
-that I had been working on.  This is simpler tool written in Go for performance reasons.
+that I had been working on in the command line.  This is simpler tools written in Go for performance reasons.
 
 ## Tools So Far
 - genseq - This is used for generating a series of numeric sequences.
