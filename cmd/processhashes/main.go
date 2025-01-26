@@ -414,6 +414,9 @@ func processTextFile(fileName string, config *Config) {
 			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations, &mu)
 		}
 
+		// Start timing
+		startTime := time.Now()
+
 		program.generateAllByteArrays(len(startArray), startArray, stopArray)
 
 		// Successfully processed, remove the line from the file
@@ -429,6 +432,10 @@ func processTextFile(fileName string, config *Config) {
 		default:
 			// Not processed, do nothing
 		}
+
+		// End timing
+		duration := time.Since(startTime)
+		fmt.Printf("Time taken to process line: %v\n", duration)
 	}
 }
 
