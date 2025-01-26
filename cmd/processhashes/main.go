@@ -169,7 +169,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 			for hashName, hash := range hashes {
 				hashCount++
 				internalCounter++
-				if internalCounter == 1 {
+				if internalCounter == 2 {
 					processedPermutations.Add(processedPermutations, big.NewInt(1))
 					internalCounter = 0
 				}
