@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jzelinskie/whirlpool"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -208,9 +209,11 @@ func generateHashes(data []byte) map[string]string {
 	sha512Hash := sha512.Sum512(data)
 	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
 
-	// SHA3-512 - Was not out in 2014.
-	//sha3Hash := sha3.Sum512(data)
-	//hashes["SHA3-512"] = hex.EncodeToString(sha3Hash[:])
+	// Whirlpool
+	whirlpoolHash := whirlpool.New()
+	whirlpoolHash.Write(data)
+	whirlHash := whirlpoolHash.Sum(nil)
+	hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
 
 	// Blake2b-512
 	blake2bHash := blake2b.Sum512(data)
