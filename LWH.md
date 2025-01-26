@@ -1,7 +1,7 @@
 # LWH - Large Web Hash
 ## Large Web Hash - Brute Force Description
 The Large Web Hash (LWH) is a hash that is used in the Liber Primus on page 56 (https://uncovering-cicada.fandom.com/wiki/PAGE_56).  
-The hash is a 512 hash that is generated from some we don't know at this time.
+The hash is a 512-bit hash that is generated from something we don't know at this time.
 
 Since we do not know what the source of the has is, we are going to have to brute for the byte arrays to fine one that 
 fits the hash.
@@ -23,7 +23,7 @@ I am in the process of getting a site ready to give the files to you.
 - num_workers - This is the number of workers that will be used to process the hashes.
 - existing_hash - This is the hash that you are looking for. *DO NOT CHANGE THIS*
 
-Once you have downloaded the .zip file from the site (TBD), then you will need to run ./processhashes.
+Once you have downloaded a .zip file from the site (TBD), then you will need to run ./processhashes.
 It will find the zip files in the directory and then start hashing the byte array into SHA-512, Whirlpool, and Blake2b-512.
 It will remove the range from the permutation text file that is in the zip file.  Then it will remove the zip file.
 If you stop the process, it will resume on the last permutation file you were processing.  That way, you do not have to 
