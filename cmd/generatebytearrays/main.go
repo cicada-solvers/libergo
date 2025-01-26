@@ -80,7 +80,7 @@ func (zw *ZipWriter) addFileToZip(folder, filePath string) error {
 		return fmt.Errorf("error creating zip entry: %v", err)
 	}
 
-	bufferedWriter := bufio.NewWriter(w)
+	bufferedWriter := bufio.NewWriterSize(w, 64*1024) // Increase buffer size to 64KB
 	if _, err := io.Copy(bufferedWriter, file); err != nil {
 		return fmt.Errorf("error writing file to zip: %v", err)
 	}
