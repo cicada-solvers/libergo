@@ -1,5 +1,5 @@
 # DWH - Deep Web Hash
-## Large Web Hash - Brute Force Description
+## Deep Web Hash - Brute Force Description
 The Deep Web Hash (DWH) is a hash that is used in the Liber Primus on page 56 (https://uncovering-cicada.fandom.com/wiki/PAGE_56).  
 The hash is a 512-bit hash that is generated from something we don't know at this time.
 
