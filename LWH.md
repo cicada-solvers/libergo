@@ -25,7 +25,7 @@ I am in the process of getting a site ready to give the files to you.
 - Just drop a zip file from the site into the same directory as the processhashes file and run it.
 
 The zip file format is as follows:
-package_l(length of arrays)_(zip number)_of_(total number of zips).zip
+package_l(length of arrays)_(zip number)_\_of_(total number of zips).zip
 
 Once you have downloaded a .zip file from the site (TBD), then you will need to run ./processhashes.
 It will find the zip files in the directory and then start hashing the byte array into SHA-512, Whirlpool, and Blake2b-512.
