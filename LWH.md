@@ -17,15 +17,15 @@ In the release, there will be two programs you will need to use.  Both of these 
 - max_permutations_per_file - This is the number of permutations that will be generated per file.
 - max_files_per_zip - This is the number of files that will be generated per zip file.
 
--The zip file format is as follows: package_l(length of arrays)\_(zip number)\_of_(total number of zips).zip
+-The zip file format is as follows: package_l(length of arrays)\_(zip number).zip
 
 2. processhashes - This is used to process the hashes that are generated from the byte arrays.
 - It has an appsettings.json file that you can use to configure the program.
 - num_workers - This is the number of workers that will be used to process the hashes.  You will want to adjust this for your machine!
 - existing_hash - This is the hash that you are looking for. *DO NOT CHANGE THIS*
 
-The ranges in the permutation file are 5 billion per line. There are 20,000 ranges per permutation file.  
-Each zip file contains 7,500 of these files.  There is no expectation that the average PC can chew through one in a day unless you have a thread-ripper or something similar.
+The ranges in the permutation file are 1 billion per line. There are 500 ranges per permutation file.  
+Each zip file contains 500 of these files.  There is no expectation that the average PC can chew through one in a day unless you have a thread-ripper or something similar.
 It should take several days/weeks to process one package (again, depending on the machine).
 
 ### DWH - Brute force process
