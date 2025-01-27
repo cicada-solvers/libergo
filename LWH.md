@@ -24,7 +24,7 @@ In the release, there will be two programs you will need to use.  Both of these 
 - num_workers - This is the number of workers that will be used to process the hashes.  You will want to adjust this for your machine!
 - existing_hash - This is the hash that you are looking for. *DO NOT CHANGE THIS*
 
-The ranges in the permutation file are 1 billion per line. There are 500 ranges per permutation file.  
+The ranges in the permutation file are 500 million per line. There are 1500 ranges per permutation file.  
 Each zip file contains 500 of these files.  There is no expectation that the average PC can chew through one in a day unless you have a thread-ripper or something similar.
 It should take several days/weeks to process one package (again, depending on the machine).
 
