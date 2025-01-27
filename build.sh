@@ -56,7 +56,6 @@ dist_binaries() {
         exit 1
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
-      cp ./*.sh "../../$BINARY_DIR/"
       cp ./*.txt "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Mac..."
@@ -67,7 +66,6 @@ dist_binaries() {
         exit 1
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
-      cp ./*.sh "../../$BINARY_DIR/"
       cp ./*.txt "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Windows..."
@@ -78,7 +76,6 @@ dist_binaries() {
         exit 1
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
-      cp ./*.sh "../../$BINARY_DIR/"
       cp ./*.txt "../../$BINARY_DIR/"
       cd - > /dev/null
     fi
@@ -91,6 +88,15 @@ dist_binaries() {
 
   echo "Removing uncompressed directories..."
   rm -rf "$DIST_DIR/linux" "$DIST_DIR/mac" "$DIST_DIR/windows"
+
+  echo "Cleaning binaries..."
+    for dir in $CMD_DIR/*; do
+      if [ -d "$dir" ]; then
+        BINARY_NAME=$(basename "$dir")
+        echo "Removing $BINARY_NAME from $dir..."
+        rm -vf "$dir/$BINARY_NAME"
+      fi
+    done
 
   echo "All distribution binaries built, compressed, and cleaned up successfully."
 }

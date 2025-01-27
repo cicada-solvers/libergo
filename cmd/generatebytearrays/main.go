@@ -10,7 +10,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -46,9 +45,9 @@ type ZipWriter struct {
 	currentZipFile       *zip.Writer
 	currentZipFileHandle *os.File
 	currentFileCount     int64
-	zipFileIndex         int
 	mu                   sync.Mutex
 	totalZipFiles        *big.Int
+	zipFileNumber        *big.Int
 	ArrayLength          int
 }
 
@@ -56,7 +55,6 @@ type ZipWriter struct {
 func NewZipWriter(maxFilesPerZip int64) *ZipWriter {
 	return &ZipWriter{
 		MaxFilesPerZip: maxFilesPerZip,
-		zipFileIndex:   1,
 	}
 }
 
@@ -82,7 +80,15 @@ func (zw *ZipWriter) addFileToZip(folder, filePath string) error {
 	}
 	defer file.Close()
 
-	w, err := zw.currentZipFile.Create(filepath.Base(filePath))
+	// Truncate the file name if it exceeds 255 characters
+	fileName := filepath.Base(filePath)
+	if len(fileName) > 255 {
+		ext := filepath.Ext(fileName)
+		name := fileName[:255-len(ext)]
+		fileName = name + ext
+	}
+
+	w, err := zw.currentZipFile.Create(fileName)
 	if err != nil {
 		return fmt.Errorf("error creating zip entry: %v", err)
 	}
@@ -121,7 +127,7 @@ func (zw *ZipWriter) closeCurrentZip() error {
 
 // createNewZip creates a new zip archive
 func (zw *ZipWriter) createNewZip(folder string) error {
-	zipFileName := fmt.Sprintf("package_l%d_%d_of_%s.zip", zw.ArrayLength, zw.zipFileIndex, zw.totalZipFiles.String())
+	zipFileName := fmt.Sprintf("package_l%d_%s_of_%s.zip", zw.ArrayLength, zw.zipFileNumber.String(), zw.totalZipFiles.String())
 	zipFilePath := filepath.Join(folder, zipFileName)
 	fmt.Printf("Creating new zip file: %s\n", zipFilePath)
 	zipFile, err := os.Create(zipFilePath)
@@ -135,12 +141,12 @@ func (zw *ZipWriter) createNewZip(folder string) error {
 	})
 	zw.currentZipFileHandle = zipFile
 	zw.currentFileCount = 0
-	zw.zipFileIndex++
 	return nil
 }
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
-func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64) {
+// calculatePermutationRanges calculates the permutation ranges for the specified length
+func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64, zipFileNumber *big.Int) {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
@@ -170,12 +176,14 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	fileChan := make(chan int64)
 
 	go func() {
-		for i := int64(0); ; i++ {
-			start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+		startFile := new(big.Int).Mul(new(big.Int).Sub(zipFileNumber, big.NewInt(1)), big.NewInt(config.MaxFilesPerZip))
+		endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxFilesPerZip))
+		for i := new(big.Int).Set(startFile); i.Cmp(endFile) < 0; i.Add(i, big.NewInt(1)) {
+			start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
 			if start.Cmp(totalPermutations) >= 0 {
 				break
 			}
-			fileChan <- i
+			fileChan <- i.Int64()
 		}
 		close(fileChan)
 	}()
@@ -183,6 +191,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	zipWriter := NewZipWriter(config.MaxFilesPerZip)
 	zipWriter.totalZipFiles = totalZipFiles
 	zipWriter.ArrayLength = length
+	zipWriter.zipFileNumber = zipFileNumber
 
 	for i := 0; i < config.NumWorkers; i++ {
 		wg.Add(1)
@@ -196,6 +205,11 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 				}
 
 				fileName := fmt.Sprintf("permutations_%d.txt", i)
+				if len(fileName) > 255 {
+					ext := filepath.Ext(fileName)
+					name := fileName[:255-len(ext)]
+					fileName = name + ext
+				}
 				filePath := filepath.Join(folder, fileName)
 				file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
@@ -204,7 +218,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 				}
 
 				bufferedWriter := bufio.NewWriter(file)
-				// Write MaxPermutationsPerLine as the first line
 				_, err = bufferedWriter.WriteString(fmt.Sprintf("%d\n", maxPermutationsPerLine))
 				if err != nil {
 					fmt.Printf("Error writing to file: %v\n", err)
@@ -247,6 +260,33 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 
 	if err := zipWriter.closeCurrentZip(); err != nil {
 		fmt.Printf("Error closing zip file: %v\n", err)
+	}
+
+	// Check if the folder exists in processhashes
+	destinationFolder := filepath.Join("..", "processhashes", folder)
+	if _, err := os.Stat(destinationFolder); os.IsNotExist(err) {
+		// Move the folder to the processhashes folder
+		if err := os.Rename(folder, destinationFolder); err != nil {
+			fmt.Printf("Error moving folder: %v\n", err)
+		} else {
+			fmt.Printf("Folder moved to %s\n", destinationFolder)
+		}
+	} else {
+		// Move the zip file to the existing folder in processhashes
+		zipFileName := fmt.Sprintf("package_l%d_%s_of_%s.zip", length, zipFileNumber.String(), totalZipFiles.String())
+		zipFilePath := filepath.Join(folder, zipFileName)
+		newZipFilePath := filepath.Join(destinationFolder, zipFileName)
+		if err := os.Rename(zipFilePath, newZipFilePath); err != nil {
+			fmt.Printf("Error moving zip file: %v\n", err)
+		} else {
+			fmt.Printf("Zip file moved to %s\n", newZipFilePath)
+		}
+		// Remove the folder under generatebytearrays
+		if err := os.RemoveAll(folder); err != nil {
+			fmt.Printf("Error removing folder: %v\n", err)
+		} else {
+			fmt.Printf("Folder %s removed\n", folder)
+		}
 	}
 }
 
@@ -293,14 +333,11 @@ func calculateNumberOfZipFiles(length int, maxPermutationsPerLine, maxPermutatio
 
 // main is the entry point for the application
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./generatebytearrays <length>")
-		return
-	}
-
-	length, err := strconv.Atoi(os.Args[1])
+	var length int
+	fmt.Print("Enter the array length: ")
+	_, err := fmt.Scan(&length)
 	if err != nil {
-		fmt.Printf("Invalid length: %v\n", err)
+		fmt.Printf("Invalid input: %v\n", err)
 		return
 	}
 
@@ -312,5 +349,29 @@ func main() {
 
 	maxPermutationsPerLine := config.MaxPermutationsPerLine
 	maxPermutationsPerFile := config.MaxPermutationsPerFile
-	calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile)
+
+	totalZipFiles, err := calculateNumberOfZipFiles(length, maxPermutationsPerLine, maxPermutationsPerFile, config.MaxFilesPerZip)
+	if err != nil {
+		fmt.Printf("Error calculating number of zip files: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Total number of zip files: %s\n", totalZipFiles.String())
+
+	var zipFileNumberStr string
+	fmt.Print("Enter the zip file number to generate: ")
+	_, err = fmt.Scan(&zipFileNumberStr)
+	if err != nil {
+		fmt.Printf("Invalid input: %v\n", err)
+		return
+	}
+
+	zipFileNumber := new(big.Int)
+	zipFileNumber, ok := zipFileNumber.SetString(zipFileNumberStr, 10)
+	if !ok || zipFileNumber.Cmp(big.NewInt(1)) < 0 || zipFileNumber.Cmp(totalZipFiles) > 0 {
+		fmt.Printf("Invalid zip file number: %v\n", err)
+		return
+	}
+
+	calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, zipFileNumber)
 }

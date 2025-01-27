@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"math/big"
@@ -473,8 +474,38 @@ func getAllPermutationFiles(rootDir string) ([]string, error) {
 	return permFiles, nil
 }
 
+// cleanUp deletes all subfolders and permutation text files in the specified directory.
+func cleanUp(rootDir string) error {
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && path != rootDir {
+			return os.RemoveAll(path)
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
+			return os.Remove(path)
+		}
+		return nil
+	})
+	return err
+}
+
 // main is the entry point of the program.
 func main() {
+	clean := flag.Bool("clean", false, "Delete all subfolders and permutation text files")
+	flag.Parse()
+
+	if *clean {
+		err := cleanUp(".")
+		if err != nil {
+			fmt.Printf("Error during cleanup: %v\n", err)
+		} else {
+			fmt.Println("Cleanup completed successfully.")
+		}
+		return
+	}
+
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
