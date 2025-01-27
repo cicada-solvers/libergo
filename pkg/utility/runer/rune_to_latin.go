@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// TransposeRuneToLatin transposes a string of runes to Latin characters
 func TransposeRuneToLatin(text string) string {
 	var sb strings.Builder
 	repo := runelib.NewCharacterRepo()

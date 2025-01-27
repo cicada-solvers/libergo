@@ -4,10 +4,12 @@ import (
 	"strings"
 )
 
+// CharacterRepo is a repository for ASCII and ANSI characters.
 type CharacterRepo struct {
 	asciiAnsiItems map[string]map[int]string
 }
 
+// NewCharacterRepo creates a new CharacterRepo.
 func NewCharacterRepo() *CharacterRepo {
 	repo := &CharacterRepo{
 		asciiAnsiItems: make(map[string]map[int]string),
@@ -70,6 +72,7 @@ func NewCharacterRepo() *CharacterRepo {
 	return repo
 }
 
+// GetANSICharFromBin returns the ANSI character for the given binary value.
 func (repo *CharacterRepo) GetANSICharFromBin(bin string, includeControlCharacters bool) string {
 	for _, char := range repo.asciiAnsiItems["ANSI"] {
 		if strings.Contains(char, bin) {
@@ -82,6 +85,7 @@ func (repo *CharacterRepo) GetANSICharFromBin(bin string, includeControlCharacte
 	return ""
 }
 
+// GetANSICharFromDec returns the ANSI character for the given decimal value.
 func (repo *CharacterRepo) GetANSICharFromDec(dec int, includeControlCharacters bool) string {
 	char, exists := repo.asciiAnsiItems["ANSI"][dec]
 	if exists {
@@ -93,6 +97,7 @@ func (repo *CharacterRepo) GetANSICharFromDec(dec int, includeControlCharacters 
 	return ""
 }
 
+// GetASCIICharFromBin returns the ASCII character for the given binary value.
 func (repo *CharacterRepo) GetASCIICharFromBin(bin string, includeControlCharacters bool) string {
 	for _, char := range repo.asciiAnsiItems["ASCII"] {
 		if strings.Contains(char, bin) {
@@ -105,6 +110,7 @@ func (repo *CharacterRepo) GetASCIICharFromBin(bin string, includeControlCharact
 	return ""
 }
 
+// GetASCIICharFromDec returns the ASCII character for the given decimal value.
 func (repo *CharacterRepo) GetASCIICharFromDec(dec int, includeControlCharacters bool) string {
 	char, exists := repo.asciiAnsiItems["ASCII"][dec]
 	if exists {
@@ -116,6 +122,7 @@ func (repo *CharacterRepo) GetASCIICharFromDec(dec int, includeControlCharacters
 	return ""
 }
 
+// GetGematriaRunes returns a list of runes used in the Elder Futhark alphabet.
 func (repo *CharacterRepo) GetGematriaRunes() []string {
 	return []string{
 		"ᛝ", // ING

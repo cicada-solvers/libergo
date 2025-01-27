@@ -15,6 +15,7 @@ import (
 	"sync"
 )
 
+// Config represents the configuration for the application
 type Config struct {
 	NumWorkers             int   `json:"num_workers"`
 	MaxPermutationsPerLine int64 `json:"max_permutations_per_line"`
@@ -22,6 +23,7 @@ type Config struct {
 	MaxFilesPerZip         int64 `json:"max_files_per_zip"`
 }
 
+// loadConfig loads the configuration from the specified file
 func loadConfig(filePath string) (*Config, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -38,6 +40,7 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
+// ZipWriter is a struct that writes files to a zip archive
 type ZipWriter struct {
 	MaxFilesPerZip       int64
 	currentZipFile       *zip.Writer
@@ -49,6 +52,7 @@ type ZipWriter struct {
 	ArrayLength          int
 }
 
+// NewZipWriter creates a new ZipWriter
 func NewZipWriter(maxFilesPerZip int64) *ZipWriter {
 	return &ZipWriter{
 		MaxFilesPerZip: maxFilesPerZip,
@@ -56,6 +60,7 @@ func NewZipWriter(maxFilesPerZip int64) *ZipWriter {
 	}
 }
 
+// addFileToZip adds a file to the zip archive
 func (zw *ZipWriter) addFileToZip(folder, filePath string) error {
 	zw.mu.Lock()
 	defer zw.mu.Unlock()
@@ -97,6 +102,7 @@ func (zw *ZipWriter) addFileToZip(folder, filePath string) error {
 	return nil
 }
 
+// closeCurrentZip closes the current zip archive
 func (zw *ZipWriter) closeCurrentZip() error {
 	if zw.currentZipFile == nil {
 		return nil
@@ -113,6 +119,7 @@ func (zw *ZipWriter) closeCurrentZip() error {
 	return nil
 }
 
+// createNewZip creates a new zip archive
 func (zw *ZipWriter) createNewZip(folder string) error {
 	zipFileName := fmt.Sprintf("package_l%d_%d_of_%s.zip", zw.ArrayLength, zw.zipFileIndex, zw.totalZipFiles.String())
 	zipFilePath := filepath.Join(folder, zipFileName)
@@ -132,6 +139,7 @@ func (zw *ZipWriter) createNewZip(folder string) error {
 	return nil
 }
 
+// calculatePermutationRanges calculates the permutation ranges for the specified length
 func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64) {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
@@ -242,6 +250,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	}
 }
 
+// indexToArray converts an index to a byte array
 func indexToArray(index *big.Int, length int) []byte {
 	array := make([]byte, length)
 	for i := length - 1; i >= 0; i-- {
@@ -252,6 +261,7 @@ func indexToArray(index *big.Int, length int) []byte {
 	return array
 }
 
+// arrayToString converts a byte array to a string
 func arrayToString(array []byte) string {
 	strArray := make([]string, len(array))
 	for i, b := range array {
@@ -260,6 +270,7 @@ func arrayToString(array []byte) string {
 	return strings.Join(strArray, ",")
 }
 
+// calculateNumberOfZipFiles calculates the number of zip files required to store all permutations
 func calculateNumberOfZipFiles(length int, maxPermutationsPerLine, maxPermutationsPerFile, maxFilesPerZip int64) (*big.Int, error) {
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
@@ -280,6 +291,7 @@ func calculateNumberOfZipFiles(length int, maxPermutationsPerLine, maxPermutatio
 	return totalZipFiles, nil
 }
 
+// main is the entry point for the application
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: ./generatebytearrays <length>")

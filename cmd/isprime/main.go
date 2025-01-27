@@ -7,6 +7,7 @@ import (
 	"sequences"
 )
 
+// main is the entry point of the program.
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: isprime <number>")

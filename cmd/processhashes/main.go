@@ -20,11 +20,13 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+// Config represents the configuration for the program.
 type Config struct {
 	NumWorkers   int    `json:"num_workers"`
 	ExistingHash string `json:"existing_hash"`
 }
 
+// loadConfig loads the configuration from the specified file.
 func loadConfig(filePath string) (*Config, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -41,16 +43,19 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
+// Program represents the program that generates all byte arrays and compresses them.
 type Program struct {
 	tasks chan []byte
 }
 
+// NewProgram creates a new Program.
 func NewProgram() *Program {
 	return &Program{
 		tasks: make(chan []byte, 10000), // Increase buffer size
 	}
 }
 
+// generateAllByteArrays generates all byte arrays and sends them to the tasks channel.
 func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
 	currentArray := make([]byte, len(startArray))
 	copy(currentArray, startArray)
@@ -58,6 +63,7 @@ func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArra
 	close(p.tasks)
 }
 
+// generateByteArrays generates all byte arrays recursively.
 func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
 	startForValue := int(passedArray[currentArrayLevel-1])
 
@@ -98,6 +104,7 @@ func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, pass
 	return true
 }
 
+// compareArrays compares two byte arrays.
 func compareArrays(a, b []byte) int {
 	for i := 0; i < len(a) && i < len(b); i++ {
 		if a[i] < b[i] {
@@ -114,6 +121,7 @@ func compareArrays(a, b []byte) int {
 	return 0
 }
 
+// processTasks processes the tasks and generates the hashes.
 func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int, mu *sync.Mutex) {
 	defer wg.Done()
 
@@ -203,6 +211,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 	}
 }
 
+// generateHashes generates the hashes for the specified data.
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 
@@ -223,6 +232,7 @@ func generateHashes(data []byte) map[string]string {
 	return hashes
 }
 
+// stringToByteArray converts the specified string to a byte array.
 func stringToByteArray(s string) ([]byte, []byte, error) {
 	parts := strings.Split(s, "-")
 	if len(parts) != 2 {
@@ -242,6 +252,7 @@ func stringToByteArray(s string) ([]byte, []byte, error) {
 	return startArray, stopArray, nil
 }
 
+// convertToByteArray converts the specified string to a byte array.
 func convertToByteArray(part string) ([]byte, error) {
 	subParts := strings.Split(part, ",")
 	var array []byte
@@ -326,6 +337,7 @@ func extractZip(src string) ([]string, error) {
 	return extractedFiles, nil
 }
 
+// removeLineFromFile removes the specified line from the specified file.
 func removeLineFromFile(fileName string, lineContent string) error {
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -361,6 +373,7 @@ func removeLineFromFile(fileName string, lineContent string) error {
 	return nil
 }
 
+// processTextFile processes the specified text file.
 func processTextFile(fileName string, config *Config) {
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -460,6 +473,7 @@ func getAllPermutationFiles(rootDir string) ([]string, error) {
 	return permFiles, nil
 }
 
+// main is the entry point of the program.
 func main() {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {

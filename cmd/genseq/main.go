@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// main is the entry point for the program
 func main() {
 	// Define the named parameters
 	maxNumber := flag.Int("max", 100, "The maximum number")
