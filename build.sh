@@ -82,9 +82,9 @@ dist_binaries() {
   done
 
   echo "Compressing directories..."
-  zip -r "$DIST_DIR/linux.zip" "$DIST_DIR/linux"
-  zip -r "$DIST_DIR/mac.zip" "$DIST_DIR/mac"
-  zip -r "$DIST_DIR/windows.zip" "$DIST_DIR/windows"
+  zip -r "$DIST_DIR/linux_$VERSION.zip" "$DIST_DIR/linux"
+  zip -r "$DIST_DIR/mac_$VERSION.zip" "$DIST_DIR/mac"
+  zip -r "$DIST_DIR/windows_$VERSION.zip" "$DIST_DIR/windows"
 
   echo "Removing uncompressed directories..."
   rm -rf "$DIST_DIR/linux" "$DIST_DIR/mac" "$DIST_DIR/windows"
