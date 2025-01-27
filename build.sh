@@ -57,6 +57,7 @@ dist_binaries() {
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
       cp ./*.sh "../../$BINARY_DIR/"
+      cp ./*.txt "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Mac..."
       BINARY_DIR="$DIST_DIR/mac/$BINARY_NAME"
@@ -67,6 +68,7 @@ dist_binaries() {
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
       cp ./*.sh "../../$BINARY_DIR/"
+      cp ./*.txt "../../$BINARY_DIR/"
 
       echo "Building $BINARY_NAME for Windows..."
       BINARY_DIR="$DIST_DIR/windows/$BINARY_NAME"
@@ -77,6 +79,7 @@ dist_binaries() {
       fi
       [ -f "appsettings.json" ] && cp "appsettings.json" "../../$BINARY_DIR/"
       cp ./*.sh "../../$BINARY_DIR/"
+      cp ./*.txt "../../$BINARY_DIR/"
       cd - > /dev/null
     fi
   done
