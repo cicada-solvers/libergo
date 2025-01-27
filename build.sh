@@ -44,6 +44,15 @@ dist_binaries() {
   DIST_DIR="dist/$VERSION"
   mkdir -p "$DIST_DIR/linux" "$DIST_DIR/mac" "$DIST_DIR/windows"
 
+  echo "Cleaning binaries..."
+      for dir in $CMD_DIR/*; do
+        if [ -d "$dir" ]; then
+          BINARY_NAME=$(basename "$dir")
+          echo "Removing $BINARY_NAME from $dir..."
+          rm -vf "$dir/$BINARY_NAME"
+        fi
+      done
+
   for dir in $CMD_DIR/*; do
     if [ -d "$dir" ]; then
       BINARY_NAME=$(basename "$dir")
@@ -87,7 +96,7 @@ dist_binaries() {
   zip -r "$DIST_DIR/windows_$VERSION.zip" "$DIST_DIR/windows"
 
   echo "Removing uncompressed directories..."
-  rm -rf "$DIST_DIR/linux" "$DIST_DIR/mac" "$DIST_DIR/windows"
+  rm -rf "$DIST_DIR/mac" "$DIST_DIR/windows"
 
   echo "Cleaning binaries..."
     for dir in $CMD_DIR/*; do

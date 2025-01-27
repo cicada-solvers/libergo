@@ -145,7 +145,6 @@ func (zw *ZipWriter) createNewZip(folder string) error {
 }
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
-// calculatePermutationRanges calculates the permutation ranges for the specified length
 func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64, zipFileNumber *big.Int) {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
