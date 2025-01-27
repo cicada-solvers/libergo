@@ -478,16 +478,22 @@ func getAllPermutationFiles(rootDir string) ([]string, error) {
 func cleanUp(rootDir string) error {
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			fmt.Printf("Error accessing path %q: %v\n", path, err)
 			return err
 		}
 		if info.IsDir() && path != rootDir {
+			fmt.Printf("Removing directory: %s\n", path)
 			return os.RemoveAll(path)
 		}
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
+			fmt.Printf("Removing file: %s\n", path)
 			return os.Remove(path)
 		}
 		return nil
 	})
+	if err != nil {
+		fmt.Printf("Error during cleanup: %v\n", err)
+	}
 	return err
 }
 
