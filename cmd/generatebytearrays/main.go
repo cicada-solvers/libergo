@@ -272,7 +272,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		}
 	} else {
 		// Move the zip file to the existing folder in processhashes
-		zipFileName := fmt.Sprintf("package_l%d_%s_of_%s.zip", length, zipFileNumber.String(), totalZipFiles.String())
+		zipFileName := fmt.Sprintf("package_l%d_%s.zip", length, zipFileNumber.String())
 		zipFilePath := filepath.Join(folder, zipFileName)
 		newZipFilePath := filepath.Join(destinationFolder, zipFileName)
 		if err := os.Rename(zipFilePath, newZipFilePath); err != nil {
@@ -357,20 +357,65 @@ func main() {
 
 	fmt.Printf("Total number of zip files: %s\n", totalZipFiles.String())
 
-	var zipFileNumberStr string
-	fmt.Print("Enter the zip file number to generate: ")
-	_, err = fmt.Scan(&zipFileNumberStr)
+	var choice string
+	fmt.Print("Do you want to generate a single zip file or a range of zip files? (single/range): ")
+	_, err = fmt.Scan(&choice)
 	if err != nil {
 		fmt.Printf("Invalid input: %v\n", err)
 		return
 	}
 
-	zipFileNumber := new(big.Int)
-	zipFileNumber, ok := zipFileNumber.SetString(zipFileNumberStr, 10)
-	if !ok || zipFileNumber.Cmp(big.NewInt(1)) < 0 || zipFileNumber.Cmp(totalZipFiles) > 0 {
-		fmt.Printf("Invalid zip file number: %v\n", err)
-		return
-	}
+	if choice == "single" {
+		var zipFileNumberStr string
+		fmt.Print("Enter the zip file number to generate: ")
+		_, err = fmt.Scan(&zipFileNumberStr)
+		if err != nil {
+			fmt.Printf("Invalid input: %v\n", err)
+			return
+		}
 
-	calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, zipFileNumber)
+		zipFileNumber := new(big.Int)
+		zipFileNumber, ok := zipFileNumber.SetString(zipFileNumberStr, 10)
+		if !ok || zipFileNumber.Cmp(big.NewInt(1)) < 0 || zipFileNumber.Cmp(totalZipFiles) > 0 {
+			fmt.Printf("Invalid zip file number: %v\n", err)
+			return
+		}
+
+		calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, zipFileNumber)
+	} else if choice == "range" {
+		var startZipFileNumberStr, endZipFileNumberStr string
+		fmt.Print("Enter the start zip file number to generate: ")
+		_, err = fmt.Scan(&startZipFileNumberStr)
+		if err != nil {
+			fmt.Printf("Invalid input: %v\n", err)
+			return
+		}
+
+		fmt.Print("Enter the end zip file number to generate: ")
+		_, err = fmt.Scan(&endZipFileNumberStr)
+		if err != nil {
+			fmt.Printf("Invalid input: %v\n", err)
+			return
+		}
+
+		startZipFileNumber := new(big.Int)
+		startZipFileNumber, ok := startZipFileNumber.SetString(startZipFileNumberStr, 10)
+		if !ok || startZipFileNumber.Cmp(big.NewInt(1)) < 0 || startZipFileNumber.Cmp(totalZipFiles) > 0 {
+			fmt.Printf("Invalid start zip file number: %v\n", err)
+			return
+		}
+
+		endZipFileNumber := new(big.Int)
+		endZipFileNumber, ok = endZipFileNumber.SetString(endZipFileNumberStr, 10)
+		if !ok || endZipFileNumber.Cmp(big.NewInt(1)) < 0 || endZipFileNumber.Cmp(totalZipFiles) > 0 || endZipFileNumber.Cmp(startZipFileNumber) < 0 {
+			fmt.Printf("Invalid end zip file number: %v\n", err)
+			return
+		}
+
+		for zipFileNumber := new(big.Int).Set(startZipFileNumber); zipFileNumber.Cmp(endZipFileNumber) <= 0; zipFileNumber.Add(zipFileNumber, big.NewInt(1)) {
+			calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, zipFileNumber)
+		}
+	} else {
+		fmt.Println("Invalid choice. Please enter 'single' or 'range'.")
+	}
 }
