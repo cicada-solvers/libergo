@@ -23,8 +23,8 @@ func initDatabase() (*sql.DB, error) {
 		id TEXT PRIMARY KEY,
 		startArray TEXT,
 		endArray TEXT,
-		packageFileName TEXT,
-		permFileName TEXT,
+		packageName TEXT,
+		permName TEXT,
 		reportedToAPI BOOLEAN,
 		processed BOOLEAN,
 		arrayLength INTEGER

@@ -75,12 +75,12 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
 
 					id := uuid.New().String()
-					packageFileName := fmt.Sprintf("packagefile_%d.package", packageFileNumber)
-					permFileName := fmt.Sprintf("permfile_%d.txt", i)
+					packageFileName := fmt.Sprintf("package_%d", packageFileNumber)
+					permFileName := fmt.Sprintf("permutation_seg_%d", i)
 					reportedToAPI := false
 					processed := false
 
-					err := insertWithRetry(db, "INSERT INTO permutations (id, startArray, endArray, packageFileName, permFileName, reportedToAPI, processed, arrayLength) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+					err := insertWithRetry(db, "INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 						id, arrayToString(startArray), arrayToString(endArray), packageFileName, permFileName, reportedToAPI, processed, length)
 					if err != nil {
 						fmt.Printf("Error inserting into database: %v\n", err)
