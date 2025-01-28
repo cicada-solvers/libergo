@@ -80,8 +80,8 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					reportedToAPI := false
 					processed := false
 
-					err := insertWithRetry(db, "INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-						id, arrayToString(startArray), arrayToString(endArray), packageFileName, permFileName, reportedToAPI, processed, length)
+					err := insertWithRetry(db, "INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+						id, arrayToString(startArray), arrayToString(endArray), packageFileName, permFileName, reportedToAPI, processed, length, config.MaxPermutationsPerLine)
 					if err != nil {
 						fmt.Printf("Error inserting into database: %v\n", err)
 					}

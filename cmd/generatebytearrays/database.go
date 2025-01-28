@@ -27,7 +27,8 @@ func initDatabase() (*sql.DB, error) {
 		permName TEXT,
 		reportedToAPI BOOLEAN,
 		processed BOOLEAN,
-		arrayLength INTEGER
+		arrayLength INTEGER,
+		numberOfPermutations INTEGER DEFAULT 0
 	);`
 
 	_, err = db.Exec(createTableSQL)
