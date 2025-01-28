@@ -6,11 +6,13 @@ import (
 	"os"
 )
 
+// Config represents the configuration
 type Config struct {
 	NumWorkers   int    `json:"num_workers"`
 	ExistingHash string `json:"existing_hash"`
 }
 
+// loadConfig loads the configuration from a file
 func loadConfig(filePath string) (*Config, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

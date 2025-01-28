@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+// processTasks processes the tasks
 func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int, mu *sync.Mutex) {
 	defer wg.Done()
 
@@ -93,6 +94,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 	}
 }
 
+// generateHashes generates hashes for a given byte array
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 
@@ -110,6 +112,7 @@ func generateHashes(data []byte) map[string]string {
 	return hashes
 }
 
+// convertToByteArray converts a string to a byte array
 func convertToByteArray(part string) ([]byte, error) {
 	subParts := strings.Split(part, ",")
 	var array []byte

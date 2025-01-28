@@ -4,16 +4,19 @@ import (
 	"fmt"
 )
 
+// Program represents the program
 type Program struct {
 	tasks chan []byte
 }
 
+// NewProgram creates a new Program
 func NewProgram() *Program {
 	return &Program{
 		tasks: make(chan []byte, 10000),
 	}
 }
 
+// generateAllByteArrays generates all possible byte arrays of a given length
 func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
 	currentArray := make([]byte, len(startArray))
 	copy(currentArray, startArray)
@@ -21,6 +24,7 @@ func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArra
 	close(p.tasks)
 }
 
+// generateByteArrays generates all possible byte arrays of a given length
 func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
 	startForValue := int(passedArray[currentArrayLevel-1])
 
@@ -57,6 +61,7 @@ func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, pass
 	return true
 }
 
+// compareArrays compares two byte arrays and returns -1 if a < b, 0 if a == b, and 1 if a > b
 func compareArrays(a, b []byte) int {
 	for i := 0; i < len(a) && i < len(b); i++ {
 		if a[i] < b[i] {

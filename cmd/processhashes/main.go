@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// main is the entry point of the program
 func main() {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
@@ -20,6 +21,12 @@ func main() {
 		return
 	}
 	defer db.Close()
+
+	// Run removeProcessedRows at the beginning
+	if err := removeProcessedRows(db); err != nil {
+		fmt.Printf("Error removing processed rows: %v\n", err)
+		return
+	}
 
 	unprocessedCount, err := countUnprocessedRows(db)
 	if err != nil {
@@ -78,5 +85,11 @@ func main() {
 			return
 		}
 		fmt.Printf("Number of unprocessed rows: %d\n", unprocessedCount)
+	}
+
+	// Run removeProcessedRows at the end
+	if err := removeProcessedRows(db); err != nil {
+		fmt.Printf("Error removing processed rows: %v\n", err)
+		return
 	}
 }
