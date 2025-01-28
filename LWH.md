@@ -15,17 +15,16 @@ In the release, there will be two programs you will need to use.  Both of these 
 - num_workers - This is the number of workers that will be used to generate the byte arrays.
 - max_permutations_per_line - This is the number of permutations that will be generated per line.
 - max_permutations_per_file - This is the number of permutations that will be generated per file.
-- max_files_per_zip - This is the number of files that will be generated per zip file.
+- max_files_per_package - This is the number of files that will be generated per package.
 
--The zip file format is as follows: package_l(length of arrays)\_(zip number).zip
 
 2. processhashes - This is used to process the hashes that are generated from the byte arrays.
 - It has an appsettings.json file that you can use to configure the program.
 - num_workers - This is the number of workers that will be used to process the hashes.  You will want to adjust this for your machine!
 - existing_hash - This is the hash that you are looking for. *DO NOT CHANGE THIS*
 
-The ranges in the permutation file are 500 million per line. There are 1500 ranges per permutation file.  
-Each zip file contains 500 of these files.  There is no expectation that the average PC can chew through one in a day unless you have a thread-ripper or something similar.
+The ranges in the permutations are 500 million per line. There are 500 ranges per permutation package.  
+Each package contains 500 of these.  There is no expectation that the average PC can chew through one in a day unless you have a thread-ripper or something similar.
 It should take several days/weeks to process one package (again, depending on the machine).
 
 ### DWH - Brute force process
@@ -36,12 +35,12 @@ It should take several days/weeks to process one package (again, depending on th
 1. Check the forum post to see what zip files are not currently being processed.
 2. On the command line, navigate to the cmd/generatebytearrays folder.
 3. Run the generatebytearrays program to generate the byte arrays.
-- You will be prompted for the array length and the zip file to create.  It will only create one zip file to save on space.
+- You will be prompted for the array length and the packages to create.  It will only create one zip file to save on space.
 4. Once the file has been created, it will move the folder over to the cmd/processhashes folder.
 5. Go to the cmd/processhashes folder on the command line.
 6. Run the processhashes program to process the hashes.
 
-The hasher will remove the processed line from the file once it has been processed.  This will allow you some degree of resuming the process if you need to stop it for some reason.
+The hasher will mark the processed line in the database once it has been processed.  This will allow you some degree of resuming the process if you need to stop it for some reason.
 
 ### DWH - Brute force results
 - If you find the hash, please post it on the forum post.  This will allow others to know that the hash has been found.
