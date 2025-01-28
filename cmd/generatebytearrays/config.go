@@ -8,10 +8,10 @@ import (
 
 // Config represents the configuration for the application
 type Config struct {
-	NumWorkers             int   `json:"num_workers"`
-	MaxPermutationsPerLine int64 `json:"max_permutations_per_line"`
-	MaxPermutationsPerFile int64 `json:"max_permutations_per_file"`
-	MaxFilesPerPackage     int64 `json:"max_files_per_package"`
+	NumWorkers                int   `json:"num_workers"`
+	MaxPermutationsPerLine    int64 `json:"max_permutations_per_line"`
+	MaxPermutationsPerSegment int64 `json:"max_permutations_per_segment"`
+	MaxFilesPerPackage        int64 `json:"max_files_per_package"`
 }
 
 // loadConfig loads the configuration from the specified file

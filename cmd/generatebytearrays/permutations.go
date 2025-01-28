@@ -10,7 +10,7 @@ import (
 )
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
-func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerFile int64, packageFileNumber *big.Int) {
+func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int) {
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
@@ -29,7 +29,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
 	}
 
-	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerFile, config.MaxFilesPerPackage)
+	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerSegment, config.MaxFilesPerPackage)
 	if err != nil {
 		fmt.Printf("Error calculating number of package files: %v\n", err)
 		return
@@ -44,7 +44,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		startFile := new(big.Int).Mul(new(big.Int).Sub(packageFileNumber, big.NewInt(1)), big.NewInt(config.MaxFilesPerPackage))
 		endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxFilesPerPackage))
 		for i := new(big.Int).Set(startFile); i.Cmp(endFile) < 0; i.Add(i, big.NewInt(1)) {
-			start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+			start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
 			if start.Cmp(totalPermutations) >= 0 {
 				break
 			}
@@ -58,13 +58,13 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		go func() {
 			defer wg.Done()
 			for i := range fileChan {
-				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
-				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerLine*maxPermutationsPerFile))
+				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
+				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
 				if end.Cmp(totalPermutations) > 0 {
 					end = totalPermutations
 				}
 
-				for j := int64(0); j < maxPermutationsPerFile; j++ {
+				for j := int64(0); j < maxPermutationsPerSegment; j++ {
 					lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
 					lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))
 					if lineEnd.Cmp(totalPermutations) > 0 {
