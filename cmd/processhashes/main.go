@@ -1,416 +1,42 @@
 package main
 
 import (
-	"archive/zip"
-	"bufio"
-	"crypto/sha512"
-	"encoding/hex"
-	"encoding/json"
-	"flag"
 	"fmt"
-	"io"
 	"math/big"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
-
-	"github.com/jzelinskie/whirlpool"
-	"golang.org/x/crypto/blake2b"
 )
 
-// Config represents the configuration for the program.
-type Config struct {
-	NumWorkers   int    `json:"num_workers"`
-	ExistingHash string `json:"existing_hash"`
-}
-
-// loadConfig loads the configuration from the specified file.
-func loadConfig(filePath string) (*Config, error) {
-	file, err := os.Open(filePath)
+func main() {
+	config, err := loadConfig("appsettings.json")
 	if err != nil {
-		return nil, fmt.Errorf("error opening config file: %v", err)
-	}
-	defer file.Close()
-
-	var config Config
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&config); err != nil {
-		return nil, fmt.Errorf("error decoding config file: %v", err)
-	}
-
-	return &config, nil
-}
-
-// Program represents the program that generates all byte arrays and compresses them.
-type Program struct {
-	tasks chan []byte
-}
-
-// NewProgram creates a new Program.
-func NewProgram() *Program {
-	return &Program{
-		tasks: make(chan []byte, 10000), // Increase buffer size
-	}
-}
-
-// generateAllByteArrays generates all byte arrays and sends them to the tasks channel.
-func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
-	currentArray := make([]byte, len(startArray))
-	copy(currentArray, startArray)
-	p.generateByteArrays(maxArrayLength, 1, currentArray, stopArray)
-	close(p.tasks)
-}
-
-// generateByteArrays generates all byte arrays recursively.
-func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
-	startForValue := int(passedArray[currentArrayLevel-1])
-
-	if currentArrayLevel == maxArrayLength {
-		currentArray := make([]byte, maxArrayLength)
-
-		if passedArray != nil {
-			copy(currentArray, passedArray)
-		}
-
-		for i := startForValue; i < 256; i++ {
-			currentArray[currentArrayLevel-1] = byte(i)
-			p.tasks <- append([]byte(nil), currentArray...) // Send a copy to avoid data race
-			if compareArrays(currentArray, stopArray) == 0 {
-				fmt.Printf("Stop Array Was: %v\n", stopArray)
-				fmt.Printf("Finished processing: %v\n", currentArray)
-				return false
-			}
-		}
-	} else {
-		currentArray := make([]byte, maxArrayLength)
-		if passedArray != nil {
-			copy(currentArray, passedArray)
-		}
-		for i := startForValue; i < 256; i++ {
-			currentArray[currentArrayLevel-1] = byte(i)
-			shouldContinue := p.generateByteArrays(maxArrayLength, currentArrayLevel+1, currentArray, stopArray)
-
-			if shouldContinue == false {
-				return false
-			}
-
-			// This resets that byte to zero of the next one up.
-			currentArray[currentArrayLevel] = 0
-		}
-	}
-
-	return true
-}
-
-// compareArrays compares two byte arrays.
-func compareArrays(a, b []byte) int {
-	for i := 0; i < len(a) && i < len(b); i++ {
-		if a[i] < b[i] {
-			return -1
-		} else if a[i] > b[i] {
-			return 1
-		}
-	}
-	if len(a) < len(b) {
-		return -1
-	} else if len(a) > len(b) {
-		return 1
-	}
-	return 0
-}
-
-// processTasks processes the tasks and generates the hashes.
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int, mu *sync.Mutex) {
-	defer wg.Done()
-
-	// Open the file in append mode
-	file, err := os.OpenFile("found_hashes.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
+		fmt.Printf("Error loading config: %v\n", err)
 		return
 	}
 
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			fmt.Printf("Error closing file: %v\n", err)
-		}
-	}(file)
-
-	buffer := make([]byte, 0, 4096) // Buffer for batching writes
-
-	hashCount := 0
-	taskLen := 0
-	processedPermutations := big.NewInt(0)
-	ticker := time.NewTicker(60 * time.Second)
-	defer ticker.Stop()
-
-	go func() {
-		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[90m", "\033[91m", "\033[92m"} // Red, Green, Yellow, Blue, Magenta, Cyan, White, Bright Black, Bright Red, Bright Green
-		colorIndex := 0
-		for range ticker.C {
-			mu.Lock()
-			remainingPermutations := new(big.Int).Sub(totalPermutations, processedPermutations)
-			mu.Unlock()
-			fmt.Printf("%sHashes per minute: %d, Array size: %d, Remaining hashes: %s\033[0m\n", colors[colorIndex], hashCount, taskLen, remainingPermutations.String())
-
-			hashCount = 0
-			colorIndex = (colorIndex + 1) % len(colors)
-		}
-	}()
-
-	for {
-		select {
-		case task, ok := <-tasks:
-			if !ok {
-				// Write any remaining data in the buffer
-				if len(buffer) > 0 {
-					if _, err := file.Write(buffer); err != nil {
-						fmt.Printf("Error writing to file: %v\n", err)
-					}
-				}
-				return
-			}
-			taskLen = len(task)
-			hashes := generateHashes(task)
-
-			for hashName, hash := range hashes {
-				hashCount++
-				mu.Lock()
-				processedPermutations.Add(processedPermutations, big.NewInt(1))
-				mu.Unlock()
-
-				if hash == existingHash {
-					// Convert byte array to comma-separated string
-					var taskStr string
-					for i, b := range task {
-						if i > 0 {
-							taskStr += ","
-						}
-						taskStr += fmt.Sprintf("%d", b)
-					}
-
-					output := fmt.Sprintf("Match found: %s, Hash Name: %s, Byte Array: %s\n", taskStr, hashName, hex.EncodeToString(task))
-					fmt.Print(output)
-					buffer = append(buffer, output...)
-					if len(buffer) >= 4096 {
-						if _, err := file.Write(buffer); err != nil {
-							fmt.Printf("Error writing to file: %v\n", err)
-						}
-						buffer = buffer[:0]
-					}
-					once.Do(func() { close(done) }) // Signal all goroutines to stop
-					return
-				}
-			}
-		case <-done:
-			return
-		}
-	}
-}
-
-// generateHashes generates the hashes for the specified data.
-func generateHashes(data []byte) map[string]string {
-	hashes := make(map[string]string)
-
-	// SHA-512
-	sha512Hash := sha512.Sum512(data)
-	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
-
-	// Whirlpool
-	whirlpoolHash := whirlpool.New()
-	whirlpoolHash.Write(data)
-	whirlHash := whirlpoolHash.Sum(nil)
-	hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
-
-	// Blake2b-512
-	blake2bHash := blake2b.Sum512(data)
-	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
-
-	return hashes
-}
-
-// stringToByteArray converts the specified string to a byte array.
-func stringToByteArray(s string) ([]byte, []byte, error) {
-	parts := strings.Split(s, "-")
-	if len(parts) != 2 {
-		return nil, nil, fmt.Errorf("invalid format: expected one hyphen separating start and end arrays")
-	}
-
-	startArray, err := convertToByteArray(parts[0])
+	db, err := initDatabase()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error converting start array: %v", err)
-	}
-
-	stopArray, err := convertToByteArray(parts[1])
-	if err != nil {
-		return nil, nil, fmt.Errorf("error converting stop array: %v", err)
-	}
-
-	return startArray, stopArray, nil
-}
-
-// convertToByteArray converts the specified string to a byte array.
-func convertToByteArray(part string) ([]byte, error) {
-	subParts := strings.Split(part, ",")
-	var array []byte
-	for _, subPart := range subParts {
-		val, err := strconv.Atoi(subPart)
-		if err != nil {
-			return nil, fmt.Errorf("error converting string to byte: %v", err)
-		}
-		array = append(array, byte(val))
-	}
-	return array, nil
-}
-
-// getAllZipFiles returns a list of all zip files in the specified directory and its subdirectories.
-func getAllZipFiles(rootDir string) ([]string, error) {
-	var zipFiles []string
-
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".zip") {
-			zipFiles = append(zipFiles, path)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return zipFiles, nil
-}
-
-// extractZip extracts a zip file and returns the list of extracted files.
-func extractZip(src string) ([]string, error) {
-	var extractedFiles []string
-
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return nil, fmt.Errorf("error opening zip file: %v", err)
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := f.Name
-
-		if f.FileInfo().IsDir() {
-			// Create directory
-			if err := os.MkdirAll(fpath, os.ModePerm); err != nil {
-				return nil, fmt.Errorf("error creating directory: %v", err)
-			}
-			continue
-		}
-
-		// Create file
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return nil, fmt.Errorf("error creating directory: %v", err)
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return nil, fmt.Errorf("error creating file: %v", err)
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return nil, fmt.Errorf("error opening file in zip: %v", err)
-		}
-
-		_, err = io.Copy(outFile, rc)
-		if err != nil {
-			return nil, fmt.Errorf("error copying file content: %v", err)
-		}
-
-		outFile.Close()
-		rc.Close()
-
-		extractedFiles = append(extractedFiles, fpath)
-	}
-
-	return extractedFiles, nil
-}
-
-// removeLineFromFile removes the specified line from the specified file.
-func removeLineFromFile(fileName string, lineContent string) error {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return fmt.Errorf("error opening file: %v", err)
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading file: %v", err)
-	}
-
-	// Filter out the line that matches the lineContent
-	var newLines []string
-	for _, line := range lines {
-		if !strings.Contains(line, lineContent) {
-			newLines = append(newLines, line)
-		}
-	}
-
-	// Rewrite the file without the specified line
-	err = os.WriteFile(fileName, []byte(strings.Join(newLines, "\n")), 0644)
-	if err != nil {
-		return fmt.Errorf("error writing file: %v", err)
-	}
-
-	fmt.Printf("Successfully removed line '%s' from file %s\n", lineContent, fileName)
-	return nil
-}
-
-// processTextFile processes the specified text file.
-func processTextFile(fileName string, config *Config) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
+		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
-	defer file.Close()
+	defer db.Close()
 
-	scanner := bufio.NewScanner(file)
-
-	// Read the first line for totalPermutations
-	if !scanner.Scan() {
-		fmt.Printf("Error reading totalPermutations from file: %v\n", err)
+	unprocessedCount, err := countUnprocessedRows(db)
+	if err != nil {
+		fmt.Printf("Error counting unprocessed rows: %v\n", err)
 		return
 	}
-	totalPermutations := new(big.Int)
-	totalPermutations.SetString(scanner.Text(), 10)
-	totalPermutations = totalPermutations.Mul(totalPermutations, big.NewInt(3))
+	fmt.Printf("Number of unprocessed rows: %d\n", unprocessedCount)
 
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
+	ranges, err := getByteArrayRanges(db)
+	if err != nil {
+		fmt.Printf("Error getting byte array ranges: %v\n", err)
 		return
 	}
 
-	for _, line := range lines {
-		startArray, stopArray, err := stringToByteArray(line)
-		if err != nil {
-			fmt.Printf("Error processing line: %v\n", err)
-			continue
-		}
-
+	for _, r := range ranges {
+		totalPermutations := big.NewInt(int64(r.NumberOfPermutations))
+		startArray, stopArray := r.StartArray, r.EndArray
 		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
 
 		program := NewProgram()
@@ -428,136 +54,29 @@ func processTextFile(fileName string, config *Config) {
 			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations, &mu)
 		}
 
-		// Start timing
 		startTime := time.Now()
 
-		program.generateAllByteArrays(len(startArray), startArray, stopArray)
-
-		// Successfully processed, remove the line from the file
-		if err := removeLineFromFile(fileName, line); err != nil {
-			fmt.Printf("Error removing line from file: %v\n", err)
-		}
+		program.generateAllByteArrays(r.ArrayLength, startArray, stopArray)
 
 		wg.Wait()
 
 		select {
 		case <-done:
-			// Do nothing
 		default:
-			// Not processed, do nothing
 		}
 
-		// End timing
 		duration := time.Since(startTime)
-		fmt.Printf("Time taken to process line: %v\n", duration)
-	}
-}
+		fmt.Printf("Time taken to process range: %v\n", duration)
 
-// getAllPermutationFiles returns a list of all permutation text files in the specified directory and its subdirectories.
-func getAllPermutationFiles(rootDir string) ([]string, error) {
-	var permFiles []string
+		if err := markAsProcessed(db, r.ID); err != nil {
+			fmt.Printf("Error marking row as processed: %v\n", err)
+		}
 
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		unprocessedCount, err := countUnprocessedRows(db)
 		if err != nil {
-			return err
+			fmt.Printf("Error counting unprocessed rows: %v\n", err)
+			return
 		}
-		if !info.IsDir() && strings.Contains(info.Name(), "permutation") && strings.HasSuffix(info.Name(), ".txt") {
-			permFiles = append(permFiles, path)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return permFiles, nil
-}
-
-// cleanUp deletes all subfolders and permutation text files in the specified directory.
-func cleanUp(rootDir string) error {
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Printf("Error accessing path %q: %v\n", path, err)
-			return err
-		}
-		if info.IsDir() && path != rootDir {
-			fmt.Printf("Removing directory: %s\n", path)
-			return os.RemoveAll(path)
-		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
-			fmt.Printf("Removing file: %s\n", path)
-			return os.Remove(path)
-		}
-		return nil
-	})
-	if err != nil {
-		fmt.Printf("Error during cleanup: %v\n", err)
-	}
-	return err
-}
-
-// main is the entry point of the program.
-func main() {
-	clean := flag.Bool("clean", false, "Delete all subfolders and permutation text files")
-	flag.Parse()
-
-	if *clean {
-		err := cleanUp(".")
-		if err != nil {
-			fmt.Printf("Error during cleanup: %v\n", err)
-		} else {
-			fmt.Println("Cleanup completed successfully.")
-		}
-		return
-	}
-
-	config, err := loadConfig("appsettings.json")
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
-	}
-
-	// Process existing permutation text files first
-	permFiles, err := getAllPermutationFiles(".")
-	if err != nil {
-		fmt.Printf("Error getting permutation files: %v\n", err)
-		return
-	}
-
-	for _, permFile := range permFiles {
-		fmt.Printf("Processing permutation file: %v\n", permFile)
-		processTextFile(permFile, config)
-	}
-
-	// Process zip files
-	zipFiles, err := getAllZipFiles(".")
-	if err != nil {
-		fmt.Printf("Error getting zip files: %v\n", err)
-		return
-	}
-
-	for _, zipFile := range zipFiles {
-		fmt.Printf("Processing zip file: %v\n", zipFile)
-		extractedFiles, err := extractZip(zipFile)
-		if err != nil {
-			fmt.Printf("Error extracting zip file: %v\n", err)
-			continue
-		}
-
-		for _, extractedFile := range extractedFiles {
-			if strings.HasSuffix(extractedFile, ".txt") {
-				fmt.Printf("Processing permutation file: %v\n", extractedFile)
-				processTextFile(extractedFile, config)
-			}
-		}
-
-		// Remove the zip file after processing
-		err = os.Remove(zipFile)
-		if err != nil {
-			fmt.Printf("Error removing zip file: %v\n", err)
-		} else {
-			fmt.Printf("Removed zip file: %v\n", zipFile)
-		}
+		fmt.Printf("Number of unprocessed rows: %d\n", unprocessedCount)
 	}
 }
