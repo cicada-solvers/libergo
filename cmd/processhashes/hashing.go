@@ -85,7 +85,6 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 						buffer = buffer[:0]
 					}
 					once.Do(func() { close(done) })
-					return
 				}
 			}
 		case <-done:
