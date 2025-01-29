@@ -29,7 +29,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
 	}
 
-	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerSegment, config.MaxFilesPerPackage)
+	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerSegment, config.MaxSegmentsPerPackage)
 	if err != nil {
 		fmt.Printf("Error calculating number of package files: %v\n", err)
 		return
@@ -41,8 +41,8 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	fileChan := make(chan int64)
 
 	go func() {
-		startFile := new(big.Int).Mul(new(big.Int).Sub(packageFileNumber, big.NewInt(1)), big.NewInt(config.MaxFilesPerPackage))
-		endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxFilesPerPackage))
+		startFile := new(big.Int).Mul(new(big.Int).Sub(packageFileNumber, big.NewInt(1)), big.NewInt(config.MaxSegmentsPerPackage))
+		endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxSegmentsPerPackage))
 		for i := new(big.Int).Set(startFile); i.Cmp(endFile) < 0; i.Add(i, big.NewInt(1)) {
 			start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
 			if start.Cmp(totalPermutations) >= 0 {

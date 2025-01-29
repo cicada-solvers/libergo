@@ -21,9 +21,9 @@ func main() {
 	}
 
 	maxPermutationsPerLine := config.MaxPermutationsPerLine
-	maxPermutationsPerFile := config.MaxPermutationsPerSegment
+	maxPermutationsPerFile := config.MaxRangesPerSegment
 
-	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerFile, config.MaxFilesPerPackage)
+	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerFile, config.MaxSegmentsPerPackage)
 	if err != nil {
 		fmt.Printf("Error calculating number of packages: %v\n", err)
 		return
