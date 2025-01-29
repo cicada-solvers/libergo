@@ -67,6 +67,8 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 				processedPermutations.Add(processedPermutations, big.NewInt(1))
 				mu.Unlock()
 
+				//fmt.Printf("Debug: Hash Name: %s, Byte Array: %s\n, Hash: %s", hashName, hex.EncodeToString(task), hash)
+
 				if hash == existingHash {
 					var taskStr string
 					for i, b := range task {

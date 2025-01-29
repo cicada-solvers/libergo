@@ -52,6 +52,7 @@ The hasher will mark the processed line in the database once it has been process
 
 ## DWH - Hashes Being Tested
 - SHA-512
+- Blake-512
 - Blake2b-512
 - Whirlpool
 
