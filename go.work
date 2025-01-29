@@ -4,6 +4,7 @@ use (
 	pkg/utility/characterrepo
 	pkg/utility/sequences
 	pkg/utility/runer
+	pkg/utility/hashinglib
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime

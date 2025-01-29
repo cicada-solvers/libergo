@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/jzelinskie/whirlpool v0.0.0-20201016144138-0675e54bb004
+	github.com/mattn/go-sqlite3 v1.14.24
 	golang.org/x/crypto v0.32.0
 )
 

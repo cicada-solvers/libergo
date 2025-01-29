@@ -13,6 +13,7 @@ import (
 
 	"github.com/jzelinskie/whirlpool"
 	"golang.org/x/crypto/blake2b"
+	"hashinglib"
 )
 
 // processTasks processes the tasks
@@ -107,6 +108,9 @@ func generateHashes(data []byte) map[string]string {
 
 	blake2bHash := blake2b.Sum512(data)
 	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
+
+	blake512Hash := hashinglib.Blake512Hash(data)
+	hashes["Blake-512"] = hex.EncodeToString(blake512Hash)
 
 	return hashes
 }
