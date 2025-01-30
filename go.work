@@ -10,4 +10,5 @@ use (
 	cmd/isprime
 	cmd/rencode
 	cmd/generatebytearrays
+	cmd/generateprimearrays
 )
