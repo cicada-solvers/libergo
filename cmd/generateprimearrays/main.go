@@ -6,14 +6,14 @@ import (
 
 func main() {
 	var start, end int
-	fmt.Print("Enter the start of the range: ")
+	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)
 	if err != nil {
 		fmt.Printf("Invalid input: %v\n", err)
 		return
 	}
 
-	fmt.Print("Enter the end of the range: ")
+	fmt.Print("Enter the end length: ")
 	_, err = fmt.Scan(&end)
 	if err != nil {
 		fmt.Printf("Invalid input: %v\n", err)
@@ -21,7 +21,7 @@ func main() {
 	}
 
 	if start > end {
-		fmt.Println("Start of the range cannot be greater than the end.")
+		fmt.Println("Start length cannot be greater than the end.")
 		return
 	}
 
