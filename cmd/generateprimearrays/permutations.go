@@ -70,7 +70,7 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 	maxRetries := 10
 	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)
-	nextPrintThreshold := big.NewInt(random.Int63n(1.5e9-1e8) + 1e8)
+	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
 
 	for i := range fileChan {
 		start := big.NewInt(i)
