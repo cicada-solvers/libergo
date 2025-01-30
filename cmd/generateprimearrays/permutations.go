@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -16,16 +17,10 @@ var primes = []int{
 
 const (
 	tableName = "permutations"
-	batchSize = 100 // Number of inserts per batch
+	batchSize = 50 // Number of inserts per batch
 )
 
 func calculatePermutationRanges(length int) {
-	config, err := loadConfig("appsettings.json")
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
-	}
-
 	db, err := initDatabase()
 	if err != nil {
 		fmt.Printf("Error initializing database: %v\n", err)
@@ -39,7 +34,7 @@ func calculatePermutationRanges(length int) {
 	}
 
 	var wg sync.WaitGroup
-	fileChan := make(chan int64, config.NumWorkers*batchSize)
+	fileChan := make(chan int64, runtime.NumCPU()*batchSize)
 
 	go func() {
 		for i := int64(0); i < totalPermutations.Int64(); i++ {
@@ -48,7 +43,8 @@ func calculatePermutationRanges(length int) {
 		close(fileChan)
 	}()
 
-	for i := 0; i < config.NumWorkers; i++ {
+	numWorkers := runtime.NumCPU() // Get the number of CPU cores
+	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go worker(db, fileChan, &wg, length, totalPermutations)
 	}
@@ -60,9 +56,13 @@ func calculatePermutationRanges(length int) {
 	_ = compactDatabase(db)
 }
 
+var dbMutex sync.Mutex
+
 func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int) {
 	defer wg.Done()
-	batch := make([]interface{}, 0, batchSize*9) // 9 columns per insert
+
+	insertCount := 0
+	maxRetries := 10
 
 	for i := range fileChan {
 		start := big.NewInt(i)
@@ -74,14 +74,66 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 		reportedToAPI := false
 		processed := false
 
-		batch = append(batch, id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length, 1)
-
-		if len(batch) >= batchSize*9 {
-			err := insertBatch(db, batch)
+		retryCount := 0
+		for {
+			dbMutex.Lock()
+			tx, err := db.Begin()
 			if err != nil {
-				fmt.Printf("Error inserting batch into database: %v\n", err)
+				dbMutex.Unlock()
+				fmt.Printf("Error starting transaction: %v\n", err)
+				return
 			}
-			batch = batch[:0]
+
+			_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
+				tableName), id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length)
+			if err != nil {
+				if strings.Contains(err.Error(), "database is locked") {
+					retryCount++
+					fmt.Println("Database is locked, retrying insert...")
+					if retryCount >= maxRetries {
+						fmt.Printf("Max retries reached for record %s, skipping insert\n", id)
+						dbMutex.Unlock()
+						break
+					}
+					dbMutex.Unlock()
+					continue
+				} else {
+					fmt.Printf("Error inserting record into database: %v\n", err)
+					dbMutex.Unlock()
+					return
+				}
+			}
+
+			err = tx.Commit()
+			dbMutex.Unlock()
+			if err != nil {
+				fmt.Printf("Error committing transaction: %v\n", err)
+				return
+			}
+			break
+		}
+
+		if retryCount > 0 && retryCount < maxRetries {
+			fmt.Printf("Insert successful after %d retries\n", retryCount)
+		}
+
+		insertCount++
+		if insertCount >= 5000 {
+			dbMutex.Lock()
+			tx, err := db.Begin()
+			if err != nil {
+				dbMutex.Unlock()
+				fmt.Printf("Error starting new transaction: %v\n", err)
+				return
+			}
+			err = tx.Commit()
+			if err != nil {
+				fmt.Printf("Error committing transaction: %v\n", err)
+				dbMutex.Unlock()
+				return
+			}
+			dbMutex.Unlock()
+			insertCount = 0
 		}
 
 		if start.Cmp(totalPermutations) == 0 {
@@ -89,20 +141,20 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 		}
 	}
 
-	if len(batch) > 0 {
-		err := insertBatch(db, batch)
+	if insertCount > 0 {
+		dbMutex.Lock()
+		tx, err := db.Begin()
 		if err != nil {
-			fmt.Printf("Error inserting final batch into database: %v\n", err)
+			dbMutex.Unlock()
+			fmt.Printf("Error starting final transaction: %v\n", err)
+			return
 		}
+		err = tx.Commit()
+		if err != nil {
+			fmt.Printf("Error committing final transaction: %v\n", err)
+		}
+		dbMutex.Unlock()
 	}
-}
-
-func insertBatch(db *sql.DB, batch []interface{}) error {
-	query := fmt.Sprintf("INSERT INTO %s (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES %s",
-		tableName, strings.Repeat("(?, ?, ?, ?, ?, ?, ?, ?, ?),", len(batch)/9))
-	query = query[:len(query)-1] // Remove the trailing comma
-
-	return insertWithRetry(db, query, batch...)
 }
 
 func indexToArray(index *big.Int, length int) []int {
