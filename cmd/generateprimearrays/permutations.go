@@ -1,10 +1,10 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"math/big"
 	"math/rand"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -18,18 +18,41 @@ var primes = []int{
 }
 
 const (
-	tableName = "permutations"
-	batchSize = 50 // Number of inserts per batch
+	tableName   = "permutations"
+	batchSize   = 500                    // Number of inserts per batch
+	maxFileSize = 5 * 1024 * 1024 * 1024 // 5 GB
 )
 
-func calculatePermutationRanges(length int) {
-	db, err := initDatabase()
+func createTableScript() {
+	script := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+	id TEXT PRIMARY KEY,
+	startArray TEXT,
+	endArray TEXT,
+	packageName TEXT,
+	permName TEXT,
+	reportedToAPI BOOLEAN,
+	processed BOOLEAN,
+	arrayLength INTEGER,
+	numberOfPermutations INTEGER
+);`, tableName)
+
+	file, err := os.Create("create_table.sql")
 	if err != nil {
-		fmt.Printf("Error initializing database: %v\n", err)
+		fmt.Printf("Error creating file: %v\n", err)
 		return
 	}
-	defer db.Close()
+	defer file.Close()
 
+	_, err = file.WriteString(script)
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
+	}
+
+	fmt.Println("Database table creation script written to create_table.sql")
+}
+
+func calculatePermutationRanges(length int) {
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
 		totalPermutations.Mul(totalPermutations, big.NewInt(int64(len(primes))))
@@ -50,27 +73,46 @@ func calculatePermutationRanges(length int) {
 	numWorkers := runtime.NumCPU() // Get the number of CPU cores
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go worker(db, fileChan, &wg, length, totalPermutations)
+		go worker(fileChan, &wg, length, totalPermutations, i+1)
 	}
 
 	wg.Wait()
-
-	// Compact the database to reclaim unused space
-	fmt.Println("Compacting database...")
-	_ = compactDatabase(db)
 }
 
-var dbMutex sync.Mutex
 var insertCountMutex sync.Mutex
 var insertCount = big.NewInt(0)
 
-func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int) {
+func getFileSize(file *os.File) int64 {
+	info, err := file.Stat()
+	if err != nil {
+		fmt.Printf("Error getting file size: %v\n", err)
+		return 0
+	}
+	return info.Size()
+}
+
+func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int, workerIndex int) {
 	defer wg.Done()
 
 	maxRetries := 10
 	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)
 	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
+
+	fileName := fmt.Sprintf("sql_statements_%d_%d.sql", length, workerIndex)
+	file, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	// Start the transaction
+	_, err = file.WriteString("BEGIN TRANSACTION;\n")
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
+	}
 
 	for i := range fileChan {
 		start := big.NewInt(i)
@@ -82,54 +124,59 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 		reportedToAPI := false
 		processed := false
 
-		retryCount := 0
-		for {
-			dbMutex.Lock()
-			tx, err := db.Begin()
+		sqlStatement := fmt.Sprintf("INSERT INTO %s (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES ('%s', '%s', '%s', '%s', '%s', %t, %t, %d, 1);\n",
+			tableName, id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length)
+
+		if getFileSize(file) >= maxFileSize {
+			// Commit the current transaction before closing the file
+			_, err = file.WriteString("COMMIT;\n")
 			if err != nil {
-				dbMutex.Unlock()
-				fmt.Printf("Error starting transaction: %v\n", err)
+				fmt.Printf("Error writing to file: %v\n", err)
 				return
 			}
-
-			_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
-				tableName), id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length)
+			file.Close()
+			fileName = fmt.Sprintf("sql_statements_%d_%d.sql", length, workerIndex)
+			file, err = os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
-				if strings.Contains(err.Error(), "database is locked") {
-					retryCount++
-					fmt.Println("Database is locked, retrying insert...")
-					if retryCount >= maxRetries {
-						fmt.Printf("Max retries reached for record %s, skipping insert\n", id)
-						dbMutex.Unlock()
-						break
-					}
-					dbMutex.Unlock()
-					continue
-				} else {
-					fmt.Printf("Error inserting record into database: %v\n", err)
-					dbMutex.Unlock()
-					return
-				}
-			}
-
-			err = tx.Commit()
-			dbMutex.Unlock()
-			if err != nil {
-				fmt.Printf("Error committing transaction: %v\n", err)
+				fmt.Printf("Error opening new file: %v\n", err)
 				return
 			}
-			break
+			// Start a new transaction
+			_, err = file.WriteString("BEGIN TRANSACTION;\n")
+			if err != nil {
+				fmt.Printf("Error writing to file: %v\n", err)
+				return
+			}
 		}
 
-		if retryCount > 0 && retryCount < maxRetries {
-			fmt.Printf("Insert successful after %d retries\n", retryCount)
+		_, err = file.WriteString(sqlStatement)
+		if err != nil {
+			if strings.Contains(err.Error(), "file is locked") {
+				retryCount := 0
+				for retryCount < maxRetries {
+					fmt.Println("File is locked, retrying write...")
+					time.Sleep(time.Millisecond * 100)
+					_, err = file.WriteString(sqlStatement)
+					if err == nil {
+						break
+					}
+					retryCount++
+				}
+				if retryCount >= maxRetries {
+					fmt.Printf("Max retries reached for record %s, skipping write\n", id)
+					continue
+				}
+			} else {
+				fmt.Printf("Error writing record to file: %v\n", err)
+				return
+			}
 		}
 
 		insertCountMutex.Lock()
 		insertCount.Add(insertCount, big.NewInt(1))
 		if insertCount.Cmp(nextPrintThreshold) >= 0 {
-			fmt.Printf("%s permutations of %s inserted into the database.\n", insertCount.String(), totalPermutations.String())
-			nextPrintThreshold.Add(insertCount, big.NewInt(random.Int63n(1.5e9-1e8)+1e8))
+			fmt.Printf("%s permutations of %s written to the file.\n", insertCount.String(), totalPermutations.String())
+			nextPrintThreshold = nextPrintThreshold.Add(nextPrintThreshold, big.NewInt(random.Int63n(1.5e9-1e8)+1e8))
 		}
 		insertCountMutex.Unlock()
 
@@ -138,19 +185,11 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 		}
 	}
 
-	if insertCount.Cmp(big.NewInt(0)) > 0 {
-		dbMutex.Lock()
-		tx, err := db.Begin()
-		if err != nil {
-			dbMutex.Unlock()
-			fmt.Printf("Error starting final transaction: %v\n", err)
-			return
-		}
-		err = tx.Commit()
-		if err != nil {
-			fmt.Printf("Error committing final transaction: %v\n", err)
-		}
-		dbMutex.Unlock()
+	// Commit the transaction at the end of the file
+	_, err = file.WriteString("COMMIT;\n")
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
 	}
 }
 
