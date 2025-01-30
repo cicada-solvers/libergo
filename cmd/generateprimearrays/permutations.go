@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -33,6 +35,8 @@ func calculatePermutationRanges(length int) {
 		totalPermutations.Mul(totalPermutations, big.NewInt(int64(len(primes))))
 	}
 
+	fmt.Printf("Total permutations are: %s\n", totalPermutations.String())
+
 	var wg sync.WaitGroup
 	fileChan := make(chan int64, runtime.NumCPU()*batchSize)
 
@@ -57,12 +61,16 @@ func calculatePermutationRanges(length int) {
 }
 
 var dbMutex sync.Mutex
+var insertCountMutex sync.Mutex
+var insertCount = big.NewInt(0)
 
 func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int) {
 	defer wg.Done()
 
-	insertCount := 0
 	maxRetries := 10
+	source := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(source)
+	nextPrintThreshold := big.NewInt(random.Int63n(1.5e9-1e8) + 1e8)
 
 	for i := range fileChan {
 		start := big.NewInt(i)
@@ -117,31 +125,20 @@ func worker(db *sql.DB, fileChan chan int64, wg *sync.WaitGroup, length int, tot
 			fmt.Printf("Insert successful after %d retries\n", retryCount)
 		}
 
-		insertCount++
-		if insertCount >= 5000 {
-			dbMutex.Lock()
-			tx, err := db.Begin()
-			if err != nil {
-				dbMutex.Unlock()
-				fmt.Printf("Error starting new transaction: %v\n", err)
-				return
-			}
-			err = tx.Commit()
-			if err != nil {
-				fmt.Printf("Error committing transaction: %v\n", err)
-				dbMutex.Unlock()
-				return
-			}
-			dbMutex.Unlock()
-			insertCount = 0
+		insertCountMutex.Lock()
+		insertCount.Add(insertCount, big.NewInt(1))
+		if insertCount.Cmp(nextPrintThreshold) >= 0 {
+			fmt.Printf("%s permutations of %s inserted into the database.\n", insertCount.String(), totalPermutations.String())
+			nextPrintThreshold.Add(insertCount, big.NewInt(random.Int63n(1.5e9-1e8)+1e8))
 		}
+		insertCountMutex.Unlock()
 
 		if start.Cmp(totalPermutations) == 0 {
 			break
 		}
 	}
 
-	if insertCount > 0 {
+	if insertCount.Cmp(big.NewInt(0)) > 0 {
 		dbMutex.Lock()
 		tx, err := db.Begin()
 		if err != nil {

@@ -28,20 +28,16 @@ func main() {
 		return
 	}
 
-	unprocessedCount, err := countUnprocessedRows(db)
-	if err != nil {
-		fmt.Printf("Error counting unprocessed rows: %v\n", err)
-		return
-	}
-	fmt.Printf("Number of unprocessed rows: %d\n", unprocessedCount)
+	for {
+		r, err := getByteArrayRange(db)
+		if err != nil {
+			fmt.Printf("Error getting byte array range: %v\n", err)
+			return
+		}
+		if r == nil {
+			break // No more rows to process
+		}
 
-	ranges, err := getByteArrayRanges(db)
-	if err != nil {
-		fmt.Printf("Error getting byte array ranges: %v\n", err)
-		return
-	}
-
-	for _, r := range ranges {
 		totalPermutations := big.NewInt(int64(r.NumberOfPermutations))
 		startArray, stopArray := r.StartArray, r.EndArray
 		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
