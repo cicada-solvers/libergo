@@ -67,12 +67,6 @@ func markAsProcessed(db *sql.DB, id string) error {
 	}
 	fmt.Printf("Row with ID %s marked as processed.\n", id)
 
-	// Compact the database
-	err = compactDatabase(db)
-	if err != nil {
-		return fmt.Errorf("error compacting database: %v", err)
-	}
-
 	return nil
 }
 
