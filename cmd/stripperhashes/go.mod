@@ -1,4 +1,4 @@
-module processhashes
+module stripperhashes
 
 go 1.23
 

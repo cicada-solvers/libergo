@@ -11,4 +11,5 @@ use (
 	cmd/rencode
 	cmd/generatebytearrays
 	cmd/generateprimearrays
+	cmd/stripperhashes
 )
