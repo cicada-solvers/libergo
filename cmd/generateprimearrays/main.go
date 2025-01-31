@@ -1,10 +1,22 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 )
 
 func main() {
+	initFlag := flag.Bool("init", false, "Initialize the database")
+	flag.Parse()
+
+	if *initFlag {
+		_, err := initDatabase()
+		if err != nil {
+			fmt.Printf("Error initializing database: %v\n", err)
+			return
+		}
+	}
+
 	var start, end int
 	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)

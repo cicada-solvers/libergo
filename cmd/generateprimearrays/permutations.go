@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -19,8 +18,6 @@ var primes = []int{
 	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
 }
 
-const batchSize = 500 // Number of inserts per batch
-
 func calculatePermutationRanges(length int) {
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
@@ -29,15 +26,8 @@ func calculatePermutationRanges(length int) {
 
 	fmt.Printf("Total permutations are: %s\n", totalPermutations.String())
 
-	db, err := initDatabase()
-	if err != nil {
-		fmt.Printf("Error initializing database: %v\n", err)
-		return
-	}
-	defer db.Close()
-
 	var wg sync.WaitGroup
-	fileChan := make(chan int64, runtime.NumCPU()*batchSize)
+	fileChan := make(chan int64, 8192)
 
 	go func() {
 		for i := int64(0); i < totalPermutations.Int64(); i++ {
@@ -46,36 +36,29 @@ func calculatePermutationRanges(length int) {
 		close(fileChan)
 	}()
 
-	numWorkers := runtime.NumCPU() // Get the number of CPU cores
+	numWorkers := runtime.NumCPU() + 2 // Get the number of CPU cores
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go worker(fileChan, &wg, length, totalPermutations, i+1, db)
+		go worker(fileChan, &wg, length, totalPermutations, i+1)
 	}
 
 	wg.Wait()
-
-	// Compact the database to reclaim unused space
-	fmt.Println("Compacting database...")
-	_ = compactDatabase(db)
 }
 
-func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int, workerIndex int, db *sql.DB) {
+func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int, workerIndex int) {
 	defer wg.Done()
+
+	db, err := initConnection()
+	if err != nil {
+		fmt.Printf("Error initializing database: %v\n", err)
+		return
+	}
 
 	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)
 	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
 
 	var builder strings.Builder
-
-	// Start the transaction
-	//builder.WriteString("BEGIN TRANSACTION;\n")
-
-	// Start the insert statement
-	builder.WriteString("INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES \n")
-
-	firstTime := true
-	insertCount := 0
 
 	for i := range fileChan {
 		start := big.NewInt(i)
@@ -87,43 +70,22 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		reportedToAPI := false
 		processed := false
 
-		sqlStatement := ""
+		// Start the insert statement
+		builder.WriteString("INSERT INTO public.permutations(id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES ")
 
-		if !firstTime {
-			sqlStatement = fmt.Sprintf("\n,('%s', '%s', '%s', '%s', '%s', %t, %t, %d, 1)",
-				id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length)
-		} else {
-			sqlStatement = fmt.Sprintf("('%s', '%s', '%s', '%s', '%s', %t, %t, %d, 1)",
-				id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length)
-			firstTime = false
+		// Add the values to the insert statement
+		builder.WriteString(fmt.Sprintf("('%s', '%s', '%s', '%s', '%s', %t, %t, %d, 1);",
+			id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length))
+
+		// Need to write to the database here...
+		err := insertWithRetry(db, builder.String())
+		if err != nil {
+			fmt.Printf("Error inserting into database: %v - %s\n", err, builder.String())
 		}
 
-		builder.WriteString(sqlStatement)
+		// Clear the builder
+		builder.Reset()
 
-		if insertCount >= batchSize {
-			// Commit the current transaction before closing the file
-			//builder.WriteString(";\nCOMMIT;\n")
-
-			// Need to write to the database here...
-			err := insertWithRetry(db, builder.String())
-			if err != nil {
-				fmt.Printf("Error inserting into database: %v - %s\n", err, builder.String())
-			}
-
-			// Clear the builder
-			builder.Reset()
-
-			// Start a new transaction
-			//builder.WriteString("BEGIN TRANSACTION;\n")
-
-			// Start the insert statement
-			builder.WriteString("INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES \n")
-
-			firstTime = true
-			insertCount = 0
-		}
-
-		insertCount++
 		insertCountMutex.Lock()
 		insertCounter.Add(insertCounter, big.NewInt(1))
 		if insertCounter.Cmp(nextPrintThreshold) >= 0 {
@@ -137,13 +99,10 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		}
 	}
 
-	// Commit the transaction at the end of the file
-	//builder.WriteString(";\nCOMMIT;\n")
-
 	// Need to write to the database here...
-	err := insertWithRetry(db, builder.String())
-	if err != nil {
-		fmt.Printf("Error inserting into database: %v - %s\n", err, builder.String())
+	insertErr := insertWithRetry(db, builder.String())
+	if insertErr != nil {
+		fmt.Printf("Error inserting into database: %v - %s\n", insertErr, builder.String())
 	}
 }
 
