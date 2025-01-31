@@ -5,7 +5,6 @@ import (
 )
 
 func main() {
-	createTableScript()
 	var start, end int
 	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)
