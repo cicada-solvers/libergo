@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
-	"time"
 )
 
 // main is the entry point of the program
@@ -15,12 +14,11 @@ func main() {
 		return
 	}
 
-	db, err := initDatabase()
+	db, err := initConnection()
 	if err != nil {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
-	defer db.Close()
 
 	// Run removeProcessedRows at the beginning
 	if err := removeProcessedRows(db); err != nil {
@@ -57,8 +55,6 @@ func main() {
 			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations, &mu)
 		}
 
-		startTime := time.Now()
-
 		program.generateAllByteArrays(r.ArrayLength, startArray, stopArray)
 
 		wg.Wait()
@@ -68,19 +64,9 @@ func main() {
 		default:
 		}
 
-		duration := time.Since(startTime)
-		fmt.Printf("Time taken to process range: %v\n", duration)
-
-		if err := markAsProcessed(db, r.ID); err != nil {
+		if err := removeItem(db, r.ID); err != nil {
 			fmt.Printf("Error marking row as processed: %v\n", err)
 		}
-
-		unprocessedCount, err := countUnprocessedRows(db)
-		if err != nil {
-			fmt.Printf("Error counting unprocessed rows: %v\n", err)
-			return
-		}
-		fmt.Printf("Number of unprocessed rows: %d\n", unprocessedCount)
 	}
 
 	// Run removeProcessedRows at the end

@@ -1,34 +1,105 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5"
+	"os"
 )
 
-// initDatabase initializes the SQLite database
-func initDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "file:../permutations.db?_journal_mode=WAL&_mutex=full")
+// initDatabase initializes the PostgreSQL database
+func initDatabase() (*pgx.Conn, error) {
+	adminStrBytes, err := os.ReadFile("./adminConn.txt")
 	if err != nil {
-		return nil, fmt.Errorf("error opening database: %v", err)
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
 	}
-	return db, nil
+
+	adminStr := string(adminStrBytes)
+
+	connStrBytes, err := os.ReadFile("./connstring.txt")
+	if err != nil {
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
+	}
+
+	connStr := string(connStrBytes)
+
+	adminConn, err := pgx.Connect(context.Background(), adminStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer adminConn.Close(context.Background())
+
+	// Create the database if it does not exist
+	createDatabaseSQL := `CREATE DATABASE libergodb;`
+	_, err = adminConn.Exec(context.Background(), createDatabaseSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error creating database: %v", err)
+	}
+
+	// Connect to the newly created database
+	conn, err := pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create the table in the public schema if it does not exist
+	createTableSQL := `CREATE TABLE public.permutations (
+        id uuid PRIMARY KEY,
+        startArray TEXT,
+        endArray TEXT,
+        packageName TEXT,
+        permName TEXT,
+        reportedToAPI BOOLEAN,
+        processed BOOLEAN,
+        arrayLength INTEGER,
+        numberOfPermutations INTEGER DEFAULT 0
+    );`
+
+	_, err = conn.Exec(context.Background(), createTableSQL)
+	if err != nil {
+		err := conn.Close(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("error creating table: %v", err)
+	}
+
+	return conn, nil
+}
+
+// initDatabase initializes the PostgreSQL database
+func initConnection() (*pgx.Conn, error) {
+	connStrBytes, err := os.ReadFile("./connstring.txt")
+	if err != nil {
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
+	}
+
+	connStr := string(connStrBytes)
+
+	conn, err := pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to database: %v", err)
+	}
+
+	return conn, nil
 }
 
 // getByteArrayRanges retrieves the unprocessed byte array ranges from the database
-func getByteArrayRange(db *sql.DB) (*struct {
+func getByteArrayRange(db *pgx.Conn) (*struct {
 	ID                   string
 	StartArray           []byte
 	EndArray             []byte
 	NumberOfPermutations int
 	ArrayLength          int
 }, error) {
-	row := db.QueryRow("SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM permutations WHERE processed = 0 LIMIT 1")
+	row := db.QueryRow(context.Background(), "SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM public.permutations WHERE processed = false LIMIT 1;")
 
 	var id, startArrayStr, endArrayStr string
 	var numberOfPermutations, arrayLength int
 	if err := row.Scan(&id, &startArrayStr, &endArrayStr, &numberOfPermutations, &arrayLength); err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil // No more rows
 		}
 		return nil, fmt.Errorf("error scanning row: %v", err)
@@ -59,48 +130,23 @@ func getByteArrayRange(db *sql.DB) (*struct {
 	}, nil
 }
 
-// markAsProcessed marks a row as processed in the database
-func markAsProcessed(db *sql.DB, id string) error {
-	_, err := db.Exec("DELETE FROM permutations WHERE id = ?", id)
+// removeItem marks a row as processed in the database
+func removeItem(db *pgx.Conn, id string) error {
+	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE id = $1;", id)
 	if err != nil {
 		return fmt.Errorf("error marking row as processed: %v", err)
 	}
-	fmt.Printf("Row with ID %s marked as processed.\n", id)
 
 	return nil
 }
 
-// countUnprocessedRows counts the number of unprocessed rows in the database
-func countUnprocessedRows(db *sql.DB) (int, error) {
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM permutations WHERE processed = 0").Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("error counting unprocessed rows: %v", err)
-	}
-	return count, nil
-}
-
 // removeProcessedRows removes the processed rows from the database and compacts it
-func removeProcessedRows(db *sql.DB) error {
-	_, err := db.Exec("DELETE FROM permutations WHERE processed = 1")
+func removeProcessedRows(db *pgx.Conn) error {
+	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE processed = true;")
 	if err != nil {
 		return fmt.Errorf("error deleting processed rows: %v", err)
 	}
 
-	err = compactDatabase(db)
-	if err != nil {
-		return fmt.Errorf("error compacting database: %v", err)
-	}
-
-	fmt.Println("Processed rows removed and database compacted.")
-	return nil
-}
-
-// compactDatabase compacts the SQLite database to reclaim unused space
-func compactDatabase(db *sql.DB) error {
-	_, err := db.Exec("VACUUM")
-	if err != nil {
-		return fmt.Errorf("error compacting database: %v", err)
-	}
+	fmt.Println("Processed rows removed.")
 	return nil
 }

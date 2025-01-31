@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 // Program represents the program
 type Program struct {
 	tasks chan []byte
@@ -38,8 +34,6 @@ func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, pass
 			currentArray[currentArrayLevel-1] = byte(i)
 			p.tasks <- append([]byte(nil), currentArray...)
 			if compareArrays(currentArray, stopArray) == 0 {
-				fmt.Printf("Stop Array Was: %v\n", stopArray)
-				fmt.Printf("Finished processing: %v\n", currentArray)
 				return false
 			}
 		}
