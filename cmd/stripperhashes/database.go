@@ -150,7 +150,7 @@ func getByteArrayRanges(db *pgx.Conn) ([]struct {
 
 // removeItem marks a row as processed in the database
 func removeItem(db *pgx.Conn, id string) error {
-	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE id = $1;", id)
+	_, err := db.Exec(context.Background(), "DELETE FROM public.permutations WHERE id = $1;", id)
 	if err != nil {
 		return fmt.Errorf("error marking row as processed: %v", err)
 	}
@@ -160,11 +160,35 @@ func removeItem(db *pgx.Conn, id string) error {
 
 // removeProcessedRows removes the processed rows from the database and compacts it
 func removeProcessedRows(db *pgx.Conn) error {
-	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE processed = true;")
+	_, err := db.Exec(context.Background(), "DELETE FROM public.permutations WHERE processed = true;")
 	if err != nil {
 		return fmt.Errorf("error deleting processed rows: %v", err)
 	}
 
 	fmt.Println("Processed rows removed.")
 	return nil
+}
+
+// getCountOfPermutations returns the count of rows where NumberOfPermutations = 1
+func getCountOfPermutations() (int64, error) {
+	connStrBytes, err := os.ReadFile("./connstring.txt")
+	if err != nil {
+		return 0, fmt.Errorf("error reading connection string file: %v", err)
+	}
+
+	connStr := string(connStrBytes)
+
+	conn, err := pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		return 0, fmt.Errorf("error connecting to database: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	var count int64
+	err = conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM public.permutations WHERE numberOfPermutations = 1;").Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("error querying count: %v", err)
+	}
+
+	return count, nil
 }
