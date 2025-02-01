@@ -45,6 +45,9 @@ func main() {
 		return
 	}
 
+	rowCount, _ := getCountOfPermutations()
+	fmt.Printf("Total number of permutations: %d\n", rowCount)
+
 	program := NewProgram()
 
 	var wg sync.WaitGroup
