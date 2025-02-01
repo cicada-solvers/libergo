@@ -7,6 +7,15 @@ import (
 
 // main is the entry point of the program
 func main() {
+	// Fancy print statement
+	fmt.Println("****************************************")
+	fmt.Println("*                                      *")
+	fmt.Println("*   This program only dances for       *")
+	fmt.Println("*             SINGLES!                 *")
+	fmt.Println("*         Make is rain!!               *")
+	fmt.Println("*                                      *")
+	fmt.Println("****************************************")
+
 	config, err := loadConfig("appsettings.json")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
