@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type Permutation struct {
+	ID                   string `json:"id"`
+	StartArray           string `json:"start_array"`
+	EndArray             string `json:"end_array"`
+	PackageName          string `json:"package_name"`
+	PermName             string `json:"perm_name"`
+	ReportedToAPI        bool   `json:"reported_to_api"`
+	Processed            bool   `json:"processed"`
+	ArrayLength          int    `json:"array_length"`
+	NumberOfPermutations int64  `json:"number_of_permutations"`
+}
+
 // initDatabase initializes the PostgreSQL database
 func initDatabase() (*pgx.Conn, error) {
 	adminStrBytes, err := os.ReadFile("./adminConn.txt")
@@ -26,10 +38,21 @@ func initDatabase() (*pgx.Conn, error) {
 
 	adminConn, err := pgx.Connect(context.Background(), adminStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		if err != nil {
+			return nil, err
+		}
 		os.Exit(1)
 	}
-	defer adminConn.Close(context.Background())
+	defer func(adminConn *pgx.Conn, ctx context.Context) {
+		err := adminConn.Close(ctx)
+		if err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error closing database connection: %v\n", err)
+			if err != nil {
+				return
+			}
+		}
+	}(adminConn, context.Background())
 
 	// Create the database if it does not exist
 	createDatabaseSQL := `CREATE DATABASE libergodb;`
@@ -41,7 +64,10 @@ func initDatabase() (*pgx.Conn, error) {
 	// Connect to the newly created database
 	conn, err := pgx.Connect(context.Background(), connStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		if err != nil {
+			return nil, err
+		}
 		os.Exit(1)
 	}
 
@@ -54,7 +80,7 @@ func initDatabase() (*pgx.Conn, error) {
         permName TEXT,
         reportedToAPI BOOLEAN,
         processed BOOLEAN,
-        arrayLength INTEGER,
+        arrayLength BIGINT,
         numberOfPermutations INTEGER DEFAULT 0
     );`
 
@@ -81,17 +107,51 @@ func initConnection() (*pgx.Conn, error) {
 	// Connect to the newly created database
 	conn, err := pgx.Connect(context.Background(), connStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		if err != nil {
+			return nil, err
+		}
 		os.Exit(1)
 	}
 
 	return conn, nil
 }
 
+// closeConnection closes the PostgreSQL database connection
+func closeConnection(db *pgx.Conn) error {
+	err := db.Close(context.Background())
+	if err != nil {
+		return fmt.Errorf("error closing connection: %v", err)
+	}
+	return nil
+}
+
 // insertWithRetry inserts a record into the database with retry logic
-func insertWithRetry(db *pgx.Conn, query string) error {
-	var err error
-	_, err = db.Exec(context.Background(), query)
+func insertRecord(db *pgx.Conn, perm Permutation) error {
+	query := `INSERT INTO public.permutations(
+                                id, 
+                                startArray, 
+                                endArray, 
+                                packageName, 
+                                permName, 
+                                reportedToAPI, 
+                                processed, 
+                                arrayLength, 
+                                numberOfPermutations) 
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
+
+	_, err := db.Exec(context.Background(),
+		query,
+		perm.ID,
+		perm.StartArray,
+		perm.EndArray,
+		perm.PackageName,
+		perm.PermName,
+		perm.ReportedToAPI,
+		perm.Processed,
+		perm.ArrayLength,
+		perm.NumberOfPermutations)
+
 	if err != nil {
 		return fmt.Errorf("error inserting record: %v", err)
 	}

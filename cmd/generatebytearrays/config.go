@@ -20,7 +20,12 @@ func loadConfig(filePath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening config file: %v", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("error closing config file: %v\n", err)
+		}
+	}(file)
 
 	var config Config
 	decoder := json.NewDecoder(file)

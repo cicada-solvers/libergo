@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"math/big"
 	"strings"
 	"sync"
@@ -10,20 +11,7 @@ import (
 )
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
-func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int) {
-	config, err := loadConfig("appsettings.json")
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
-	}
-
-	db, err := initDatabase()
-	if err != nil {
-		fmt.Printf("Error initializing database: %v\n", err)
-		return
-	}
-	defer db.Close()
-
+func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int, config *Config) {
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
@@ -31,11 +19,11 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 
 	totalPackageFiles, err := calculateNumberOfPackageFiles(length, maxPermutationsPerLine, maxPermutationsPerSegment, config.MaxSegmentsPerPackage)
 	if err != nil {
-		fmt.Printf("Error calculating number of package files: %v\n", err)
+		fmt.Printf("Error calculating number of packages: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Current package file: %s of %s\n", packageFileNumber.String(), totalPackageFiles.String())
+	fmt.Printf("Current package: %s of %s\n", packageFileNumber.String(), totalPackageFiles.String())
 
 	var wg sync.WaitGroup
 	fileChan := make(chan int64)
@@ -57,6 +45,18 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			db, err := initConnection()
+			if err != nil {
+				fmt.Printf("Error initializing database connection: %v\n", err)
+				return
+			}
+			defer func(db *pgx.Conn) {
+				err := closeConnection(db)
+				if err != nil {
+					fmt.Printf("Error closing database connection: %v\n", err)
+				}
+			}(db)
+
 			for i := range fileChan {
 				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
 				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
@@ -74,14 +74,19 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					startArray := indexToArray(lineStart, length)
 					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
 
-					id := uuid.New().String()
-					packageFileName := fmt.Sprintf("package_%d", packageFileNumber)
-					permFileName := fmt.Sprintf("permutation_seg_%d", i)
-					reportedToAPI := false
-					processed := false
+					perm := Permutation{
+						ID:                   uuid.New().String(),
+						StartArray:           arrayToString(startArray),
+						EndArray:             arrayToString(endArray),
+						PackageName:          fmt.Sprintf("package_%d", packageFileNumber),
+						PermName:             fmt.Sprintf("permutation_seg_%d", i),
+						ReportedToAPI:        false,
+						Processed:            false,
+						ArrayLength:          length,
+						NumberOfPermutations: config.MaxPermutationsPerLine,
+					}
 
-					err := insertWithRetry(db, "INSERT INTO permutations (id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-						id, arrayToString(startArray), arrayToString(endArray), packageFileName, permFileName, reportedToAPI, processed, length, config.MaxPermutationsPerLine)
+					err := insertRecord(db, perm)
 					if err != nil {
 						fmt.Printf("Error inserting into database: %v\n", err)
 					}
@@ -95,10 +100,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 	}
 
 	wg.Wait()
-
-	// Compact the database to reclaim unused space
-	fmt.Println("Compacting database...")
-	_ = compactDatabase(db)
 }
 
 // indexToArray converts an index to a byte array

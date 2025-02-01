@@ -1,70 +1,177 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
-	"strings"
-	"sync"
+	"os"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5"
 )
 
-var dbMutex sync.Mutex
+// Permutation represents a permutation of a byte array
+type Permutation struct {
+	ID                   string `json:"id"`
+	StartArray           string `json:"start_array"`
+	EndArray             string `json:"end_array"`
+	PackageName          string `json:"package_name"`
+	PermName             string `json:"perm_name"`
+	ReportedToAPI        bool   `json:"reported_to_api"`
+	Processed            bool   `json:"processed"`
+	ArrayLength          int    `json:"array_length"`
+	NumberOfPermutations int64  `json:"number_of_permutations"`
+}
 
-// initDatabase initializes the SQLite database
-func initDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "file:../permutations.db?_journal_mode=WAL&_mutex=full")
+// initDatabase initializes the PostgreSQL database
+func initDatabase() (*pgx.Conn, error) {
+	adminStrBytes, err := os.ReadFile("./adminConn.txt")
 	if err != nil {
-		return nil, fmt.Errorf("error opening database: %v", err)
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
 	}
 
-	createTableSQL := `CREATE TABLE IF NOT EXISTS permutations (
-		id TEXT PRIMARY KEY,
-		startArray TEXT,
-		endArray TEXT,
-		packageName TEXT,
-		permName TEXT,
-		reportedToAPI BOOLEAN,
-		processed BOOLEAN,
-		arrayLength INTEGER,
-		numberOfPermutations INTEGER DEFAULT 0
-	);`
+	adminStr := string(adminStrBytes)
 
-	_, err = db.Exec(createTableSQL)
+	connStrBytes, err := os.ReadFile("./connstring.txt")
 	if err != nil {
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
+	}
+
+	connStr := string(connStrBytes)
+
+	adminConn, err := pgx.Connect(context.Background(), adminStr)
+	if err != nil {
+		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		if err != nil {
+			return nil, err
+		}
+		os.Exit(1)
+	}
+	defer func(adminConn *pgx.Conn, ctx context.Context) {
+		err := adminConn.Close(ctx)
+		if err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error closing database connection: %v\n", err)
+			if err != nil {
+				return
+			}
+		}
+	}(adminConn, context.Background())
+
+	// Create the database if it does not exist
+	createDatabaseSQL := `CREATE DATABASE libergodb;`
+	_, err = adminConn.Exec(context.Background(), createDatabaseSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error creating database: %v", err)
+	}
+
+	// Connect to the newly created database
+	conn, err := pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		if err != nil {
+			return nil, err
+		}
+		os.Exit(1)
+	}
+
+	// Create the table in the public schema if it does not exist
+	createTableSQL := `CREATE TABLE public.permutations (
+        id uuid PRIMARY KEY,
+        startArray TEXT,
+        endArray TEXT,
+        packageName TEXT,
+        permName TEXT,
+        reportedToAPI BOOLEAN,
+        processed BOOLEAN,
+        arrayLength BIGINT,
+        numberOfPermutations INTEGER DEFAULT 0
+    );`
+
+	_, err = conn.Exec(context.Background(), createTableSQL)
+	if err != nil {
+		err := conn.Close(context.Background())
+		if err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf("error creating table: %v", err)
 	}
 
-	return db, nil
+	return conn, nil
 }
 
-// insertWithRetry inserts a record into the database with retry logic
-func insertWithRetry(db *sql.DB, query string, args ...interface{}) error {
-	const maxRetries = 100
-	const retryDelay = time.Second
+// initConnection initializes a connection to the PostgreSQL database
+func initConnection() (*pgx.Conn, error) {
+	connStrBytes, err := os.ReadFile("./connstring.txt")
+	if err != nil {
+		return nil, fmt.Errorf("error reading connection string file: %v", err)
+	}
+
+	connStr := string(connStrBytes)
+	var conn *pgx.Conn
+	const maxRetries = 1000
+	const retryDelay = 2 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-		dbMutex.Lock()
-		_, err := db.Exec(query, args...)
-		dbMutex.Unlock()
-		if err == nil {
-			return nil
-		}
-		if strings.Contains(err.Error(), "database is locked") {
+		conn, err = pgx.Connect(context.Background(), connStr)
+		if err != nil {
+			fmt.Printf("Unable to connect to database. Trying again...\n")
 			time.Sleep(retryDelay)
-			continue
+		} else {
+			return conn, nil
 		}
-		return err
 	}
-	return fmt.Errorf("max retries reached, could not insert record")
+
+	return nil, fmt.Errorf("unable to connect to database after %d retries: %v", maxRetries, err)
 }
 
-// compactDatabase compacts the SQLite database to reclaim unused space
-func compactDatabase(db *sql.DB) error {
-	_, err := db.Exec("VACUUM")
+// closeConnection closes the PostgreSQL database connection
+func closeConnection(db *pgx.Conn) error {
+	err := db.Close(context.Background())
 	if err != nil {
-		return fmt.Errorf("error compacting database: %v", err)
+		return fmt.Errorf("error closing connection: %v", err)
 	}
 	return nil
+}
+
+// insertRecord inserts a record into the database
+func insertRecord(db *pgx.Conn, perm Permutation) error {
+	const maxRetries = 1000
+	const retryDelay = 2 * time.Second
+
+	query := `INSERT INTO public.permutations (
+                                 id, 
+                                 startArray, 
+                                 endArray, 
+                                 packageName, 
+                                 permName, 
+                                 reportedToAPI, 
+                                 processed, 
+                                 arrayLength, 
+                                 numberOfPermutations)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		_, err = db.Exec(
+			context.Background(),
+			query,
+			perm.ID,
+			perm.StartArray,
+			perm.EndArray,
+			perm.PackageName,
+			perm.PermName,
+			perm.ReportedToAPI,
+			perm.Processed,
+			perm.ArrayLength,
+			perm.NumberOfPermutations)
+
+		if err != nil {
+			_ = fmt.Errorf("error inserting record: %v", err)
+			time.Sleep(retryDelay)
+			continue
+		} else {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("error inserting record after %d retries: %v", maxRetries, err)
 }

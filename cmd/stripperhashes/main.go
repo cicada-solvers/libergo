@@ -27,6 +27,11 @@ func main() {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
+	defer func() {
+		if err := closeConnection(db); err != nil {
+			fmt.Printf("Error closing database connection: %v\n", err)
+		}
+	}()
 
 	// Run removeProcessedRows at the beginning
 	if err := removeProcessedRows(db); err != nil {

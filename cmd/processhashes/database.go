@@ -7,66 +7,16 @@ import (
 	"os"
 )
 
-// initDatabase initializes the PostgreSQL database
-func initDatabase() (*pgx.Conn, error) {
-	adminStrBytes, err := os.ReadFile("./adminConn.txt")
-	if err != nil {
-		return nil, fmt.Errorf("error reading connection string file: %v", err)
-	}
-
-	adminStr := string(adminStrBytes)
-
-	connStrBytes, err := os.ReadFile("./connstring.txt")
-	if err != nil {
-		return nil, fmt.Errorf("error reading connection string file: %v", err)
-	}
-
-	connStr := string(connStrBytes)
-
-	adminConn, err := pgx.Connect(context.Background(), adminStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-	defer adminConn.Close(context.Background())
-
-	// Create the database if it does not exist
-	createDatabaseSQL := `CREATE DATABASE libergodb;`
-	_, err = adminConn.Exec(context.Background(), createDatabaseSQL)
-	if err != nil {
-		return nil, fmt.Errorf("error creating database: %v", err)
-	}
-
-	// Connect to the newly created database
-	conn, err := pgx.Connect(context.Background(), connStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Create the table in the public schema if it does not exist
-	createTableSQL := `CREATE TABLE public.permutations (
-        id uuid PRIMARY KEY,
-        startArray TEXT,
-        endArray TEXT,
-        packageName TEXT,
-        permName TEXT,
-        reportedToAPI BOOLEAN,
-        processed BOOLEAN,
-        arrayLength INTEGER,
-        numberOfPermutations INTEGER DEFAULT 0
-    );`
-
-	_, err = conn.Exec(context.Background(), createTableSQL)
-	if err != nil {
-		err := conn.Close(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error creating table: %v", err)
-	}
-
-	return conn, nil
+type Permutation struct {
+	ID                   string `json:"id"`
+	StartArray           []byte `json:"start_array"`
+	EndArray             []byte `json:"end_array"`
+	PackageName          string `json:"package_name"`
+	PermName             string `json:"perm_name"`
+	ReportedToAPI        bool   `json:"reported_to_api"`
+	Processed            bool   `json:"processed"`
+	ArrayLength          int    `json:"array_length"`
+	NumberOfPermutations int64  `json:"number_of_permutations"`
 }
 
 // initDatabase initializes the PostgreSQL database
@@ -86,48 +36,40 @@ func initConnection() (*pgx.Conn, error) {
 	return conn, nil
 }
 
-// getByteArrayRanges retrieves the unprocessed byte array ranges from the database
-func getByteArrayRange(db *pgx.Conn) (*struct {
-	ID                   string
-	StartArray           []byte
-	EndArray             []byte
-	NumberOfPermutations int
-	ArrayLength          int
-}, error) {
-	row := db.QueryRow(context.Background(), "SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM public.permutations WHERE processed = false LIMIT 1;")
+// closeConnection closes the PostgreSQL database connection
+func closeConnection(db *pgx.Conn) error {
+	err := db.Close(context.Background())
+	if err != nil {
+		return fmt.Errorf("error closing connection: %v", err)
+	}
+	return nil
+}
 
-	var id, startArrayStr, endArrayStr string
-	var numberOfPermutations, arrayLength int
-	if err := row.Scan(&id, &startArrayStr, &endArrayStr, &numberOfPermutations, &arrayLength); err != nil {
+// getByteArrayRange retrieves the unprocessed byte array ranges from the database
+func getByteArrayRange(db *pgx.Conn) (*Permutation, error) {
+	row := db.QueryRow(context.Background(), "SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM public.permutations LIMIT 1;")
+
+	var p Permutation
+	var startArrayStr, endArrayStr string
+	if err := row.Scan(&p.ID, &startArrayStr, &endArrayStr, &p.NumberOfPermutations, &p.ArrayLength); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil // No more rows
+			return nil, nil // No more rows to process
 		}
 		return nil, fmt.Errorf("error scanning row: %v", err)
 	}
 
-	startArray, err := convertToByteArray(startArrayStr)
+	var err error
+	p.StartArray, err = convertToByteArray(startArrayStr)
 	if err != nil {
 		return nil, fmt.Errorf("error converting start array: %v", err)
 	}
 
-	endArray, err := convertToByteArray(endArrayStr)
+	p.EndArray, err = convertToByteArray(endArrayStr)
 	if err != nil {
 		return nil, fmt.Errorf("error converting end array: %v", err)
 	}
 
-	return &struct {
-		ID                   string
-		StartArray           []byte
-		EndArray             []byte
-		NumberOfPermutations int
-		ArrayLength          int
-	}{
-		ID:                   id,
-		StartArray:           startArray,
-		EndArray:             endArray,
-		NumberOfPermutations: numberOfPermutations,
-		ArrayLength:          arrayLength,
-	}, nil
+	return &p, nil
 }
 
 // removeItem marks a row as processed in the database

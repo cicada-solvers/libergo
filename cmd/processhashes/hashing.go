@@ -25,7 +25,12 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		fmt.Printf("Error opening file: %v\n", err)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("Error closing file: %v\n", err)
+		}
+	}(file)
 
 	buffer := make([]byte, 0, 4096)
 	hashCount := 0
@@ -66,8 +71,6 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 				mu.Lock()
 				processedPermutations.Add(processedPermutations, big.NewInt(1))
 				mu.Unlock()
-
-				//fmt.Printf("Debug: Hash Name: %s, Byte Array: %s\n, Hash: %s", hashName, hex.EncodeToString(task), hash)
 
 				if hash == existingHash {
 					var taskStr string

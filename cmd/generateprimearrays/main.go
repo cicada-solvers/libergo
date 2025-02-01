@@ -1,20 +1,21 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"os"
 )
 
 func main() {
-	initFlag := flag.Bool("init", false, "Initialize the database")
-	flag.Parse()
-
-	if *initFlag {
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		fmt.Println("Initializing database.")
 		_, err := initDatabase()
 		if err != nil {
 			fmt.Printf("Error initializing database: %v\n", err)
 			return
 		}
+
+		fmt.Println("Database initialized successfully.")
+		return
 	}
 
 	var start, end int

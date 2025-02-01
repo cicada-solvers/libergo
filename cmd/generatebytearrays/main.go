@@ -3,9 +3,22 @@ package main
 import (
 	"fmt"
 	"math/big"
+	"os"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		fmt.Println("Initializing database.")
+		_, err := initDatabase()
+		if err != nil {
+			fmt.Printf("Error initializing database: %v\n", err)
+			return
+		}
+
+		fmt.Println("Database initialized successfully.")
+		return
+	}
+
 	var length int
 	fmt.Print("Enter the array length: ")
 	_, err := fmt.Scan(&length)
@@ -33,7 +46,7 @@ func main() {
 
 	if totalPackageFiles.Cmp(big.NewInt(1)) == 0 {
 		fmt.Println("Only one package to generate.")
-		calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, big.NewInt(1))
+		calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, big.NewInt(1), config)
 		return
 	}
 
@@ -61,7 +74,7 @@ func main() {
 			return
 		}
 
-		calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, packageFileNumber)
+		calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, packageFileNumber, config)
 	} else if choice == "range" {
 		var startPackageFileNumberStr, endPackageFileNumberStr string
 		fmt.Print("Enter the start package number to generate: ")
@@ -93,7 +106,7 @@ func main() {
 		}
 
 		for packageFileNumber := new(big.Int).Set(startPackageFileNumber); packageFileNumber.Cmp(endPackageFileNumber) <= 0; packageFileNumber.Add(packageFileNumber, big.NewInt(1)) {
-			calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, packageFileNumber)
+			calculatePermutationRanges(length, maxPermutationsPerLine, maxPermutationsPerFile, packageFileNumber, config)
 		}
 	} else {
 		fmt.Println("Invalid choice. Please enter 'single' or 'range'.")

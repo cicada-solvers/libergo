@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"math/big"
 	"math/rand"
 	"runtime"
@@ -39,13 +40,13 @@ func calculatePermutationRanges(length int) {
 	numWorkers := runtime.NumCPU() + 2 // Get the number of CPU cores
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go worker(fileChan, &wg, length, totalPermutations, i+1)
+		go worker(fileChan, &wg, length, totalPermutations)
 	}
 
 	wg.Wait()
 }
 
-func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int, workerIndex int) {
+func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int) {
 	defer wg.Done()
 
 	db, err := initConnection()
@@ -53,43 +54,42 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
+	defer func(db *pgx.Conn) {
+		err := closeConnection(db)
+		if err != nil {
+			fmt.Printf("Error closing database connection: %v\n", err)
+		}
+	}(db) // Ensure the connection is closed when the function completes
 
 	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)
 	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
 
-	var builder strings.Builder
-
 	for i := range fileChan {
 		start := big.NewInt(i)
 		startArray := indexToArray(start, length)
 
-		id := uuid.New().String()
-		packageFileName := fmt.Sprintf("%d", 1)
-		permFileName := fmt.Sprintf("%d", 1)
-		reportedToAPI := false
-		processed := false
-
-		// Start the insert statement
-		builder.WriteString("INSERT INTO public.permutations(id, startArray, endArray, packageName, permName, reportedToAPI, processed, arrayLength, numberOfPermutations) VALUES ")
-
-		// Add the values to the insert statement
-		builder.WriteString(fmt.Sprintf("('%s', '%s', '%s', '%s', '%s', %t, %t, %d, 1);",
-			id, arrayToString(startArray), arrayToString(startArray), packageFileName, permFileName, reportedToAPI, processed, length))
-
-		// Need to write to the database here...
-		err := insertWithRetry(db, builder.String())
-		if err != nil {
-			fmt.Printf("Error inserting into database: %v - %s\n", err, builder.String())
+		perm := Permutation{
+			ID:                   uuid.New().String(),
+			StartArray:           arrayToString(startArray),
+			EndArray:             arrayToString(startArray),
+			PackageName:          fmt.Sprintf("%d", 1),
+			PermName:             fmt.Sprintf("%d", 1),
+			ReportedToAPI:        false,
+			Processed:            false,
+			ArrayLength:          length,
+			NumberOfPermutations: 1,
 		}
 
-		// Clear the builder
-		builder.Reset()
+		err := insertRecord(db, perm)
+		if err != nil {
+			fmt.Printf("Error inserting into database: %v - %v\n", err, perm)
+		}
 
 		insertCountMutex.Lock()
 		insertCounter.Add(insertCounter, big.NewInt(1))
 		if insertCounter.Cmp(nextPrintThreshold) >= 0 {
-			fmt.Printf("%s permutations of %s written to the file.\n", insertCounter.String(), totalPermutations.String())
+			fmt.Printf("%s permutations of %s written to the database.\n", insertCounter.String(), totalPermutations.String())
 			nextPrintThreshold = nextPrintThreshold.Add(nextPrintThreshold, big.NewInt(random.Int63n(1.5e9-1e8)+1e8))
 		}
 		insertCountMutex.Unlock()
@@ -97,12 +97,6 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		if start.Cmp(totalPermutations) == 0 {
 			break
 		}
-	}
-
-	// Need to write to the database here...
-	insertErr := insertWithRetry(db, builder.String())
-	if insertErr != nil {
-		fmt.Printf("Error inserting into database: %v - %s\n", insertErr, builder.String())
 	}
 }
 

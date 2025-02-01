@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"math/big"
 	"sync"
 )
@@ -19,6 +20,12 @@ func main() {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
+	defer func(db *pgx.Conn) {
+		err := closeConnection(db)
+		if err != nil {
+			fmt.Printf("Error closing database connection: %v\n", err)
+		}
+	}(db)
 
 	// Run removeProcessedRows at the beginning
 	if err := removeProcessedRows(db); err != nil {
@@ -36,7 +43,7 @@ func main() {
 			break // No more rows to process
 		}
 
-		totalPermutations := big.NewInt(int64(r.NumberOfPermutations))
+		totalPermutations := big.NewInt(r.NumberOfPermutations)
 		startArray, stopArray := r.StartArray, r.EndArray
 		fmt.Printf("Processing: %v - %v\n", startArray, stopArray)
 
