@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"hashinglib"
 	"os"
 	"strconv"
 	"strings"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/jzelinskie/whirlpool"
 	"golang.org/x/crypto/blake2b"
-	"hashinglib"
 )
 
 // processTasks processes the tasks
