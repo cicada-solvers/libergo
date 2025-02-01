@@ -36,8 +36,8 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		colorIndex := 0
 		for range ticker.C {
 			permCount, _ := getCountOfPermutations()
-
-			fmt.Printf("%sHashes per minute: %d, %d remaining\033[0m\n", colors[colorIndex], hashCount, permCount)
+			aps := hashCount / 4
+			fmt.Printf("%sArrays per minute: %d, %d remaining\033[0m\n", colors[colorIndex], aps, permCount)
 			hashCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
 		}
