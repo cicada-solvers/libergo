@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// InitPermutationDatabase initializes the PostgreSQL database
-func InitPermutationDatabase() (*pgx.Conn, error) {
+// InitDatabase initializes the PostgreSQL database
+func InitDatabase() (*pgx.Conn, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config: %v", err)
@@ -78,7 +78,32 @@ func InitPermutationDatabase() (*pgx.Conn, error) {
 		return nil, fmt.Errorf("error creating table: %v", err)
 	}
 
+	factorError := InitFactor(conn)
+	if factorError != nil {
+		return nil, err
+	}
+
 	return conn, nil
+}
+
+func InitFactor(conn *pgx.Conn) error {
+	// Create the table in the public schema if it does not exist
+	createTableSQL := `CREATE TABLE public.factors (
+		id uuid PRIMARY KEY,
+		factor TEXT,
+		mainid uuid
+	);`
+
+	_, err := conn.Exec(context.Background(), createTableSQL)
+	if err != nil {
+		err := conn.Close(context.Background())
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("error creating table: %v", err)
+	}
+
+	return nil
 }
 
 // InitConnection initializes the PostgreSQL database
@@ -198,6 +223,40 @@ func GetCountOfPermutations() (int64, error) {
 	}
 
 	return count, nil
+}
+
+// GetFactorsByMainID retrieves all factors from the factors table based on the mainid.
+func GetFactorsByMainID(db *pgx.Conn, mainId string) ([]Factor, error) {
+	query := `SELECT id, factor, mainid FROM public.factors WHERE mainid = $1`
+	rows, err := db.Query(context.Background(), query, mainId)
+	if err != nil {
+		return nil, fmt.Errorf("error querying factors: %v", err)
+	}
+	defer rows.Close()
+
+	var factors []Factor
+	for rows.Next() {
+		var factor Factor
+		if err := rows.Scan(&factor.ID, &factor.Factor, &factor.MainId); err != nil {
+			return nil, fmt.Errorf("error scanning row: %v", err)
+		}
+		factors = append(factors, factor)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return factors, nil
+}
+
+// InsertFactor inserts a factor into the database
+func InsertFactor(db *pgx.Conn, factor Factor) error {
+	query := `INSERT INTO public.factors (id, factor, mainid) VALUES ($1, $2, $3)`
+	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId)
+	if err != nil {
+		return fmt.Errorf("error inserting factor: %v", err)
+	}
+	return nil
 }
 
 // InsertRecord inserts a record into the database

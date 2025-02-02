@@ -106,7 +106,7 @@ func executeScript() {
 	time.Sleep(2 * time.Minute)
 	fmt.Println("Awake!")
 
-	_, dbError := liberdatabase.InitPermutationDatabase()
+	_, dbError := liberdatabase.InitDatabase()
 	if dbError != nil {
 		return
 	} else {

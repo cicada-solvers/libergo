@@ -16,4 +16,5 @@ use (
 	cmd/generateprimearrays
 	cmd/stripperhashes
 	cmd/libergo
+	cmd/factorize
 )
