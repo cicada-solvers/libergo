@@ -1,45 +1,38 @@
 package main
 
 import (
+	"config"
 	"fmt"
+	"liberdatabase"
 	"sync"
 )
 
 // main is the entry point of the program
 func main() {
-	// Fancy print statement
-	fmt.Println("****************************************")
-	fmt.Println("*                                      *")
-	fmt.Println("*   This program only dances for       *")
-	fmt.Println("*             SINGLES!                 *")
-	fmt.Println("*         Make is rain!!               *")
-	fmt.Println("*                                      *")
-	fmt.Println("****************************************")
-
-	config, err := loadConfig("appsettings.json")
+	configuration, err := config.LoadConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
 		return
 	}
 
-	db, err := initConnection()
+	db, err := liberdatabase.InitConnection()
 	if err != nil {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
 	defer func() {
-		if err := closeConnection(db); err != nil {
+		if err := liberdatabase.CloseConnection(db); err != nil {
 			fmt.Printf("Error closing database connection: %v\n", err)
 		}
 	}()
 
 	// Run removeProcessedRows at the beginning
-	if err := removeProcessedRows(db); err != nil {
+	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
 		fmt.Printf("Error removing processed rows: %v\n", err)
 		return
 	}
 
-	ranges, err := getByteArrayRanges(db)
+	ranges, err := liberdatabase.GetByteArrayRanges(db)
 	if err != nil {
 		fmt.Printf("Error getting byte array ranges: %v\n", err)
 		return
@@ -50,20 +43,20 @@ func main() {
 		return
 	}
 
-	rowCount, _ := getCountOfPermutations()
+	rowCount, _ := liberdatabase.GetCountOfPermutations()
 	fmt.Printf("Total number of permutations: %d\n", rowCount)
 
 	program := NewProgram()
 
 	var wg sync.WaitGroup
-	numWorkers := config.NumWorkers
+	numWorkers := configuration.NumWorkers
 	wg.Add(numWorkers)
 
 	done := make(chan struct{})
 	var once sync.Once
 
 	for j := 0; j < numWorkers; j++ {
-		go processTasks(program.tasks, &wg, config.ExistingHash, done, &once)
+		go processTasks(program.tasks, &wg, configuration.ExistingHash, done, &once)
 	}
 
 	for _, r := range ranges {
@@ -77,7 +70,7 @@ func main() {
 		default:
 		}
 
-		if err := removeItem(db, r.ID); err != nil {
+		if err := liberdatabase.RemoveItem(db, r.ID); err != nil {
 			fmt.Printf("Error marking row as processed: %v\n", err)
 		}
 	}
@@ -86,7 +79,7 @@ func main() {
 	wg.Wait()
 
 	// Run removeProcessedRows at the end
-	if err := removeProcessedRows(db); err != nil {
+	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
 		fmt.Printf("Error removing processed rows: %v\n", err)
 		return
 	}

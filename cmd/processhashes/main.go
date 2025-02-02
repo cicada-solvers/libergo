@@ -1,40 +1,42 @@
 package main
 
 import (
+	"config"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"liberdatabase"
 	"math/big"
 	"sync"
 )
 
 // main is the entry point of the program
 func main() {
-	config, err := loadConfig("appsettings.json")
+	configuration, err := config.LoadConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
 		return
 	}
 
-	db, err := initConnection()
+	db, err := liberdatabase.InitConnection()
 	if err != nil {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
 	defer func(db *pgx.Conn) {
-		err := closeConnection(db)
+		err := liberdatabase.CloseConnection(db)
 		if err != nil {
 			fmt.Printf("Error closing database connection: %v\n", err)
 		}
 	}(db)
 
 	// Run removeProcessedRows at the beginning
-	if err := removeProcessedRows(db); err != nil {
+	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
 		fmt.Printf("Error removing processed rows: %v\n", err)
 		return
 	}
 
 	for {
-		r, err := getByteArrayRange(db)
+		r, err := liberdatabase.GetByteArrayRange(db)
 		if err != nil {
 			fmt.Printf("Error getting byte array range: %v\n", err)
 			return
@@ -50,7 +52,7 @@ func main() {
 		program := NewProgram()
 
 		var wg sync.WaitGroup
-		numWorkers := config.NumWorkers
+		numWorkers := configuration.NumWorkers
 		wg.Add(numWorkers)
 
 		done := make(chan struct{})
@@ -59,7 +61,7 @@ func main() {
 		var mu sync.Mutex
 
 		for j := 0; j < numWorkers; j++ {
-			go processTasks(program.tasks, &wg, config.ExistingHash, done, &once, totalPermutations, &mu)
+			go processTasks(program.tasks, &wg, configuration.ExistingHash, done, &once, totalPermutations, &mu)
 		}
 
 		program.generateAllByteArrays(r.ArrayLength, startArray, stopArray)
@@ -71,13 +73,13 @@ func main() {
 		default:
 		}
 
-		if err := removeItem(db, r.ID); err != nil {
+		if err := liberdatabase.RemoveItem(db, r.ID); err != nil {
 			fmt.Printf("Error marking row as processed: %v\n", err)
 		}
 	}
 
 	// Run removeProcessedRows at the end
-	if err := removeProcessedRows(db); err != nil {
+	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
 		fmt.Printf("Error removing processed rows: %v\n", err)
 		return
 	}

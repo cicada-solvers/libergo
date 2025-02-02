@@ -2,22 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "init" {
-		fmt.Println("Initializing database.")
-		_, err := initDatabase()
-		if err != nil {
-			fmt.Printf("Error initializing database: %v\n", err)
-			return
-		}
-
-		fmt.Println("Database initialized successfully.")
-		return
-	}
-
 	var start, end int
 	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)

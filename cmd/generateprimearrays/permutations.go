@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"liberdatabase"
 	"math/big"
 	"math/rand"
 	"runtime"
@@ -49,13 +50,13 @@ func calculatePermutationRanges(length int) {
 func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutations *big.Int) {
 	defer wg.Done()
 
-	db, err := initConnection()
+	db, err := liberdatabase.InitConnection()
 	if err != nil {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
 	defer func(db *pgx.Conn) {
-		err := closeConnection(db)
+		err := liberdatabase.CloseConnection(db)
 		if err != nil {
 			fmt.Printf("Error closing database connection: %v\n", err)
 		}
@@ -69,7 +70,7 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		start := big.NewInt(i)
 		startArray := indexToArray(start, length)
 
-		perm := Permutation{
+		perm := liberdatabase.WritePermutation{
 			ID:                   uuid.New().String(),
 			StartArray:           arrayToString(startArray),
 			EndArray:             arrayToString(startArray),
@@ -81,7 +82,7 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 			NumberOfPermutations: 1,
 		}
 
-		err := insertRecord(db, perm)
+		err := liberdatabase.InsertRecord(db, perm)
 		if err != nil {
 			fmt.Printf("Error inserting into database: %v - %v\n", err, perm)
 		}

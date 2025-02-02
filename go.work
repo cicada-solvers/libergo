@@ -1,10 +1,13 @@
 go 1.23
 
 use (
+	pkg/utility/conversion
 	pkg/utility/characterrepo
 	pkg/utility/sequences
 	pkg/utility/runer
 	pkg/utility/hashinglib
+	pkg/internal/config
+	pkg/liberdatabase
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
@@ -12,4 +15,5 @@ use (
 	cmd/generatebytearrays
 	cmd/generateprimearrays
 	cmd/stripperhashes
+	cmd/libergo
 )

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"config"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"liberdatabase"
 	"math/big"
 	"strings"
 	"sync"
@@ -11,7 +13,7 @@ import (
 )
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
-func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int, config *Config) {
+func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int, config *config.AppConfig) {
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
@@ -45,13 +47,13 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			db, err := initConnection()
+			db, err := liberdatabase.InitConnection()
 			if err != nil {
 				fmt.Printf("Error initializing database connection: %v\n", err)
 				return
 			}
 			defer func(db *pgx.Conn) {
-				err := closeConnection(db)
+				err := liberdatabase.CloseConnection(db)
 				if err != nil {
 					fmt.Printf("Error closing database connection: %v\n", err)
 				}
@@ -74,7 +76,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					startArray := indexToArray(lineStart, length)
 					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
 
-					perm := Permutation{
+					perm := liberdatabase.WritePermutation{
 						ID:                   uuid.New().String(),
 						StartArray:           arrayToString(startArray),
 						EndArray:             arrayToString(endArray),
@@ -86,7 +88,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 						NumberOfPermutations: config.MaxPermutationsPerLine,
 					}
 
-					err := insertRecord(db, perm)
+					err := liberdatabase.InsertRecord(db, perm)
 					if err != nil {
 						fmt.Printf("Error inserting into database: %v\n", err)
 					}
