@@ -32,13 +32,13 @@ fi
 cp "$SOURCE_FILE" "$TARGET_FILE"
 echo "Copied $SOURCE_FILE to $TARGET_FILE"
 
-# Copy the appsettings.json file to the target directory
-cp "$APPSETTINGS_FILE" "$TARGET_APPSETTINGS_FILE"
-echo "Copied $APPSETTINGS_FILE to $TARGET_APPSETTINGS_FILE"
-
 # Mark the target file as executable
 chmod +x "$TARGET_FILE"
 echo "Marked $TARGET_FILE as executable"
+
+# Copy the appsettings.json file to the target directory
+cp "$APPSETTINGS_FILE" "$TARGET_APPSETTINGS_FILE"
+echo "Copied $APPSETTINGS_FILE to $TARGET_APPSETTINGS_FILE"
 
 # Create the binary directory if it does not exist
 if [ ! -d "$BIN_DIR" ]; then
@@ -80,4 +80,5 @@ done
 
 # Ensure the .libergo directory and all files in it are owned by the user
 chown -R "$SUDO_USER:$SUDO_USER" "$TARGET_DIR"
+chmod 755 "$TARGET_FILE"
 echo "Changed ownership of $TARGET_DIR to $SUDO_USER"

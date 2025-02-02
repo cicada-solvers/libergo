@@ -6,7 +6,9 @@ import (
 	"liberdatabase"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"time"
 
 	"config"
 )
@@ -56,6 +58,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *initDBServerFlag {
+		executeScript()
+		os.Exit(0)
+	}
+
 	if *workersFlag != -1 {
 		err := config.UpdateConfig("NumWorkers", *workersFlag)
 		if err != nil {
@@ -69,11 +76,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *initDBServerFlag {
-		executeScript()
-		os.Exit(0)
-	}
-
 	fmt.Println("This program is used to init or update the configuration for the toolset.")
 }
 
@@ -81,7 +83,13 @@ func executeScript() {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin", "linux":
-		cmd = exec.Command("sh", ".libergo/create_podman_db.sh")
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("Error getting user home directory: %v\n", err)
+			return
+		}
+		cmdPath := filepath.Join(homeDir, ".libergo/create_podman_db.sh")
+		cmd = exec.Command("sh", cmdPath)
 	default:
 		fmt.Println("Unsupported operating system")
 		return
@@ -93,6 +101,10 @@ func executeScript() {
 	if err != nil {
 		fmt.Printf("Error executing script: %v\n", err)
 	}
+
+	fmt.Println("Sleeping for 2 minutes to fully initialize...")
+	time.Sleep(2 * time.Minute)
+	fmt.Println("Awake!")
 
 	_, dbError := liberdatabase.InitPermutationDatabase()
 	if dbError != nil {
