@@ -41,6 +41,15 @@ func LoadConfig() (*AppConfig, error) {
 		return nil, err
 	}
 
+	// Check if the config file exists
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		// If the config file does not exist, create a default config
+		err = CreateDefaultConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	data, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return nil, err
@@ -79,7 +88,7 @@ func CreateDefaultConfig() error {
 	}
 
 	defaultConfig := AppConfig{
-		NumWorkers:              10,
+		NumWorkers:              runtime.NumCPU(), // Set NumWorkers to the number of CPU cores
 		ExistingHash:            "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4",
 		AdminConnectionString:   "postgres://postgres:lppasswd@localhost:5432/postgres",
 		GeneralConnectionString: "postgres://postgres:lppasswd@localhost:5432/libergodb",
@@ -94,6 +103,12 @@ func CreateDefaultConfig() error {
 	}
 
 	err = os.WriteFile(configFilePath, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	// Update NumWorkers to the number of CPU cores
+	err = UpdateConfig("NumWorkers", runtime.NumCPU())
 	if err != nil {
 		return err
 	}
