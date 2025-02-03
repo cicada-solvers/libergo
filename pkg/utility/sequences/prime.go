@@ -1,7 +1,10 @@
 package sequences
 
 import (
+	"config"
+	"fmt"
 	"math/big"
+	"sync"
 )
 
 // IsPrime checks if a number is prime.
@@ -29,18 +32,48 @@ func IsPrime(number *big.Int) bool {
 // YieldPrimesAsc yields prime numbers in descending order up to the given number.
 func YieldPrimesAsc(maxNumber *big.Int) <-chan *big.Int {
 	one := big.NewInt(1)
-
 	ch := make(chan *big.Int)
-	go func() {
-		defer close(ch)
-		counter := big.NewInt(2)
-		for counter.Cmp(maxNumber) <= 0 {
-			if counter.ProbablyPrime(20) { // Use ProbablyPrime for a faster prime check
-				ch <- new(big.Int).Set(counter)
-			}
-			counter.Add(counter, one)
+	var wg sync.WaitGroup
+
+	// Load worker count from config
+	cfg, err := config.LoadConfig()
+	workerCount := 4 // Default worker count
+	if err != nil {
+		fmt.Printf("Error loading config: %v\nUsing default worker count: %d\n", err, workerCount)
+	} else {
+		workerCount = cfg.NumWorkers / 2
+	}
+
+	// Calculate the range size for each worker
+	rangeSize := new(big.Int).Div(maxNumber, big.NewInt(int64(workerCount)))
+
+	// Start worker goroutines
+	for i := 0; i < workerCount; i++ {
+		start := new(big.Int).Mul(rangeSize, big.NewInt(int64(i)))
+		end := new(big.Int).Add(start, rangeSize)
+		if i == workerCount-1 {
+			end = maxNumber
 		}
+
+		wg.Add(1)
+		go func(start, end *big.Int) {
+			defer wg.Done()
+			counter := new(big.Int).Set(start)
+			for counter.Cmp(end) <= 0 {
+				if counter.ProbablyPrime(20) { // Use ProbablyPrime for a faster prime check
+					ch <- new(big.Int).Set(counter)
+				}
+				counter.Add(counter, one)
+			}
+		}(start, end)
+	}
+
+	// Close the channel once all workers are done
+	go func() {
+		wg.Wait()
+		close(ch)
 	}()
+
 	return ch
 }
 

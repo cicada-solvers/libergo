@@ -20,7 +20,7 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 
 	// Get p values
 	fmt.Println("Getting possible p values")
-	getPValues(db, mainId, number)
+	getPValues(mainId, number)
 
 	// Initialize the last sequence number
 	var lastSeqNumber int64 = 0
@@ -88,14 +88,14 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 }
 
 // getPValues finds p values using multiple workers.
-func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
+func getPValues(mainId string, n *big.Int) {
 	// Load worker count from config
 	cfg, err := config.LoadConfig()
 	workerCount := 4 // Default worker count
 	if err != nil {
 		fmt.Printf("Error loading config: %v\nUsing default worker count: %d\n", err, workerCount)
 	} else {
-		workerCount = cfg.NumWorkers
+		workerCount = cfg.NumWorkers / 2
 	}
 
 	// Create channels for distributing work and collecting results
@@ -108,6 +108,19 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
+			// Each worker initializes its own database connection
+			db, err := liberdatabase.InitConnection()
+			if err != nil {
+				fmt.Printf("Error initializing database connection: %v\n", err)
+				return
+			}
+			defer func(db *pgx.Conn) {
+				dbCloseError := liberdatabase.CloseConnection(db)
+				if dbCloseError != nil {
+					fmt.Printf("Error closing database connection: %v\n", dbCloseError)
+				}
+			}(db)
+
 			for prime := range primeChan {
 				if new(big.Int).Mod(n, prime).Cmp(big.NewInt(0)) == 0 {
 					resultChan <- prime
@@ -144,6 +157,19 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 			SeqNumber: seqValue,
 		}
 
-		_ = liberdatabase.InsertFactor(db, factor)
+		// Create a new database connection for inserting the factor
+		db, err := liberdatabase.InitConnection()
+		if err != nil {
+			fmt.Printf("Error initializing database connection: %v\n", err)
+			continue
+		}
+		err = liberdatabase.InsertFactor(db, factor)
+		if err != nil {
+			fmt.Printf("Error inserting factor: %v\n", err)
+		}
+		dbCloseError := liberdatabase.CloseConnection(db)
+		if dbCloseError != nil {
+			fmt.Printf("Error closing database connection: %v\n", dbCloseError)
+		}
 	}
 }
