@@ -92,8 +92,6 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 		workerCount = cfg.NumWorkers
 	}
 
-	fmt.Printf("Starting %d workers\n", workerCount)
-
 	// Create channels for distributing work and collecting results
 	primeChan := make(chan *big.Int)
 	resultChan := make(chan *big.Int)
