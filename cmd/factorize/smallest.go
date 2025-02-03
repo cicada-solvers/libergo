@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"liberdatabase"
 	"math/big"
-	"sequences"
 )
 
 // factorize returns the prime factors of a given big integer.
@@ -89,7 +88,7 @@ func factorize(db *pgx.Conn, mainId string, n *big.Int, lastSeq int64) bool {
 			fmt.Printf("Error converting factor to *big.Int: %v\n", factor.Factor)
 		}
 
-		if !sequences.IsPrime(factorValue) {
+		if !factorValue.ProbablyPrime(20) {
 			areAllPrime = false
 			break
 		}
