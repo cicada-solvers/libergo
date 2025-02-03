@@ -21,8 +21,8 @@ func main() {
 	fmt.Println("Using this for other purposes may be illegal in your country.")
 	fmt.Println(strings.Repeat("=", 80) + "\033[0m")
 
-	// Define the combo flag
-	comboFlag := flag.Bool("combo", false, "Find prime combos")
+	// Define the pq flag
+	pqFlag := flag.Bool("pq", false, "Find prime p and q values")
 	flag.Parse()
 
 	// Check if the number is provided as an argument
@@ -77,37 +77,37 @@ func main() {
 	// The mainId is the number being factorized
 	mainId := uuid.New().String()
 
-	if *comboFlag {
-		// Find prime combos
+	if *pqFlag {
+		// Find prime pqs
 		findCombos(db, mainId, number)
 
-		// Output prime combos
+		// Output prime pqs
 		output := strings.Builder{}
 		firstTime := true
 
 		// Initialize the last sequence number
 		var lastSeqNumber int64 = 0
 
-		// Loop to get prime combos until nil is returned
+		// Loop to get prime pqs until nil is returned
 		for {
-			combo, err := liberdatabase.GetPrimeCombosByMainID(db, mainId, lastSeqNumber)
+			pq, err := liberdatabase.GetPrimeCombosByMainID(db, mainId, lastSeqNumber)
 			if err != nil {
-				fmt.Printf("Error getting prime combos: %v\n", err)
+				fmt.Printf("Error getting prime pqs: %v\n", err)
 				os.Exit(1)
 			}
-			if combo == nil {
+			if pq == nil {
 				break
 			}
 
 			// Update the last sequence number
-			lastSeqNumber = combo.SeqNumber
+			lastSeqNumber = pq.SeqNumber
 
 			if !firstTime {
 				output.WriteString(",")
 			}
 
-			// Append prime combo to output
-			output.WriteString(fmt.Sprintf("%s : (%s,%s)", numberStr, combo.ValueP, combo.ValueQ))
+			// Append prime pq to output
+			output.WriteString(fmt.Sprintf("%s : (%s,%s)", numberStr, pq.ValueP, pq.ValueQ))
 
 			firstTime = false
 		}
