@@ -26,17 +26,19 @@ func IsPrime(number *big.Int) bool {
 	return true
 }
 
-// YieldPrimesDesc yields prime numbers in descending order up to the given number.
-func YieldPrimesDesc(maxNumber *big.Int) <-chan *big.Int {
+// YieldPrimesAsc yields prime numbers in descending order up to the given number.
+func YieldPrimesAsc(maxNumber *big.Int) <-chan *big.Int {
+	one := big.NewInt(1)
+
 	ch := make(chan *big.Int)
 	go func() {
 		defer close(ch)
-		counter := new(big.Int).Set(maxNumber)
-		for counter.Cmp(big.NewInt(2)) > 0 {
+		counter := big.NewInt(2)
+		for counter.Cmp(maxNumber) <= 0 {
 			if counter.ProbablyPrime(20) { // Use ProbablyPrime for a faster prime check
 				ch <- new(big.Int).Set(counter)
 			}
-			counter.Sub(counter, big.NewInt(1))
+			counter.Add(counter, one)
 		}
 	}()
 	return ch

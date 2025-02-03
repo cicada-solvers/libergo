@@ -85,11 +85,14 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 	// Load worker count from config
 	cfg, err := config.LoadConfig()
+	workerCount := 4 // Default worker count
 	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
+		fmt.Printf("Error loading config: %v\nUsing default worker count: %d\n", err, workerCount)
+	} else {
+		workerCount = cfg.NumWorkers
 	}
-	workerCount := cfg.NumWorkers
+
+	fmt.Printf("Starting %d workers\n", workerCount)
 
 	// Create channels for distributing work and collecting results
 	primeChan := make(chan *big.Int)
@@ -99,14 +102,14 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 	// Start worker goroutines
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
-		go func() {
+		go func(workerID int) {
 			defer wg.Done()
 			for prime := range primeChan {
 				if new(big.Int).Mod(n, prime).Cmp(big.NewInt(0)) == 0 {
 					resultChan <- prime
 				}
 			}
-		}()
+		}(i)
 	}
 
 	// Start a goroutine to close the result channel once all workers are done
@@ -117,7 +120,7 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 
 	// Start a goroutine to send primes to the workers
 	go func() {
-		for prime := range sequences.YieldPrimesDesc(n) {
+		for prime := range sequences.YieldPrimesAsc(n) {
 			primeChan <- prime
 		}
 		close(primeChan)
@@ -128,7 +131,7 @@ func getPValues(db *pgx.Conn, mainId string, n *big.Int) {
 	// Collect results
 	for prime := range resultChan {
 		seqValue++
-		fmt.Printf("Found prime: %s\n", prime.String())
+		fmt.Printf("Found prime factor: %s\n", prime.String())
 		// Insert the prime into the database or perform other actions
 		factor := liberdatabase.Factor{
 			ID:        uuid.New().String(),
