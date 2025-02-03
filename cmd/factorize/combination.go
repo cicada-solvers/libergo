@@ -28,7 +28,7 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 		if new(big.Int).Mod(number, prime).Cmp(zero) == 0 {
 			q := new(big.Int).Div(number, prime)
 
-			if sequences.IsPrime(q) {
+			if q.ProbablyPrime(20) {
 				seqNumber++
 
 				// Insert the prime combo into the database
