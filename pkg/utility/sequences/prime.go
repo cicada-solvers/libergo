@@ -33,7 +33,7 @@ func YieldPrimesDesc(maxNumber *big.Int) <-chan *big.Int {
 		defer close(ch)
 		counter := new(big.Int).Set(maxNumber)
 		for counter.Cmp(big.NewInt(2)) > 0 {
-			if IsPrime(counter) {
+			if counter.ProbablyPrime(20) { // Use ProbablyPrime for a faster prime check
 				ch <- new(big.Int).Set(counter)
 			}
 			counter.Sub(counter, big.NewInt(1))
