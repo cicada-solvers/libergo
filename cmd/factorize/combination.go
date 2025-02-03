@@ -22,6 +22,7 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 		// Display the current prime based on the loop count
 		if (prime.Cmp(big.NewInt(100000000)) == -1 && loopCounter%1000000 == 0) || loopCounter%1000000000 == 0 {
 			fmt.Printf("Current prime at loop %d: %s\n", loopCounter, prime.String())
+			loopCounter = 0 // Reset loopCounter
 		}
 
 		if new(big.Int).Mod(number, prime).Cmp(zero) == 0 {
