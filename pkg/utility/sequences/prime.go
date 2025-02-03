@@ -26,6 +26,22 @@ func IsPrime(number *big.Int) bool {
 	return true
 }
 
+// YieldPrimesDesc yields prime numbers in descending order up to the given number.
+func YieldPrimesDesc(maxNumber *big.Int) <-chan *big.Int {
+	ch := make(chan *big.Int)
+	go func() {
+		defer close(ch)
+		counter := new(big.Int).Set(maxNumber)
+		for counter.Cmp(big.NewInt(2)) > 0 {
+			if IsPrime(counter) {
+				ch <- new(big.Int).Set(counter)
+			}
+			counter.Sub(counter, big.NewInt(1))
+		}
+	}()
+	return ch
+}
+
 // GetPrimeSequence generates the prime sequence.
 func GetPrimeSequence(maxNumber *big.Int, isPositional bool) (*NumericSequence, error) {
 	numericSequence := &NumericSequence{Name: "Prime", Number: new(big.Int).Set(maxNumber)}

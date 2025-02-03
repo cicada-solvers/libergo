@@ -83,6 +83,11 @@ func InitDatabase() (*pgx.Conn, error) {
 		return nil, err
 	}
 
+	comboError := InitCombo(conn)
+	if comboError != nil {
+		return nil, err
+	}
+
 	return conn, nil
 }
 
@@ -91,6 +96,28 @@ func InitFactor(conn *pgx.Conn) error {
 	createTableSQL := `CREATE TABLE public.factors (
 		id uuid PRIMARY KEY,
 		factor TEXT,
+		mainid uuid,
+		seqnumber BIGINT
+	);`
+
+	_, err := conn.Exec(context.Background(), createTableSQL)
+	if err != nil {
+		err := conn.Close(context.Background())
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("error creating table: %v", err)
+	}
+
+	return nil
+}
+
+func InitCombo(conn *pgx.Conn) error {
+	// Create the table in the public schema if it does not exist
+	createTableSQL := `CREATE TABLE public.primecombo (
+		id uuid PRIMARY KEY,
+		valuep TEXT,
+		valueq uuid,
 		mainid uuid,
 		seqnumber BIGINT
 	);`
@@ -251,12 +278,36 @@ func GetMaxSeqNumberByMainID(db *pgx.Conn, mainId string) (Factor, error) {
 	return factor, nil
 }
 
+// GetPrimeCombosByMainID retrieves all factors from the factors table based on the mainid.
+func GetPrimeCombosByMainID(db *pgx.Conn, mainId string, seqNumber int64) (*PrimeCombo, error) {
+	var combo PrimeCombo
+	query := `SELECT id, valuep, valueq, mainid, seqnumber FROM public.primecombo WHERE mainid = $1 AND seqnumber > $2 ORDER BY seqnumber ASC LIMIT 1`
+	err := db.QueryRow(context.Background(), query, mainId, seqNumber).Scan(&combo.ID, &combo.ValueP, &combo.ValueQ, &combo.MainId, &combo.SeqNumber)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil // No rows found, return nil
+		}
+		return nil, fmt.Errorf("error querying factors: %v", err)
+	}
+	return &combo, nil
+}
+
 // InsertFactor inserts a factor into the database
 func InsertFactor(db *pgx.Conn, factor Factor) error {
 	query := `INSERT INTO public.factors (id, factor, mainid, seqnumber) VALUES ($1, $2, $3, $4)`
 	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId, factor.SeqNumber)
 	if err != nil {
 		return fmt.Errorf("error inserting factor: %v", err)
+	}
+	return nil
+}
+
+// InsertPrimeCombo inserts a PrimeCombo entry into the database
+func InsertPrimeCombo(db *pgx.Conn, combo PrimeCombo) error {
+	query := `INSERT INTO public.primecombo (id, valuep, valueq, mainid, seqnumber) VALUES ($1, $2, $3, $4. $5)`
+	_, err := db.Exec(context.Background(), query, combo.ID, combo.ValueP, combo.ValueQ, combo.MainId, combo.SeqNumber)
+	if err != nil {
+		return fmt.Errorf("error inserting prime combo: %v", err)
 	}
 	return nil
 }
@@ -321,6 +372,16 @@ func RemoveFactorsByMainID(db *pgx.Conn, mainId string) error {
 	_, err := db.Exec(context.Background(), query, mainId)
 	if err != nil {
 		return fmt.Errorf("error deleting factors: %v", err)
+	}
+	return nil
+}
+
+// RemovePrimeCombosByMainID removes all prime combos from the primecombo table based on the given mainId.
+func RemovePrimeCombosByMainID(db *pgx.Conn, mainId string) error {
+	query := `DELETE FROM public.primecombo WHERE mainid = $1`
+	_, err := db.Exec(context.Background(), query, mainId)
+	if err != nil {
+		return fmt.Errorf("error deleting prime combos: %v", err)
 	}
 	return nil
 }

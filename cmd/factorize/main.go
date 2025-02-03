@@ -3,6 +3,7 @@ package main
 import (
 	"config"
 	"context"
+	"flag"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -14,14 +15,24 @@ import (
 )
 
 func main() {
+	// Display a big warning outlined in red
+	fmt.Println("\033[31;1m" + strings.Repeat("=", 80))
+	fmt.Println("WARNING: This program is for use on puzzles only.")
+	fmt.Println("Using this for other purposes may be illegal in your country.")
+	fmt.Println(strings.Repeat("=", 80) + "\033[0m")
+
+	// Define the combo flag
+	comboFlag := flag.Bool("combo", false, "Find prime combos")
+	flag.Parse()
+
 	// Check if the number is provided as an argument
-	if len(os.Args) < 2 {
+	if len(flag.Args()) < 1 {
 		fmt.Println("Please provide a number to be factorized as an argument.")
 		os.Exit(1)
 	}
 
 	// Read input number
-	numberStr := os.Args[1]
+	numberStr := flag.Arg(0)
 
 	// Convert input to bigint
 	number := new(big.Int)
@@ -66,44 +77,87 @@ func main() {
 	// The mainId is the number being factorized
 	mainId := uuid.New().String()
 
-	// Perform factorization
-	factorize(db, mainId, number, 0)
+	if *comboFlag {
+		// Find prime combos
+		findCombos(db, mainId, number)
 
-	// Output prime factors
-	output := strings.Builder{}
-	firstTime := true
+		// Output prime combos
+		output := strings.Builder{}
+		firstTime := true
 
-	// Initialize the last sequence number
-	var lastSeqNumber = int64(0)
+		// Initialize the last sequence number
+		var lastSeqNumber int64 = 0
 
-	// Loop to get factors until nil is returned
-	for {
-		factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
-		if err != nil {
-			fmt.Printf("Error getting factors: %v\n", err)
-			os.Exit(1)
+		// Loop to get prime combos until nil is returned
+		for {
+			combo, err := liberdatabase.GetPrimeCombosByMainID(db, mainId, lastSeqNumber)
+			if err != nil {
+				fmt.Printf("Error getting prime combos: %v\n", err)
+				os.Exit(1)
+			}
+			if combo == nil {
+				break
+			}
+
+			// Update the last sequence number
+			lastSeqNumber = combo.SeqNumber
+
+			if !firstTime {
+				output.WriteString(",")
+			}
+
+			// Append prime combo to output
+			output.WriteString(fmt.Sprintf("%s : (%s,%s)", numberStr, combo.ValueP, combo.ValueQ))
+
+			firstTime = false
 		}
-		if factor == nil {
-			break
+
+		fmt.Println(numberStr, ":", output.String())
+
+		removeErr := liberdatabase.RemovePrimeCombosByMainID(db, mainId)
+		if removeErr != nil {
+			return
+		}
+	} else {
+		// Perform factorization
+		factorize(db, mainId, number, 0)
+
+		// Output prime factors
+		output := strings.Builder{}
+		firstTime := true
+
+		// Initialize the last sequence number
+		var lastSeqNumber int64 = 0
+
+		// Loop to get factors until nil is returned
+		for {
+			factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
+			if err != nil {
+				fmt.Printf("Error getting factors: %v\n", err)
+				os.Exit(1)
+			}
+			if factor == nil {
+				break
+			}
+
+			// Update the last sequence number
+			lastSeqNumber = factor.SeqNumber
+
+			if !firstTime {
+				output.WriteString(",")
+			}
+
+			// Append factor to output
+			output.WriteString(factor.Factor)
+
+			firstTime = false
 		}
 
-		// Update the last sequence number
-		lastSeqNumber = factor.SeqNumber
+		fmt.Println(numberStr, ":", output.String())
 
-		if !firstTime {
-			output.WriteString(",")
+		removeErr := liberdatabase.RemoveFactorsByMainID(db, mainId)
+		if removeErr != nil {
+			return
 		}
-
-		// Append factor to output
-		output.WriteString(factor.Factor)
-
-		firstTime = false
-	}
-
-	fmt.Println(numberStr, ":", output.String())
-
-	removeErr := liberdatabase.RemoveFactorsByMainID(db, mainId)
-	if removeErr != nil {
-		return
 	}
 }

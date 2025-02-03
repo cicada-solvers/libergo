@@ -17,4 +17,5 @@ use (
 	cmd/stripperhashes
 	cmd/libergo
 	cmd/factorize
+	cmd/intgen
 )

@@ -3,14 +3,15 @@
 # Compile the factorize program
 go build
 
-# Check if the number is provided as an argument
-if [ $# -lt 1 ]; then
-  echo "Please provide a number to be factorized as an argument."
+# Check if the start and end numbers are provided as arguments
+if [ $# -lt 2 ]; then
+  echo "Please provide a start and end number as arguments."
   exit 1
 fi
 
-# Read input number
-number=$1
+# Read input numbers
+start=$1
+end=$2
 
 # Define the output file
 output_file="factorize_output.txt"
@@ -20,8 +21,8 @@ if [ -f "$output_file" ]; then
   rm "$output_file"
 fi
 
-# Loop from 0 to the provided number
-for ((i=0; i<=number; i++)); do
+# Loop from start to end number
+for ((i=start; i<=end; i++)); do
   echo "Factorizing $i"
   ./factorize "$i" >> "$output_file"
 done
