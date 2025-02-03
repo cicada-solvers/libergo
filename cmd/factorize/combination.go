@@ -42,11 +42,17 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 
 		// Convert the factor to a big.Int
 		prime := new(big.Int)
+		if _, ok := prime.SetString(factor.Factor, 10); !ok {
+			fmt.Printf("Error converting factor to big.Int: %s\n", factor.Factor)
+			continue
+		}
 
 		if loopCounter == 1000000 {
 			fmt.Printf("Current prime at loop %d: %s\n", loopCounter, factor.Factor)
 			loopCounter = 0 // Reset loopCounter
 		}
+
+		fmt.Println("Processing factor: ", factor.Factor)
 
 		q := new(big.Int).Div(number, prime)
 
