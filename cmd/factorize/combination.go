@@ -19,17 +19,9 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 	for prime := range sequences.YieldPrimesDesc(n) {
 		loopCounter++
 
-		// Display the current prime based on the loop count
-		if loopCounter == 1000000000 {
+		if loopCounter == 1000000 {
 			fmt.Printf("Current prime at loop %d: %s\n", loopCounter, prime.String())
 			loopCounter = 0 // Reset loopCounter
-		}
-
-		if prime.Cmp(big.NewInt(10000000)) == -1 {
-			if loopCounter == 1000000 {
-				fmt.Printf("Current prime at loop %d: %s\n", loopCounter, prime.String())
-				loopCounter = 0 // Reset loopCounter
-			}
 		}
 
 		if new(big.Int).Mod(number, prime).Cmp(zero) == 0 {
