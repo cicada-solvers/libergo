@@ -1,50 +1,17 @@
 package main
 
 import (
+	"config"
+	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"liberdatabase"
 	"math/big"
 	"os"
 	"sequences"
 	"strings"
 )
-
-// factorize returns the prime factors of a given big integer.
-func factorize(n *big.Int, existing []*big.Int) []*big.Int {
-	counter := big.NewInt(2)
-	zero := big.NewInt(0)
-	number := new(big.Int).Set(n)
-
-	if len(existing) > 0 {
-		existing = existing[:len(existing)-1] // Remove the last item
-	}
-
-	// Check if n is divisible by x
-	for counter.Cmp(number) <= 0 {
-		if new(big.Int).Mod(number, counter).Cmp(zero) == 0 {
-			number = n.Div(number, counter)
-			existing = append(existing, counter)
-			existing = append(existing, number)
-			break
-		} else {
-			counter.Add(counter, big.NewInt(1))
-		}
-	}
-
-	if areAllFactorsPrime(existing) {
-		return existing
-	} else {
-		return factorize(n, existing)
-	}
-}
-
-func areAllFactorsPrime(factors []*big.Int) bool {
-	for _, factor := range factors {
-		if !sequences.IsPrime(factor) {
-			return false
-		}
-	}
-	return true
-}
 
 func main() {
 	// Check if the number is provided as an argument
@@ -75,19 +42,68 @@ func main() {
 		return
 	}
 
+	// Load database configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Establish database connection
+	connStr := cfg.GeneralConnectionString
+	db, err := pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		fmt.Printf("Error connecting to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer func(db *pgx.Conn, ctx context.Context) {
+		err := db.Close(ctx)
+		if err != nil {
+			fmt.Printf("Error closing connection: %v\n", err)
+		}
+	}(db, context.Background())
+
+	// The mainId is the number being factorized
+	mainId := uuid.New().String()
+
 	// Perform factorization
-	primeList := factorize(number, []*big.Int{})
+	factorize(db, mainId, number, 0)
 
 	// Output prime factors
 	output := strings.Builder{}
-	for counter, factor := range primeList {
-		if counter == 0 {
-			output.WriteString(factor.String())
-		} else {
-			output.WriteString(",")
-			output.WriteString(factor.String())
+	firstTime := true
+
+	// Initialize the last sequence number
+	var lastSeqNumber = int64(0)
+
+	// Loop to get factors until nil is returned
+	for {
+		factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
+		if err != nil {
+			fmt.Printf("Error getting factors: %v\n", err)
+			os.Exit(1)
 		}
+		if factor == nil {
+			break
+		}
+
+		// Update the last sequence number
+		lastSeqNumber = factor.SeqNumber
+
+		if !firstTime {
+			output.WriteString(",")
+		}
+
+		// Append factor to output
+		output.WriteString(factor.Factor)
+
+		firstTime = false
 	}
 
 	fmt.Println(numberStr, ":", output.String())
+
+	removeErr := liberdatabase.RemoveFactorsByMainID(db, mainId)
+	if removeErr != nil {
+		return
+	}
 }

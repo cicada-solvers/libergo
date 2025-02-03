@@ -91,7 +91,8 @@ func InitFactor(conn *pgx.Conn) error {
 	createTableSQL := `CREATE TABLE public.factors (
 		id uuid PRIMARY KEY,
 		factor TEXT,
-		mainid uuid
+		mainid uuid,
+		seqnumber BIGINT
 	);`
 
 	_, err := conn.Exec(context.Background(), createTableSQL)
@@ -226,33 +227,34 @@ func GetCountOfPermutations() (int64, error) {
 }
 
 // GetFactorsByMainID retrieves all factors from the factors table based on the mainid.
-func GetFactorsByMainID(db *pgx.Conn, mainId string) ([]Factor, error) {
-	query := `SELECT id, factor, mainid FROM public.factors WHERE mainid = $1`
-	rows, err := db.Query(context.Background(), query, mainId)
+func GetFactorsByMainID(db *pgx.Conn, mainId string, seqNumber int64) (*Factor, error) {
+	var factor Factor
+	query := `SELECT id, factor, mainid, seqnumber FROM public.factors WHERE mainid = $1 AND seqnumber > $2 ORDER BY seqnumber ASC LIMIT 1`
+	err := db.QueryRow(context.Background(), query, mainId, seqNumber).Scan(&factor.ID, &factor.Factor, &factor.MainId, &factor.SeqNumber)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil // No rows found, return nil
+		}
 		return nil, fmt.Errorf("error querying factors: %v", err)
 	}
-	defer rows.Close()
+	return &factor, nil
+}
 
-	var factors []Factor
-	for rows.Next() {
-		var factor Factor
-		if err := rows.Scan(&factor.ID, &factor.Factor, &factor.MainId); err != nil {
-			return nil, fmt.Errorf("error scanning row: %v", err)
-		}
-		factors = append(factors, factor)
+// GetMaxSeqNumberByMainID retrieves the maximum SeqNumber from the factors table based on the mainid.
+func GetMaxSeqNumberByMainID(db *pgx.Conn, mainId string) (Factor, error) {
+	var factor Factor
+	query := `SELECT id, factor, mainid, seqnumber FROM public.factors WHERE mainid = $1 ORDER BY seqnumber DESC LIMIT 1`
+	err := db.QueryRow(context.Background(), query, mainId).Scan(&factor.ID, &factor.Factor, &factor.MainId, &factor.SeqNumber)
+	if err != nil {
+		return Factor{}, fmt.Errorf("error querying max seqnumber: %v", err)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %v", err)
-	}
-
-	return factors, nil
+	return factor, nil
 }
 
 // InsertFactor inserts a factor into the database
 func InsertFactor(db *pgx.Conn, factor Factor) error {
-	query := `INSERT INTO public.factors (id, factor, mainid) VALUES ($1, $2, $3)`
-	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId)
+	query := `INSERT INTO public.factors (id, factor, mainid, seqnumber) VALUES ($1, $2, $3, $4)`
+	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId, factor.SeqNumber)
 	if err != nil {
 		return fmt.Errorf("error inserting factor: %v", err)
 	}
@@ -301,6 +303,26 @@ func InsertRecord(db *pgx.Conn, perm WritePermutation) error {
 	}
 
 	return fmt.Errorf("error inserting record after %d retries: %v", maxRetries, err)
+}
+
+// RemoveFactorByID removes a factor from the factors table based on the given id.
+func RemoveFactorByID(db *pgx.Conn, id string) error {
+	query := `DELETE FROM public.factors WHERE id = $1`
+	_, err := db.Exec(context.Background(), query, id)
+	if err != nil {
+		return fmt.Errorf("error deleting factor: %v", err)
+	}
+	return nil
+}
+
+// RemoveFactorsByMainID removes all factors from the factors table based on the given mainId.
+func RemoveFactorsByMainID(db *pgx.Conn, mainId string) error {
+	query := `DELETE FROM public.factors WHERE mainid = $1`
+	_, err := db.Exec(context.Background(), query, mainId)
+	if err != nil {
+		return fmt.Errorf("error deleting factors: %v", err)
+	}
+	return nil
 }
 
 // RemoveItem marks a row as processed in the database
