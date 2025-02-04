@@ -2,6 +2,7 @@ package main
 
 import (
 	"config"
+	"context"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -105,6 +106,10 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 	resultChan := make(chan *big.Int)
 	var wg sync.WaitGroup
 
+	// Create a context to handle cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Start worker goroutines
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
@@ -123,9 +128,26 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 				}
 			}(db)
 
-			for prime := range primeChan {
-				if new(big.Int).Mod(n, prime).Cmp(big.NewInt(0)) == 0 {
-					resultChan <- prime
+			for {
+				if pcount >= pmax {
+					cancel() // Cancel the context to stop the workers
+					break
+				}
+
+				select {
+				case <-ctx.Done():
+					return
+				case prime, ok := <-primeChan:
+					if !ok {
+						return
+					}
+					if new(big.Int).Mod(n, prime).Cmp(big.NewInt(0)) == 0 {
+						select {
+						case <-ctx.Done():
+							return
+						case resultChan <- prime:
+						}
+					}
 				}
 			}
 		}(i)
@@ -140,7 +162,16 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 	// Start a goroutine to send primes to the workers
 	go func() {
 		for prime := range sequences.YieldPrimesAsc(n) {
-			primeChan <- prime
+			if pcount >= pmax {
+				cancel() // Cancel the context to stop the workers
+				break
+			}
+			select {
+			case <-ctx.Done():
+				close(primeChan)
+				return
+			case primeChan <- prime:
+			}
 		}
 		close(primeChan)
 	}()
@@ -150,6 +181,7 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 	// Collect results
 	for prime := range resultChan {
 		if pcount >= pmax {
+			cancel() // Cancel the context to stop the workers
 			break
 		}
 		seqValue++
