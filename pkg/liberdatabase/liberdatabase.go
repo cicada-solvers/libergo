@@ -304,7 +304,7 @@ func InsertFactor(db *pgx.Conn, factor Factor) error {
 
 // InsertPrimeCombo inserts a PrimeCombo entry into the database
 func InsertPrimeCombo(db *pgx.Conn, combo PrimeCombo) error {
-	query := `INSERT INTO public.primecombo (id, valuep, valueq, mainid, seqnumber) VALUES ($1, $2, $3, $4. $5)`
+	query := `INSERT INTO public.primecombo (id, valuep, valueq, mainid, seqnumber) VALUES ($1, $2, $3, $4, $5)`
 	_, err := db.Exec(context.Background(), query, combo.ID, combo.ValueP, combo.ValueQ, combo.MainId, combo.SeqNumber)
 	if err != nil {
 		return fmt.Errorf("error inserting prime combo: %v", err)
