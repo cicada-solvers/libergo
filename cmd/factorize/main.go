@@ -108,7 +108,7 @@ func main() {
 			output.WriteString(fmt.Sprintf("%s : (%s,%s)\n", numberStr, pq.ValueP, pq.ValueQ))
 		}
 
-		fmt.Println(numberStr, ":", output.String())
+		fmt.Println(output.String())
 
 		removeErr := liberdatabase.RemovePrimeCombosByMainID(db, mainId)
 		if removeErr != nil {
