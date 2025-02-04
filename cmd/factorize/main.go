@@ -28,6 +28,12 @@ func main() {
 	pqFlag := flag.Bool("pq", false, "Find prime p and q values")
 	flag.Parse()
 
+	pmaxFlag := flag.Int("pmax", 2, "Maximum value for p")
+	flag.Parse()
+
+	pmax := *pmaxFlag
+	fmt.Println("The value of pmax is:", pmax)
+
 	// Check if the number is provided as an argument
 	if len(flag.Args()) < 1 {
 		fmt.Println("Please provide a number to be factorized as an argument.")
@@ -82,7 +88,7 @@ func main() {
 
 	if *pqFlag {
 		// Find prime pqs
-		findCombos(db, mainId, number)
+		findCombos(db, mainId, number, pmax)
 
 		// Output prime pqs
 		output := strings.Builder{}

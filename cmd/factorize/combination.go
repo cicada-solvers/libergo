@@ -13,14 +13,14 @@ import (
 )
 
 // findCombos finds prime combos for a given number.
-func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
+func findCombos(db *pgx.Conn, mainId string, n *big.Int, pmax int) bool {
 	number := new(big.Int).Set(n)
 	seqNumber := int64(0)
 	loopCounter := int64(0)
 
 	// Get p values
 	fmt.Println("Getting possible p values")
-	getPValues(mainId, number)
+	getPValues(mainId, number, pmax)
 
 	// Initialize the last sequence number
 	var lastSeqNumber int64 = 0
@@ -88,7 +88,9 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 }
 
 // getPValues finds p values using multiple workers.
-func getPValues(mainId string, n *big.Int) {
+func getPValues(mainId string, n *big.Int, pmax int) {
+	pcount := 0
+
 	// Load worker count from config
 	cfg, err := config.LoadConfig()
 	workerCount := 4 // Default worker count
@@ -147,7 +149,11 @@ func getPValues(mainId string, n *big.Int) {
 
 	// Collect results
 	for prime := range resultChan {
+		if pcount >= pmax {
+			break
+		}
 		seqValue++
+		pcount++
 		fmt.Printf("Found prime factor: %s\n", prime.String())
 		// Insert the prime into the database or perform other actions
 		factor := liberdatabase.Factor{
