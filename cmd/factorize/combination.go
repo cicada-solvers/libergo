@@ -68,7 +68,7 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int) bool {
 				SeqNumber: seqNumber,
 			}
 
-			fmt.Println("Found combo: ", combo.ValueP, combo.ValueQ)
+			fmt.Println("Found prime p,q factors: ", combo.ValueP, combo.ValueQ)
 
 			err := liberdatabase.InsertPrimeCombo(db, combo)
 			if err != nil {
