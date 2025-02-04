@@ -12,9 +12,12 @@ import (
 	"os"
 	"sequences"
 	"strings"
+	"time"
 )
 
 func main() {
+	startTime := time.Now() // Record the start time
+
 	// Display a big warning outlined in red
 	fmt.Println("\033[31;1m" + strings.Repeat("=", 80))
 	fmt.Println("WARNING: This program is for use on puzzles only.")
@@ -160,4 +163,8 @@ func main() {
 			return
 		}
 	}
+
+	endTime := time.Now()                        // Record the end time
+	duration := endTime.Sub(startTime)           // Calculate the duration
+	fmt.Printf("Execution time: %v\n", duration) // Print the log message
 }

@@ -297,7 +297,7 @@ func InsertFactor(db *pgx.Conn, factor Factor) error {
 	query := `INSERT INTO public.factors (id, factor, mainid, seqnumber) VALUES ($1, $2, $3, $4)`
 	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId, factor.SeqNumber)
 	if err != nil {
-		return fmt.Errorf("error inserting factor: %v", err)
+		return fmt.Errorf("error inserting factor: %v, %v", factor, err)
 	}
 	return nil
 }
