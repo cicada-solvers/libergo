@@ -86,7 +86,6 @@ func main() {
 
 		// Output prime pqs
 		output := strings.Builder{}
-		firstTime := true
 
 		// Initialize the last sequence number
 		var lastSeqNumber int64 = 0
@@ -105,14 +104,8 @@ func main() {
 			// Update the last sequence number
 			lastSeqNumber = pq.SeqNumber
 
-			if !firstTime {
-				output.WriteString(",")
-			}
-
 			// Append prime pq to output
-			output.WriteString(fmt.Sprintf("%s : (%s,%s)", numberStr, pq.ValueP, pq.ValueQ))
-
-			firstTime = false
+			output.WriteString(fmt.Sprintf("%s : (%s,%s)\n", numberStr, pq.ValueP, pq.ValueQ))
 		}
 
 		fmt.Println(numberStr, ":", output.String())

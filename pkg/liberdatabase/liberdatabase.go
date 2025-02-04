@@ -117,7 +117,7 @@ func InitCombo(conn *pgx.Conn) error {
 	createTableSQL := `CREATE TABLE public.primecombo (
 		id uuid PRIMARY KEY,
 		valuep TEXT,
-		valueq uuid,
+		valueq TEXT,
 		mainid uuid,
 		seqnumber BIGINT
 	);`
