@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"sequences"
 	"strconv"
 )
 
@@ -55,7 +54,7 @@ func generateRandomPrime(bits int) (*big.Int, error) {
 		}
 
 		// Check if the number is prime
-		if sequences.IsPrime(n) {
+		if n.ProbablyPrime(20) {
 			return n, nil
 		}
 	}

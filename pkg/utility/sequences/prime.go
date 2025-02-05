@@ -39,7 +39,7 @@ func YieldPrimesAsc(maxNumber *big.Int) <-chan *big.Int {
 	cfg, err := config.LoadConfig()
 	workerCount := 4 // Default worker count
 	if err != nil {
-		fmt.Printf("Error loading config: %v\nUsing default worker count: %d\n", err, workerCount)
+		fmt.Printf("Error loading config: %v\nUsing default worker count: %d\n", err)
 	} else {
 		workerCount = cfg.NumWorkers / 2
 	}
@@ -56,16 +56,35 @@ func YieldPrimesAsc(maxNumber *big.Int) <-chan *big.Int {
 		}
 
 		wg.Add(1)
-		go func(start, end *big.Int) {
+		go func(start, end *big.Int, isDecrement bool) {
 			defer wg.Done()
+			// if increment is true, the worker will yield prime numbers in ascending order
 			counter := new(big.Int).Set(start)
-			for counter.Cmp(end) <= 0 {
-				if counter.ProbablyPrime(20) { // Use ProbablyPrime for a faster prime check
-					ch <- new(big.Int).Set(counter)
-				}
-				counter.Add(counter, one)
+
+			if isDecrement {
+				counter = new(big.Int).Set(end)
 			}
-		}(start, end)
+
+			for {
+				if isDecrement {
+					if counter.Cmp(start) <= 0 {
+						break
+					}
+					if counter.ProbablyPrime(20) {
+						ch <- new(big.Int).Set(counter)
+					}
+					counter.Sub(counter, one)
+				} else {
+					if counter.Cmp(end) >= 0 {
+						break
+					}
+					if counter.ProbablyPrime(20) {
+						ch <- new(big.Int).Set(counter)
+					}
+					counter.Add(counter, one)
+				}
+			}
+		}(start, end, i < workerCount/2)
 	}
 
 	// Close the channel once all workers are done
