@@ -161,6 +161,7 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 	}()
 
 	primeCount := 0
+	processedNumber := big.NewInt(0)
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
@@ -169,7 +170,7 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 		colorIndex := 0
 		for range ticker.C {
 			aps := primeCount
-			fmt.Printf("%s Primes per minute: %d\033[0m\n", colors[colorIndex], aps)
+			fmt.Printf("%s Primes per minute: %d - Primes Processed: %s \033[0m\n", colors[colorIndex], aps, processedNumber.String())
 			primeCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
 		}
@@ -179,6 +180,7 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 	go func() {
 		for prime := range sequences.YieldPrimesAsc(n) {
 			primeCount++
+			processedNumber.Add(processedNumber, big.NewInt(1))
 			if pcount >= pmax {
 				cancel() // Cancel the context to stop the workers
 				break
