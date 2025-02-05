@@ -170,7 +170,7 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 		colorIndex := 0
 		for range ticker.C {
 			aps := primeCount
-			fmt.Printf("%s Primes per minute: %d - Primes Processed: %s \033[0m\n", colors[colorIndex], aps, processedNumber.String())
+			fmt.Printf("%s - %s Primes per minute: %d - Primes Processed: %s \033[0m\n", n.String(), colors[colorIndex], aps, processedNumber.String())
 			primeCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)
 		}
