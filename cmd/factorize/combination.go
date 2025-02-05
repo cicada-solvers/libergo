@@ -11,6 +11,7 @@ import (
 	"os"
 	"sequences"
 	"sync"
+	"time"
 )
 
 // findCombos finds prime combos for a given number.
@@ -159,9 +160,25 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 		close(resultChan)
 	}()
 
+	primeCount := 0
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	go func() {
+		colors := []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[90m", "\033[91m", "\033[92m"}
+		colorIndex := 0
+		for range ticker.C {
+			aps := primeCount
+			fmt.Printf("%s Primes per minute: %d\033[0m\n", colors[colorIndex], aps)
+			primeCount = 0
+			colorIndex = (colorIndex + 1) % len(colors)
+		}
+	}()
+
 	// Start a goroutine to send primes to the workers
 	go func() {
 		for prime := range sequences.YieldPrimesAsc(n) {
+			primeCount++
 			if pcount >= pmax {
 				cancel() // Cancel the context to stop the workers
 				break
