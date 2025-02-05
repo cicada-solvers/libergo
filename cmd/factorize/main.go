@@ -10,7 +10,6 @@ import (
 	"liberdatabase"
 	"math/big"
 	"os"
-	"sequences"
 	"strings"
 	"time"
 )
@@ -56,7 +55,7 @@ func main() {
 		return
 	}
 
-	if sequences.IsPrime(number) {
+	if number.ProbablyPrime(20) {
 		// You don't need to factorize a prime number
 		fmt.Printf("%s : 1,%s\n", numberStr, numberStr)
 		return
