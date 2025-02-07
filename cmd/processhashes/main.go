@@ -3,7 +3,6 @@ package main
 import (
 	"config"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"liberdatabase"
 	"math/big"
 	"sync"
@@ -22,18 +21,9 @@ func main() {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
-	defer func(db *pgx.Conn) {
-		err := liberdatabase.CloseConnection(db)
-		if err != nil {
-			fmt.Printf("Error closing database connection: %v\n", err)
-		}
-	}(db)
 
 	// Run removeProcessedRows at the beginning
-	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
-		fmt.Printf("Error removing processed rows: %v\n", err)
-		return
-	}
+	liberdatabase.RemoveProcessedRows(db)
 
 	for {
 		r, err := liberdatabase.GetByteArrayRange(db)
@@ -73,14 +63,9 @@ func main() {
 		default:
 		}
 
-		if err := liberdatabase.RemoveItem(db, r.ID); err != nil {
-			fmt.Printf("Error marking row as processed: %v\n", err)
-		}
+		liberdatabase.RemoveItem(db, r.ID)
 	}
 
 	// Run removeProcessedRows at the end
-	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
-		fmt.Printf("Error removing processed rows: %v\n", err)
-		return
-	}
+	liberdatabase.RemoveProcessedRows(db)
 }

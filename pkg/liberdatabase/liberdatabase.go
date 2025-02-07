@@ -3,23 +3,22 @@ package liberdatabase
 import (
 	"config"
 	"context"
-	"conversion"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/jackc/pgx/v5"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"os"
 )
 
 // InitDatabase initializes the PostgreSQL database
-func InitDatabase() (*pgx.Conn, error) {
+// InitDatabase initializes the PostgreSQL database
+func InitDatabase() (*gorm.DB, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config: %v", err)
 	}
 
 	adminStr := cfg.AdminConnectionString
-	connStr := cfg.GeneralConnectionString
 
 	adminConn, err := pgx.Connect(context.Background(), adminStr)
 	if err != nil {
@@ -46,96 +45,51 @@ func InitDatabase() (*pgx.Conn, error) {
 		return nil, fmt.Errorf("error creating database: %v", err)
 	}
 
-	// Connect to the newly created database
-	conn, err := pgx.Connect(context.Background(), connStr)
+	// Now we need to put in our migrations.
+	conn, err := InitConnection()
 	if err != nil {
-		_, err := fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		if err != nil {
-			return nil, err
-		}
-		os.Exit(1)
-	}
-
-	// Create the table in the public schema if it does not exist
-	createTableSQL := `CREATE TABLE public.permutations (
-		id uuid PRIMARY KEY,
-		startArray TEXT,
-		endArray TEXT,
-		packageName TEXT,
-		permName TEXT,
-		reportedToAPI BOOLEAN,
-		processed BOOLEAN,
-		arrayLength BIGINT,
-		numberOfPermutations INTEGER DEFAULT 0
-	);`
-
-	_, err = conn.Exec(context.Background(), createTableSQL)
-	if err != nil {
-		err := conn.Close(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error creating table: %v", err)
-	}
-
-	factorError := InitFactor(conn)
-	if factorError != nil {
 		return nil, err
 	}
 
-	comboError := InitCombo(conn)
-	if comboError != nil {
-		return nil, err
+	// Migrate the schemas
+	dbCreateError := conn.AutoMigrate(&Factor{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&LiberTextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&PrimeCombo{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&Permutation{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&TextDocument{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&RuneTextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
 
 	return conn, nil
 }
 
-func InitFactor(conn *pgx.Conn) error {
-	// Create the table in the public schema if it does not exist
-	createTableSQL := `CREATE TABLE public.factors (
-		id uuid PRIMARY KEY,
-		factor TEXT,
-		mainid uuid,
-		seqnumber BIGINT
-	);`
-
-	_, err := conn.Exec(context.Background(), createTableSQL)
-	if err != nil {
-		err := conn.Close(context.Background())
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("error creating table: %v", err)
-	}
-
-	return nil
-}
-
-func InitCombo(conn *pgx.Conn) error {
-	// Create the table in the public schema if it does not exist
-	createTableSQL := `CREATE TABLE public.primecombo (
-		id uuid PRIMARY KEY,
-		valuep TEXT,
-		valueq TEXT,
-		mainid uuid,
-		seqnumber BIGINT
-	);`
-
-	_, err := conn.Exec(context.Background(), createTableSQL)
-	if err != nil {
-		err := conn.Close(context.Background())
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("error creating table: %v", err)
-	}
-
-	return nil
-}
-
 // InitConnection initializes the PostgreSQL database
-func InitConnection() (*pgx.Conn, error) {
+func InitConnection() (*gorm.DB, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config: %v", err)
@@ -143,266 +97,11 @@ func InitConnection() (*pgx.Conn, error) {
 
 	connStr := cfg.GeneralConnectionString
 
-	conn, err := pgx.Connect(context.Background(), connStr)
+	dsn := connStr
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to database: %v", err)
+		return nil, err
 	}
 
-	return conn, nil
-}
-
-// CloseConnection closes the PostgreSQL database connection
-func CloseConnection(db *pgx.Conn) error {
-	err := db.Close(context.Background())
-	if err != nil {
-		return fmt.Errorf("error closing connection: %v", err)
-	}
-	return nil
-}
-
-// GetByteArrayRange retrieves the unprocessed byte array ranges from the database
-func GetByteArrayRange(db *pgx.Conn) (*ReadPermutation, error) {
-	row := db.QueryRow(context.Background(), "SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM public.permutations LIMIT 1;")
-
-	var p ReadPermutation
-	var startArrayStr, endArrayStr string
-	if err := row.Scan(&p.ID, &startArrayStr, &endArrayStr, &p.NumberOfPermutations, &p.ArrayLength); err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil // No more rows to process
-		}
-		return nil, fmt.Errorf("error scanning row: %v", err)
-	}
-
-	var err error
-	p.StartArray, err = conversion.ConvertToByteArray(startArrayStr)
-	if err != nil {
-		return nil, fmt.Errorf("error converting start array: %v", err)
-	}
-
-	p.EndArray, err = conversion.ConvertToByteArray(endArrayStr)
-	if err != nil {
-		return nil, fmt.Errorf("error converting end array: %v", err)
-	}
-
-	return &p, nil
-}
-
-// GetByteArrayRanges retrieves the unprocessed byte array ranges from the database
-func GetByteArrayRanges(db *pgx.Conn) ([]ReadPermutation, error) {
-	rows, err := db.Query(context.Background(), "SELECT id, startArray, endArray, numberOfPermutations, arrayLength FROM public.permutations WHERE numberOfPermutations = 1;")
-	if err != nil {
-		return nil, fmt.Errorf("error querying rows: %v", err)
-	}
-	defer rows.Close()
-
-	var results []ReadPermutation
-
-	for rows.Next() {
-		var p ReadPermutation
-		var startArrayStr, endArrayStr string
-		if err := rows.Scan(&p.ID, &startArrayStr, &endArrayStr, &p.NumberOfPermutations, &p.ArrayLength); err != nil {
-			return nil, fmt.Errorf("error scanning row: %v", err)
-		}
-
-		p.StartArray, err = conversion.ConvertToByteArray(startArrayStr)
-		if err != nil {
-			return nil, fmt.Errorf("error converting start array: %v", err)
-		}
-
-		p.EndArray, err = conversion.ConvertToByteArray(endArrayStr)
-		if err != nil {
-			return nil, fmt.Errorf("error converting end array: %v", err)
-		}
-
-		results = append(results, p)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %v", err)
-	}
-
-	return results, nil
-}
-
-// GetCountOfPermutations returns the count of rows where NumberOfPermutations = 1
-func GetCountOfPermutations() (int64, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return 0, fmt.Errorf("error loading config: %v", err)
-	}
-
-	connStr := cfg.GeneralConnectionString
-
-	conn, err := pgx.Connect(context.Background(), connStr)
-	if err != nil {
-		return 0, fmt.Errorf("error connecting to database: %v", err)
-	}
-	defer func(conn *pgx.Conn, ctx context.Context) {
-		err := conn.Close(ctx)
-		if err != nil {
-			fmt.Printf("error closing connection: %v\n", err)
-		}
-	}(conn, context.Background())
-
-	var count int64
-	err = conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM public.permutations WHERE numberOfPermutations = 1;").Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("error querying count: %v", err)
-	}
-
-	return count, nil
-}
-
-// GetFactorsByMainID retrieves all factors from the factors table based on the mainid.
-func GetFactorsByMainID(db *pgx.Conn, mainId string, seqNumber int64) (*Factor, error) {
-	var factor Factor
-	query := `SELECT id, factor, mainid, seqnumber FROM public.factors WHERE mainid = $1 AND seqnumber > $2 ORDER BY seqnumber ASC LIMIT 1`
-	err := db.QueryRow(context.Background(), query, mainId, seqNumber).Scan(&factor.ID, &factor.Factor, &factor.MainId, &factor.SeqNumber)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil // No rows found, return nil
-		}
-		return nil, fmt.Errorf("error querying factors: %v", err)
-	}
-	return &factor, nil
-}
-
-// GetMaxSeqNumberByMainID retrieves the maximum SeqNumber from the factors table based on the mainid.
-func GetMaxSeqNumberByMainID(db *pgx.Conn, mainId string) (Factor, error) {
-	var factor Factor
-	query := `SELECT id, factor, mainid, seqnumber FROM public.factors WHERE mainid = $1 ORDER BY seqnumber DESC LIMIT 1`
-	err := db.QueryRow(context.Background(), query, mainId).Scan(&factor.ID, &factor.Factor, &factor.MainId, &factor.SeqNumber)
-	if err != nil {
-		return Factor{}, fmt.Errorf("error querying max seqnumber: %v", err)
-	}
-	return factor, nil
-}
-
-// GetPrimeCombosByMainID retrieves all factors from the factors table based on the mainid.
-func GetPrimeCombosByMainID(db *pgx.Conn, mainId string, seqNumber int64) (*PrimeCombo, error) {
-	var combo PrimeCombo
-	query := `SELECT id, valuep, valueq, mainid, seqnumber FROM public.primecombo WHERE mainid = $1 AND seqnumber > $2 ORDER BY seqnumber ASC LIMIT 1`
-	err := db.QueryRow(context.Background(), query, mainId, seqNumber).Scan(&combo.ID, &combo.ValueP, &combo.ValueQ, &combo.MainId, &combo.SeqNumber)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil // No rows found, return nil
-		}
-		return nil, fmt.Errorf("error querying factors: %v", err)
-	}
-	return &combo, nil
-}
-
-// InsertFactor inserts a factor into the database
-func InsertFactor(db *pgx.Conn, factor Factor) error {
-	query := `INSERT INTO public.factors (id, factor, mainid, seqnumber) VALUES ($1, $2, $3, $4)`
-	_, err := db.Exec(context.Background(), query, factor.ID, factor.Factor, factor.MainId, factor.SeqNumber)
-	if err != nil {
-		return fmt.Errorf("error inserting factor: %v, %v", factor, err)
-	}
-	return nil
-}
-
-// InsertPrimeCombo inserts a PrimeCombo entry into the database
-func InsertPrimeCombo(db *pgx.Conn, combo PrimeCombo) error {
-	query := `INSERT INTO public.primecombo (id, valuep, valueq, mainid, seqnumber) VALUES ($1, $2, $3, $4, $5)`
-	_, err := db.Exec(context.Background(), query, combo.ID, combo.ValueP, combo.ValueQ, combo.MainId, combo.SeqNumber)
-	if err != nil {
-		return fmt.Errorf("error inserting prime combo: %v", err)
-	}
-	return nil
-}
-
-// InsertRecord inserts a record into the database
-func InsertRecord(db *pgx.Conn, perm WritePermutation) error {
-	const maxRetries = 1000
-	const retryDelay = 2 * time.Second
-
-	query := `INSERT INTO public.permutations (
-								 id,
-								 startArray,
-								 endArray,
-								 packageName,
-								 permName,
-								 reportedToAPI,
-								 processed,
-								 arrayLength,
-								 numberOfPermutations)
-		   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-
-	var err error
-	for i := 0; i < maxRetries; i++ {
-		_, err = db.Exec(
-			context.Background(),
-			query,
-			perm.ID,
-			perm.StartArray,
-			perm.EndArray,
-			perm.PackageName,
-			perm.PermName,
-			perm.ReportedToAPI,
-			perm.Processed,
-			perm.ArrayLength,
-			perm.NumberOfPermutations)
-
-		if err != nil {
-			_ = fmt.Errorf("error inserting record: %v", err)
-			time.Sleep(retryDelay)
-			continue
-		} else {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("error inserting record after %d retries: %v", maxRetries, err)
-}
-
-// RemoveFactorByID removes a factor from the factors table based on the given id.
-func RemoveFactorByID(db *pgx.Conn, id string) error {
-	query := `DELETE FROM public.factors WHERE id = $1`
-	_, err := db.Exec(context.Background(), query, id)
-	if err != nil {
-		return fmt.Errorf("error deleting factor: %v", err)
-	}
-	return nil
-}
-
-// RemoveFactorsByMainID removes all factors from the factors table based on the given mainId.
-func RemoveFactorsByMainID(db *pgx.Conn, mainId string) error {
-	query := `DELETE FROM public.factors WHERE mainid = $1`
-	_, err := db.Exec(context.Background(), query, mainId)
-	if err != nil {
-		return fmt.Errorf("error deleting factors: %v", err)
-	}
-	return nil
-}
-
-// RemovePrimeCombosByMainID removes all prime combos from the primecombo table based on the given mainId.
-func RemovePrimeCombosByMainID(db *pgx.Conn, mainId string) error {
-	query := `DELETE FROM public.primecombo WHERE mainid = $1`
-	_, err := db.Exec(context.Background(), query, mainId)
-	if err != nil {
-		return fmt.Errorf("error deleting prime combos: %v", err)
-	}
-	return nil
-}
-
-// RemoveItem marks a row as processed in the database
-func RemoveItem(db *pgx.Conn, id string) error {
-	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE id = $1;", id)
-	if err != nil {
-		return fmt.Errorf("error marking row as processed: %v", err)
-	}
-
-	return nil
-}
-
-// RemoveProcessedRows removes the processed rows from the database and compacts it
-func RemoveProcessedRows(db *pgx.Conn) error {
-	_, err := db.Exec(context.Background(), "DELETE FROM permutations WHERE processed = true;")
-	if err != nil {
-		return fmt.Errorf("error deleting processed rows: %v", err)
-	}
-
-	fmt.Println("Processed rows removed.")
-	return nil
+	return db, nil
 }

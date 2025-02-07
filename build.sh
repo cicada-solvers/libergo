@@ -117,6 +117,10 @@ dist_binaries() {
   cp appsettings.json "$DIST_DIR/mac_amd64"
   cp appsettings.json "$DIST_DIR/mac_arm64"
   cp appsettings.json "$DIST_DIR/windows"
+  cp words.txt "$DIST_DIR/linux"
+  cp words.txt "$DIST_DIR/mac_amd64"
+  cp words.txt "$DIST_DIR/mac_arm64"
+  cp words.txt "$DIST_DIR/windows"
 
   echo "Compressing directories..."
   zip -r "$DIST_DIR/linux_$VERSION.zip" "$DIST_DIR/linux"

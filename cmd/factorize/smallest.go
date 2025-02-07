@@ -3,27 +3,20 @@ package main
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"gorm.io/gorm"
 	"liberdatabase"
 	"math/big"
 )
 
 // factorize returns the prime factors of a given big integer.
-func factorize(db *pgx.Conn, mainId string, n *big.Int, lastSeq int64) bool {
+func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	counter := big.NewInt(2)
 	zero := big.NewInt(0)
 	number := new(big.Int).Set(n)
 
 	if lastSeq > 0 {
-		lastRecord, dbErr := liberdatabase.GetMaxSeqNumberByMainID(db, mainId)
-		if dbErr != nil {
-			fmt.Printf("Error getting max sequence number: %v\n", dbErr)
-		}
-
-		err := liberdatabase.RemoveFactorByID(db, lastRecord.ID)
-		if err != nil {
-			fmt.Printf("Error getting max sequence number: %v\n", dbErr)
-		}
+		lastRecord := liberdatabase.GetMaxSeqNumberByMainID(db, mainId)
+		liberdatabase.RemoveFactorByID(db, lastRecord.ID)
 	}
 
 	// Check if n is divisible by x
@@ -40,10 +33,7 @@ func factorize(db *pgx.Conn, mainId string, n *big.Int, lastSeq int64) bool {
 				SeqNumber: lastSeq,
 			}
 
-			err := liberdatabase.InsertFactor(db, counterFactor)
-			if err != nil {
-				fmt.Printf("Error inserting factor: %v\n", err)
-			}
+			liberdatabase.InsertFactor(db, counterFactor)
 
 			// Insert the number factor into the database
 			lastSeq++
@@ -54,11 +44,7 @@ func factorize(db *pgx.Conn, mainId string, n *big.Int, lastSeq int64) bool {
 				SeqNumber: lastSeq,
 			}
 
-			numberErr := liberdatabase.InsertFactor(db, numberFactor)
-			if numberErr != nil {
-				fmt.Printf("Error inserting factor: %v\n", numberErr)
-			}
-
+			liberdatabase.InsertFactor(db, numberFactor)
 			break
 		} else {
 			counter.Add(counter, big.NewInt(1))
@@ -71,10 +57,7 @@ func factorize(db *pgx.Conn, mainId string, n *big.Int, lastSeq int64) bool {
 
 	// Loop to get factors until nil is returned
 	for {
-		factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
-		if err != nil {
-			fmt.Printf("Error getting factors: %v\n", err)
-		}
+		factor := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
 		if factor == nil {
 			break
 		}

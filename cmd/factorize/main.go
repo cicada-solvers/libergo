@@ -1,12 +1,9 @@
 package main
 
 import (
-	"config"
-	"context"
 	"flag"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"liberdatabase"
 	"math/big"
 	"os"
@@ -61,26 +58,12 @@ func main() {
 		return
 	}
 
-	// Load database configuration
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		os.Exit(1)
-	}
-
 	// Establish database connection
-	connStr := cfg.GeneralConnectionString
-	db, err := pgx.Connect(context.Background(), connStr)
-	if err != nil {
-		fmt.Printf("Error connecting to database: %v\n", err)
+	db, connError := liberdatabase.InitConnection()
+	if connError != nil {
+		fmt.Printf("Error initializing database connection: %v\n", connError)
 		os.Exit(1)
 	}
-	defer func(db *pgx.Conn, ctx context.Context) {
-		err := db.Close(ctx)
-		if err != nil {
-			fmt.Printf("Error closing connection: %v\n", err)
-		}
-	}(db, context.Background())
 
 	// The mainId is the number being factorized
 	mainId := uuid.New().String()
@@ -94,6 +77,7 @@ func main() {
 
 		// Initialize the last sequence number
 		var lastSeqNumber int64 = 0
+		var hasPrimePQ bool = false
 
 		// Loop to get prime pqs until nil is returned
 		for {
@@ -111,6 +95,11 @@ func main() {
 
 			// Append prime pq to output
 			output.WriteString(fmt.Sprintf("%s : (%s,%s)\n", numberStr, pq.ValueP, pq.ValueQ))
+			hasPrimePQ = true
+		}
+
+		if !hasPrimePQ {
+			fmt.Printf("%s : No prime p,q values found\n", numberStr)
 		}
 
 		fmt.Println(output.String())
@@ -132,11 +121,7 @@ func main() {
 
 		// Loop to get factors until nil is returned
 		for {
-			factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
-			if err != nil {
-				fmt.Printf("Error getting factors: %v\n", err)
-				os.Exit(1)
-			}
+			factor := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
 			if factor == nil {
 				break
 			}
@@ -156,10 +141,7 @@ func main() {
 
 		fmt.Println(numberStr, ":", output.String())
 
-		removeErr := liberdatabase.RemoveFactorsByMainID(db, mainId)
-		if removeErr != nil {
-			return
-		}
+		liberdatabase.RemoveFactorsByMainID(db, mainId)
 	}
 
 	endTime := time.Now()                        // Record the end time

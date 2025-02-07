@@ -3,7 +3,6 @@ package main
 import (
 	"config"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"liberdatabase"
 	"math/big"
 	"strings"
@@ -52,12 +51,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 				fmt.Printf("Error initializing database connection: %v\n", err)
 				return
 			}
-			defer func(db *pgx.Conn) {
-				err := liberdatabase.CloseConnection(db)
-				if err != nil {
-					fmt.Printf("Error closing database connection: %v\n", err)
-				}
-			}(db)
 
 			for i := range fileChan {
 				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
@@ -76,7 +69,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 					startArray := indexToArray(lineStart, length)
 					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
 
-					perm := liberdatabase.WritePermutation{
+					perm := liberdatabase.Permutation{
 						ID:                   uuid.New().String(),
 						StartArray:           arrayToString(startArray),
 						EndArray:             arrayToString(endArray),
@@ -88,10 +81,7 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 						NumberOfPermutations: config.MaxPermutationsPerLine,
 					}
 
-					err := liberdatabase.InsertRecord(db, perm)
-					if err != nil {
-						fmt.Printf("Error inserting into database: %v\n", err)
-					}
+					liberdatabase.InsertRecord(db, perm)
 
 					if lineEnd.Cmp(totalPermutations) == 0 {
 						break

@@ -20,17 +20,9 @@ func main() {
 		fmt.Printf("Error initializing database: %v\n", err)
 		return
 	}
-	defer func() {
-		if err := liberdatabase.CloseConnection(db); err != nil {
-			fmt.Printf("Error closing database connection: %v\n", err)
-		}
-	}()
 
 	// Run removeProcessedRows at the beginning
-	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
-		fmt.Printf("Error removing processed rows: %v\n", err)
-		return
-	}
+	liberdatabase.RemoveProcessedRows(db)
 
 	ranges, err := liberdatabase.GetByteArrayRanges(db)
 	if err != nil {
@@ -43,7 +35,7 @@ func main() {
 		return
 	}
 
-	rowCount, _ := liberdatabase.GetCountOfPermutations()
+	rowCount := liberdatabase.GetCountOfPermutations(db)
 	fmt.Printf("Total number of permutations: %d\n", rowCount)
 
 	program := NewProgram()
@@ -70,17 +62,12 @@ func main() {
 		default:
 		}
 
-		if err := liberdatabase.RemoveItem(db, r.ID); err != nil {
-			fmt.Printf("Error marking row as processed: %v\n", err)
-		}
+		liberdatabase.RemoveItem(db, r.ID)
 	}
 
 	close(program.tasks)
 	wg.Wait()
 
 	// Run removeProcessedRows at the end
-	if err := liberdatabase.RemoveProcessedRows(db); err != nil {
-		fmt.Printf("Error removing processed rows: %v\n", err)
-		return
-	}
+	liberdatabase.RemoveProcessedRows(db)
 }

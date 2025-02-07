@@ -5,17 +5,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"gorm.io/gorm"
 	"liberdatabase"
 	"math/big"
-	"os"
 	"sequences"
 	"sync"
 	"time"
 )
 
 // findCombos finds prime combos for a given number.
-func findCombos(db *pgx.Conn, mainId string, n *big.Int, pmax int) bool {
+func findCombos(db *gorm.DB, mainId string, n *big.Int, pmax int) bool {
 	number := new(big.Int).Set(n)
 	seqNumber := int64(0)
 	loopCounter := int64(0)
@@ -30,11 +29,7 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int, pmax int) bool {
 	// Loop to get factors until nil is returned
 	for {
 		loopCounter++
-		factor, err := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
-		if err != nil {
-			fmt.Printf("Error getting factors: %v\n", err)
-			os.Exit(1)
-		}
+		factor := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
 		if factor == nil {
 			break
 		}
@@ -72,19 +67,12 @@ func findCombos(db *pgx.Conn, mainId string, n *big.Int, pmax int) bool {
 
 			fmt.Println("Found prime p,q factors: ", combo.ValueP, combo.ValueQ)
 
-			err := liberdatabase.InsertPrimeCombo(db, combo)
-			if err != nil {
-				fmt.Printf("Error inserting factor: %v\n", err)
-				return false
-			}
+			liberdatabase.InsertPrimeCombo(db, combo)
 		}
 
 	}
 
-	removeErr := liberdatabase.RemoveFactorsByMainID(db, mainId)
-	if removeErr != nil {
-		fmt.Printf("Error removing factors: %v\n", removeErr)
-	}
+	liberdatabase.RemoveFactorsByMainID(db, mainId)
 
 	return true
 }
@@ -116,18 +104,6 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			// Each worker initializes its own database connection
-			db, err := liberdatabase.InitConnection()
-			if err != nil {
-				fmt.Printf("Error initializing database connection: %v\n", err)
-				return
-			}
-			defer func(db *pgx.Conn) {
-				dbCloseError := liberdatabase.CloseConnection(db)
-				if dbCloseError != nil {
-					fmt.Printf("Error closing database connection: %v\n", dbCloseError)
-				}
-			}(db)
 
 			for {
 				if pcount >= pmax {
@@ -220,13 +196,6 @@ func getPValues(mainId string, n *big.Int, pmax int) {
 			fmt.Printf("Error initializing database connection: %v\n", err)
 			continue
 		}
-		err = liberdatabase.InsertFactor(db, factor)
-		if err != nil {
-			fmt.Printf("Error inserting factor: %v\n", err)
-		}
-		dbCloseError := liberdatabase.CloseConnection(db)
-		if dbCloseError != nil {
-			fmt.Printf("Error closing database connection: %v\n", dbCloseError)
-		}
+		liberdatabase.InsertFactor(db, factor)
 	}
 }

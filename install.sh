@@ -15,6 +15,8 @@ BIN_DIR="/opt/libergo"
 MANIFEST_FILE="manifest.txt"
 APPSETTINGS_FILE="appsettings.json"
 TARGET_APPSETTINGS_FILE="$TARGET_DIR/$APPSETTINGS_FILE"
+WORDS_FILE="words.txt"
+TARGET_WORDS_FILE="$TARGET_DIR/$WORDS_FILE"
 
 # Remove the binary directory if it exists
 if [ -d "$BIN_DIR" ]; then
@@ -39,6 +41,10 @@ echo "Marked $TARGET_FILE as executable"
 # Copy the appsettings.json file to the target directory
 cp "$APPSETTINGS_FILE" "$TARGET_APPSETTINGS_FILE"
 echo "Copied $APPSETTINGS_FILE to $TARGET_APPSETTINGS_FILE"
+
+# Copy the words.txt file to the target directory
+cp "$WORDS_FILE" "$TARGET_WORDS_FILE"
+echo "Copied $WORDS_FILE to $TARGET_WORDS_FILE"
 
 # Create the binary directory if it does not exist
 if [ ! -d "$BIN_DIR" ]; then
