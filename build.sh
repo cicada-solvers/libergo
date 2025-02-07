@@ -39,6 +39,7 @@ build_binaries() {
 }
 
 # Function to build distribution binaries
+# Function to build distribution binaries
 dist_binaries() {
   read -p "Enter version number: " VERSION
   DIST_DIR="dist/$VERSION"
@@ -123,9 +124,9 @@ dist_binaries() {
   cp words.txt "$DIST_DIR/windows"
 
   echo "Compressing directories..."
-  zip -r "$DIST_DIR/linux_$VERSION.zip" "$DIST_DIR/linux"
-  zip -r "$DIST_DIR/mac_amd64_$VERSION.zip" "$DIST_DIR/mac_amd64"
-  zip -r "$DIST_DIR/mac_arm64_$VERSION.zip" "$DIST_DIR/mac_arm64"
+  tar -czvf "$DIST_DIR/linux_$VERSION.tar.gz" -C "$DIST_DIR" linux
+  tar -czvf "$DIST_DIR/mac_amd64_$VERSION.tar.gz" -C "$DIST_DIR" mac_amd64
+  tar -czvf "$DIST_DIR/mac_arm64_$VERSION.tar.gz" -C "$DIST_DIR" mac_arm64
   zip -r "$DIST_DIR/windows_$VERSION.zip" "$DIST_DIR/windows"
 
   echo "Removing uncompressed directories..."
