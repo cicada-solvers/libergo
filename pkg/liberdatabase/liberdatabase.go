@@ -84,6 +84,10 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
+	dbCreateError = conn.AutoMigrate(&FoundHashes{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
 
 	return conn, nil
 }

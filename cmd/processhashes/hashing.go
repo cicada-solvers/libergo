@@ -4,8 +4,8 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"liberdatabase"
 	"math/big"
-	"os"
 	"sync"
 	"time"
 
@@ -18,19 +18,6 @@ import (
 func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, totalPermutations *big.Int, mu *sync.Mutex) {
 	defer wg.Done()
 
-	file, err := os.OpenFile("found_hashes.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			fmt.Printf("Error closing file: %v\n", err)
-		}
-	}(file)
-
-	buffer := make([]byte, 0, 4096)
 	hashCount := 0
 	taskLen := 0
 	processedPermutations := big.NewInt(0)
@@ -54,11 +41,6 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		select {
 		case task, ok := <-tasks:
 			if !ok {
-				if len(buffer) > 0 {
-					if _, err := file.Write(buffer); err != nil {
-						fmt.Printf("Error writing to file: %v\n", err)
-					}
-				}
 				return
 			}
 			taskLen = len(task)
@@ -81,13 +63,11 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 
 					output := fmt.Sprintf("Match found: %s, Hash Name: %s, Byte Array: %s\n", taskStr, hashName, hex.EncodeToString(task))
 					fmt.Print(output)
-					buffer = append(buffer, output...)
-					if len(buffer) >= 4096 {
-						if _, err := file.Write(buffer); err != nil {
-							fmt.Printf("Error writing to file: %v\n", err)
-						}
-						buffer = buffer[:0]
+					err := liberdatabase.InsertFoundHash(taskStr, hashName)
+					if err != nil {
+						fmt.Printf("Error inserting found hash: %v\n", err)
 					}
+
 					once.Do(func() { close(done) })
 				}
 			}

@@ -18,9 +18,10 @@ func main() {
 	listFlag := flag.Bool("list", false, "List the current configuration")
 	workersFlag := flag.Int("workers", 0, "Set the number of workers")
 	initDBServerFlag := flag.Bool("initdbserver", false, "Initialize the podman database server")
+	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -60,6 +61,18 @@ func main() {
 
 	if *initDBServerFlag {
 		executeScript()
+		os.Exit(0)
+	}
+
+	if *showHashesFlag {
+		err := liberdatabase.GetAllFoundHashes()
+		if err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error showing found hashes: %v\n", err)
+			if err != nil {
+				return
+			}
+			os.Exit(1)
+		}
 		os.Exit(0)
 	}
 
