@@ -18,4 +18,5 @@ use (
 	cmd/libergo
 	cmd/factorize
 	cmd/intgen
+	cmd/gemsum
 )

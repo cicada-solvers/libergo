@@ -14,12 +14,6 @@ import (
 func main() {
 	startTime := time.Now() // Record the start time
 
-	// Display a big warning outlined in red
-	fmt.Println("\033[31;1m" + strings.Repeat("=", 80))
-	fmt.Println("WARNING: This program is for use on puzzles only.")
-	fmt.Println("Using this for other purposes may be illegal in your country.")
-	fmt.Println(strings.Repeat("=", 80) + "\033[0m")
-
 	// Parse command-line flags
 	flag.Parse()
 
