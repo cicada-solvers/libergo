@@ -18,14 +18,13 @@ if [ -f "$number_only_output_file" ]; then
   rm "$number_only_output_file"
 fi
 
-# Array of bit lengths
-#bit_lengths=(8 16 32 64 128 256 512 1024 2048 4096)
-bit_lengths=(8 16 32 64 128 256 512 1024)
+# Array of bit lengths to generate
+bit_lengths=(8 16 32 64 128 256 512 1024 2048 4096)
 
 # Loop through each bit length
 for bits in "${bit_lengths[@]}"; do
-  echo "Generating 100 ${bits}-bit numbers"
-  for ((i=0; i<100; i++)); do
+  echo "Generating 250 ${bits}-bit numbers"
+  for ((i=0; i<250; i++)); do
     echo "Generating number $i"
     ./intgen "$bits" >> "$output_file"
   done
