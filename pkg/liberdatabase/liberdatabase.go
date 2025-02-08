@@ -64,10 +64,6 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
-	dbCreateError = conn.AutoMigrate(&PrimeCombo{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
 	dbCreateError = conn.AutoMigrate(&Permutation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)

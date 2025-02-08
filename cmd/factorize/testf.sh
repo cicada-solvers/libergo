@@ -3,15 +3,8 @@
 # Compile the factorize program
 go build
 
-# Check if the start and end numbers are provided as arguments
-if [ $# -lt 2 ]; then
-  echo "Please provide a start and end number as arguments."
-  exit 1
-fi
-
-# Read input numbers
-start=$1
-end=$2
+# Define the input file
+input_file="../intgen/intgen_output.txt"
 
 # Define the output file
 output_file="factorize_output.txt"
@@ -21,8 +14,14 @@ if [ -f "$output_file" ]; then
   rm "$output_file"
 fi
 
-# Loop from start to end number
-for ((i=start; i<=end; i++)); do
-  echo "Factorizing $i"
-  ./factorize "$i" >> "$output_file"
-done
+# Check if the input file exists
+if [ ! -f "$input_file" ]; then
+  echo "Input file $input_file not found."
+  exit 1
+fi
+
+# Read each line from the input file and factorize the number
+while IFS= read -r number; do
+  echo "Factorizing $number"
+  ./factorize "$number" >> "$output_file"
+done < "$input_file"
