@@ -19,6 +19,22 @@ type AppConfig struct {
 	MaxSegmentsPerPackage   int64  `json:"max_segments_per_package"`
 }
 
+// GetConfigFolderPath returns the path to the configuration folder.
+func GetConfigFolderPath() (string, error) {
+	var configDir string
+	if runtime.GOOS == "windows" {
+		configDir = filepath.Join(os.TempDir(), ".libergo")
+		return configDir, nil
+	} else {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		configDir = filepath.Join(homeDir, ".libergo")
+		return configDir, nil
+	}
+}
+
 // getConfigFilePath returns the path to the configuration file.
 func getConfigFilePath() (string, error) {
 	var configDir string

@@ -19,9 +19,10 @@ func main() {
 	workersFlag := flag.Int("workers", 0, "Set the number of workers")
 	initDBServerFlag := flag.Bool("initdbserver", false, "Initialize the podman database server")
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
+	reloadWordsFlag := flag.Bool("reloadwords", false, "Reload words from words.txt")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -73,6 +74,11 @@ func main() {
 			}
 			os.Exit(1)
 		}
+		os.Exit(0)
+	}
+
+	if *reloadWordsFlag {
+		ReloadWords()
 		os.Exit(0)
 	}
 

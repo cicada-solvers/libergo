@@ -57,3 +57,15 @@ func (dw DictionaryWord) GetRunePattern() string {
 func (dw DictionaryWord) String() string {
 	return fmt.Sprintf("%s - %s - %s - %d", dw.DictionaryWordText, dw.RuneglishWordText, dw.RuneWordText, dw.GemSum)
 }
+
+// DeleteAllDictionaryWords deletes all rows from the DictionaryWord table
+func DeleteAllDictionaryWords(db *gorm.DB) error {
+	result := db.Exec("DELETE FROM public.dictionary_words")
+	return result.Error
+}
+
+// InsertDictionaryWord inserts a new DictionaryWord into the database
+func InsertDictionaryWord(db *gorm.DB, word DictionaryWord) error {
+	result := db.Create(&word)
+	return result.Error
+}
