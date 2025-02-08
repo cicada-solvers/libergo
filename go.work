@@ -19,4 +19,5 @@ use (
 	cmd/factorize
 	cmd/intgen
 	cmd/gemsum
+	cmd/getwords
 )
