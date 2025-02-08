@@ -94,8 +94,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	var sequenceStrings []string
+	for _, num := range sequence.Sequence {
+		sequenceStrings = append(sequenceStrings, num.String())
+	}
+
 	// Print the sequence to the console
-	fmt.Printf("Sequence: %v\n", sequence.Sequence)
+	fmt.Printf("Sequence: %s\n", strings.Join(sequenceStrings, ","))
 
 	// If output flag is set, write the sequence to the specified file
 	if *output != "" {
@@ -112,10 +117,6 @@ func main() {
 			}
 		}(file)
 
-		var sequenceStrings []string
-		for _, num := range sequence.Sequence {
-			sequenceStrings = append(sequenceStrings, num.String())
-		}
 		_, err = file.WriteString(strings.Join(sequenceStrings, ","))
 		if err != nil {
 			fmt.Println("Error writing to file:", err)

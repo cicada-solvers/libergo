@@ -6,13 +6,18 @@ import (
 	"liberdatabase"
 	"math/big"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
 )
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
 func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int, config *config.AppConfig) {
+	db, err := liberdatabase.InitConnection()
+	if err != nil {
+		fmt.Printf("Error initializing database connection: %v\n", err)
+		return
+	}
+
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
 		totalPermutations.Mul(totalPermutations, big.NewInt(256))
@@ -26,72 +31,44 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 
 	fmt.Printf("Current package: %s of %s\n", packageFileNumber.String(), totalPackageFiles.String())
 
-	var wg sync.WaitGroup
-	fileChan := make(chan int64)
+	startFile := new(big.Int).Mul(new(big.Int).Sub(packageFileNumber, big.NewInt(1)), big.NewInt(config.MaxSegmentsPerPackage))
+	endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxSegmentsPerPackage))
+	for i := new(big.Int).Set(startFile); i.Cmp(endFile) < 0; i.Add(i, big.NewInt(1)) {
+		start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
+		if start.Cmp(totalPermutations) >= 0 {
+			break
+		}
+		fmt.Printf("Processing file index: %d\n", i.Int64())
 
-	go func() {
-		startFile := new(big.Int).Mul(new(big.Int).Sub(packageFileNumber, big.NewInt(1)), big.NewInt(config.MaxSegmentsPerPackage))
-		endFile := new(big.Int).Add(startFile, big.NewInt(config.MaxSegmentsPerPackage))
-		for i := new(big.Int).Set(startFile); i.Cmp(endFile) < 0; i.Add(i, big.NewInt(1)) {
-			start := new(big.Int).Mul(i, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
-			if start.Cmp(totalPermutations) >= 0 {
+		for j := int64(0); j < maxPermutationsPerSegment; j++ {
+			lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
+			lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))
+			if lineEnd.Cmp(totalPermutations) > 0 {
+				lineEnd = totalPermutations
+			}
+
+			startArray := indexToArray(lineStart, length)
+			endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
+
+			perm := liberdatabase.Permutation{
+				ID:                   uuid.New().String(),
+				StartArray:           arrayToString(startArray),
+				EndArray:             arrayToString(endArray),
+				PackageName:          fmt.Sprintf("package_%d", packageFileNumber),
+				PermName:             fmt.Sprintf("permutation_seg_%d", i.Int64()),
+				ReportedToAPI:        false,
+				Processed:            false,
+				ArrayLength:          length,
+				NumberOfPermutations: config.MaxPermutationsPerLine,
+			}
+
+			liberdatabase.InsertRecord(db, perm)
+
+			if lineEnd.Cmp(totalPermutations) == 0 {
 				break
 			}
-			fileChan <- i.Int64()
 		}
-		close(fileChan)
-	}()
-
-	for i := 0; i < config.NumWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			db, err := liberdatabase.InitConnection()
-			if err != nil {
-				fmt.Printf("Error initializing database connection: %v\n", err)
-				return
-			}
-
-			for i := range fileChan {
-				start := new(big.Int).Mul(big.NewInt(i), big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
-				end := new(big.Int).Add(start, big.NewInt(maxPermutationsPerLine*maxPermutationsPerSegment))
-				if end.Cmp(totalPermutations) > 0 {
-					end = totalPermutations
-				}
-
-				for j := int64(0); j < maxPermutationsPerSegment; j++ {
-					lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
-					lineEnd := new(big.Int).Add(lineStart, big.NewInt(maxPermutationsPerLine))
-					if lineEnd.Cmp(totalPermutations) > 0 {
-						lineEnd = totalPermutations
-					}
-
-					startArray := indexToArray(lineStart, length)
-					endArray := indexToArray(new(big.Int).Sub(lineEnd, big.NewInt(1)), length)
-
-					perm := liberdatabase.Permutation{
-						ID:                   uuid.New().String(),
-						StartArray:           arrayToString(startArray),
-						EndArray:             arrayToString(endArray),
-						PackageName:          fmt.Sprintf("package_%d", packageFileNumber),
-						PermName:             fmt.Sprintf("permutation_seg_%d", i),
-						ReportedToAPI:        false,
-						Processed:            false,
-						ArrayLength:          length,
-						NumberOfPermutations: config.MaxPermutationsPerLine,
-					}
-
-					liberdatabase.InsertRecord(db, perm)
-
-					if lineEnd.Cmp(totalPermutations) == 0 {
-						break
-					}
-				}
-			}
-		}()
 	}
-
-	wg.Wait()
 }
 
 // indexToArray converts an index to a byte array

@@ -71,6 +71,8 @@ func ReloadWords() {
 			RuneWordLength:       utf8.RuneCountInString(runeText),
 		}
 
+		dictionaryWord.RunePattern = dictionaryWord.GetRunePattern()
+
 		err = liberdatabase.InsertDictionaryWord(db, dictionaryWord)
 	}
 

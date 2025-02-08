@@ -16,6 +16,7 @@ type DictionaryWord struct {
 	DictionaryWordLength int    `gorm:"column:dict_word_length"`
 	RuneglishWordLength  int    `gorm:"column:dict_runeglish_length"`
 	RuneWordLength       int    `gorm:"column:dict_rune_length"`
+	RunePattern          string `gorm:"column:rune_pattern"`
 }
 
 func (DictionaryWord) TableName() string {
@@ -25,7 +26,7 @@ func (DictionaryWord) TableName() string {
 // GetRunePattern gets the rune pattern for the dictionary word
 func (dw DictionaryWord) GetRunePattern() string {
 	patternDictionary := make(map[int]string)
-	runes := []string{}
+	var runes []string
 	counter := 1
 
 	for _, character := range dw.RuneWordText {
@@ -37,20 +38,20 @@ func (dw DictionaryWord) GetRunePattern() string {
 		found := false
 		for key, value := range patternDictionary {
 			if value == string(character) {
-				runes = append(runes, string(rune(key)))
+				runes = append(runes, fmt.Sprintf("%d", key))
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			runes = append(runes, string(rune(counter)))
+			runes = append(runes, fmt.Sprintf("%d", counter))
 			patternDictionary[counter] = string(character)
 			counter++
 		}
 	}
 
-	return strings.Join(runes, "")
+	return strings.Join(runes, ",")
 }
 
 // String returns a string representation of the dictionary word
