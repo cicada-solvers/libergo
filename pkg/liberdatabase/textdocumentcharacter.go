@@ -14,3 +14,10 @@ type TextDocumentCharacter struct {
 func (TextDocumentCharacter) TableName() string {
 	return "public.text_document_characters"
 }
+
+func InsertTextDocumentCharacter(db *gorm.DB, tdc *TextDocumentCharacter) (uint, error) {
+	if err := db.Create(tdc).Error; err != nil {
+		return 0, err
+	}
+	return tdc.ID, nil
+}

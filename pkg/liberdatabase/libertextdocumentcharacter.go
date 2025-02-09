@@ -13,3 +13,10 @@ type LiberTextDocumentCharacter struct {
 func (LiberTextDocumentCharacter) TableName() string {
 	return "public.liber_text_document_characters"
 }
+
+func InsertLiberTextDocumentCharacter(db *gorm.DB, tdc *LiberTextDocumentCharacter) (uint, error) {
+	if err := db.Create(tdc).Error; err != nil {
+		return 0, err
+	}
+	return tdc.ID, nil
+}

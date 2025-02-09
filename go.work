@@ -8,6 +8,7 @@ use (
 	pkg/utility/hashinglib
 	pkg/internal/config
 	pkg/liberdatabase
+	pkg/utility/charindex
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
@@ -20,4 +21,5 @@ use (
 	cmd/intgen
 	cmd/gemsum
 	cmd/getwords
+	cmd/indexdirectory
 )

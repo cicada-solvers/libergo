@@ -12,3 +12,10 @@ type RuneTextDocumentCharacter struct {
 func (RuneTextDocumentCharacter) TableName() string {
 	return "public.rune_text_document_characters"
 }
+
+func InsertRuneTextDocumentCharacter(db *gorm.DB, tdc *RuneTextDocumentCharacter) (uint, error) {
+	if err := db.Create(tdc).Error; err != nil {
+		return 0, err
+	}
+	return tdc.ID, nil
+}
