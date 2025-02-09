@@ -20,9 +20,10 @@ func main() {
 	initDBServerFlag := flag.Bool("initdbserver", false, "Initialize the podman database server")
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
 	reloadWordsFlag := flag.Bool("reloadwords", false, "Reload words from words.txt")
+	initTablesFlag := flag.Bool("initTables", false, "Initialize the database tables")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -79,6 +80,19 @@ func main() {
 
 	if *reloadWordsFlag {
 		ReloadWords()
+		os.Exit(0)
+	}
+
+	if *initTablesFlag {
+		_, err := liberdatabase.InitTables()
+		if err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error initializing tables: %v\n", err)
+			if err != nil {
+				return
+			}
+			os.Exit(1)
+		}
+		fmt.Println("Tables initialized successfully.")
 		os.Exit(0)
 	}
 

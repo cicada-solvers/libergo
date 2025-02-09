@@ -11,7 +11,6 @@ import (
 )
 
 // InitDatabase initializes the PostgreSQL database
-// InitDatabase initializes the PostgreSQL database
 func InitDatabase() (*gorm.DB, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -79,6 +78,89 @@ func InitDatabase() (*gorm.DB, error) {
 	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&FoundHashes{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	return conn, nil
+}
+
+func InitTables() (*gorm.DB, error) {
+	// Now we need to put in our migrations.
+	conn, err := InitConnection()
+	if err != nil {
+		return nil, err
+	}
+
+	// Migrate the schemas
+	dropError := conn.Migrator().DropTable(&Factor{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError := conn.AutoMigrate(&Factor{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&DictionaryWord{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&LiberTextDocumentCharacter{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&LiberTextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&Permutation{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&Permutation{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&TextDocument{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&TextDocument{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&RuneTextDocumentCharacter{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&RuneTextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&TextDocumentCharacter{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&FoundHashes{})
+	if dropError != nil {
+		fmt.Printf("Error dropping Factor table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
