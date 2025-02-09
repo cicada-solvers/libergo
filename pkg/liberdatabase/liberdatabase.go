@@ -59,7 +59,7 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
-	dbCreateError = conn.AutoMigrate(&LiberTextDocumentCharacter{})
+	dbCreateError = conn.AutoMigrate(&RuneglishTextDocumentCharacter{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
@@ -113,11 +113,11 @@ func InitTables() (*gorm.DB, error) {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
 
-	dropError = conn.Migrator().DropTable(&LiberTextDocumentCharacter{})
+	dropError = conn.Migrator().DropTable(&RuneglishTextDocumentCharacter{})
 	if dropError != nil {
 		fmt.Printf("Error dropping Factor table: %v\n", dropError)
 	}
-	dbCreateError = conn.AutoMigrate(&LiberTextDocumentCharacter{})
+	dbCreateError = conn.AutoMigrate(&RuneglishTextDocumentCharacter{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}

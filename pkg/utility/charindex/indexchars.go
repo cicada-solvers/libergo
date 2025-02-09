@@ -81,7 +81,7 @@ func readAndIndexFileContents(db *gorm.DB, file string) error {
 	}
 
 	// runeglish characters
-	var liberTextDocumentCharacters []liberdatabase.LiberTextDocumentCharacter
+	var liberTextDocumentCharacters []liberdatabase.RuneglishTextDocumentCharacter
 	for _, line := range strings.Split(string(lines), "\n") {
 		runeglishLine := runer.PrepLatinToRune(line)
 		for _, char := range runeglishLine {
@@ -96,7 +96,7 @@ func readAndIndexFileContents(db *gorm.DB, file string) error {
 			}
 			if !found {
 				liberTextDocumentCharacters = append(liberTextDocumentCharacters,
-					liberdatabase.LiberTextDocumentCharacter{
+					liberdatabase.RuneglishTextDocumentCharacter{
 						Character:      charStr,
 						Count:          1,
 						TextDocumentId: int64(docId),
@@ -106,7 +106,7 @@ func readAndIndexFileContents(db *gorm.DB, file string) error {
 	}
 
 	for _, tdc := range liberTextDocumentCharacters {
-		_, err := liberdatabase.InsertLiberTextDocumentCharacter(db, &tdc)
+		_, err := liberdatabase.InsertRuneglishTextDocumentCharacter(db, &tdc)
 		if err != nil {
 			fmt.Println("Error inserting text document character: ", err)
 		}
