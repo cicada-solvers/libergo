@@ -10,7 +10,7 @@ that I had been working on in the command line.  This is simpler tools written i
 - rencode - This is used for encoding and decoding runes to latin characters.
 
 ## Deep Web Hash Processing
-[For more information on how to process the deep web hash files](DWH.md)
+[For more information on how to process the deep web hash files](documentation/DWH.md)
 
 ## Upcoming Tools available in LPAT
 - gem sum utility
