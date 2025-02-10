@@ -75,8 +75,7 @@ func GetByteArrayRanges(db *gorm.DB) ([]ReadPermutation, error) {
 	var results []ReadPermutation
 	var permutations []Permutation
 
-	maxInt := int(^uint(0) >> 1)
-	result := db.Model(&Permutation{}).Where("number_of_permutations = ?", 1).Limit(maxInt).Find(&permutations)
+	result := db.Model(&Permutation{}).Where("number_of_permutations = ?", 1).Limit(50000000).Find(&permutations)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error querying rows: %v", result.Error)
 	}
