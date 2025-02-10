@@ -7,7 +7,6 @@ import (
 	"sync"
 )
 
-// main is the entry point of the program
 func main() {
 	configuration, err := config.LoadConfig()
 	if err != nil {
@@ -24,50 +23,52 @@ func main() {
 	// Run removeProcessedRows at the beginning
 	liberdatabase.RemoveProcessedRows(db)
 
-	ranges, err := liberdatabase.GetByteArrayRanges(db)
-	if err != nil {
-		fmt.Printf("Error getting byte array ranges: %v\n", err)
-		return
-	}
-
-	if len(ranges) == 0 {
-		fmt.Println("No more rows to process")
-		return
-	}
-
-	rowCount := liberdatabase.GetCountOfPermutations(db)
-	fmt.Printf("Total number of permutations: %d\n", rowCount)
-
-	program := NewProgram()
-
-	var wg sync.WaitGroup
-	numWorkers := configuration.NumWorkers
-	wg.Add(numWorkers)
-
-	done := make(chan struct{})
-	var once sync.Once
-
-	for j := 0; j < numWorkers; j++ {
-		go processTasks(program.tasks, &wg, configuration.ExistingHash, done, &once)
-	}
-
-	for _, r := range ranges {
-		startArray := r.StartArray
-
-		// Since startArray and stopArray are the same, we can send it directly to tasks
-		program.tasks <- startArray
-
-		select {
-		case <-done:
-		default:
+	for {
+		ranges, err := liberdatabase.GetByteArrayRanges(db)
+		if err != nil {
+			fmt.Printf("Error getting byte array ranges: %v\n", err)
+			return
 		}
 
-		liberdatabase.RemoveItem(db, r.ID)
+		if ranges == nil || len(ranges) == 0 {
+			fmt.Println("No more rows to process")
+			break
+		}
+
+		rowCount := liberdatabase.GetCountOfPermutations(db)
+		fmt.Printf("Total number of permutations: %d\n", rowCount)
+
+		program := NewProgram()
+
+		var wg sync.WaitGroup
+		numWorkers := configuration.NumWorkers
+		wg.Add(numWorkers)
+
+		done := make(chan struct{})
+		var once sync.Once
+
+		for j := 0; j < numWorkers; j++ {
+			go processTasks(program.tasks, &wg, configuration.ExistingHash, done, &once)
+		}
+
+		for _, r := range ranges {
+			startArray := r.StartArray
+
+			// Since startArray and stopArray are the same, we can send it directly to tasks
+			program.tasks <- startArray
+
+			select {
+			case <-done:
+			default:
+			}
+
+			liberdatabase.RemoveItem(db, r.ID)
+		}
+
+		close(program.tasks)
+		wg.Wait()
+
+		// Run removeProcessedRows at the end of each batch
+		liberdatabase.RemoveProcessedRows(db)
 	}
-
-	close(program.tasks)
-	wg.Wait()
-
-	// Run removeProcessedRows at the end
-	liberdatabase.RemoveProcessedRows(db)
 }
