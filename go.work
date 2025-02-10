@@ -9,6 +9,7 @@ use (
 	pkg/internal/config
 	pkg/liberdatabase
 	pkg/utility/charindex
+	pkg/utility/decoder
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
@@ -22,4 +23,5 @@ use (
 	cmd/gemsum
 	cmd/getwords
 	cmd/indexdirectory
+	cmd/decode64
 )
