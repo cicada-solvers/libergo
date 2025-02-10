@@ -39,7 +39,7 @@ func (Permutation) TableName() string {
 // GetByteArrayRange retrieves the unprocessed byte array ranges from the database
 func GetByteArrayRange(db *gorm.DB) (*ReadPermutation, error) {
 	var perm Permutation
-	result := db.Limit(1).Find(&perm)
+	result := db.Model(&Permutation{}).Limit(1).Find(&perm)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error querying row: %v", result.Error)
 	}
@@ -76,7 +76,7 @@ func GetByteArrayRanges(db *gorm.DB) ([]ReadPermutation, error) {
 	var permutations []Permutation
 
 	maxInt := int(^uint(0) >> 1)
-	result := db.Where("number_of_permutations = ?", 1).Limit(maxInt).Find(&permutations)
+	result := db.Model(&Permutation{}).Where("number_of_permutations = ?", 1).Limit(maxInt).Find(&permutations)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error querying rows: %v", result.Error)
 	}
