@@ -28,7 +28,7 @@ func calculatePermutationRanges(length int) {
 	fmt.Printf("Total permutations are: %s\n", totalPermutations.String())
 
 	var wg sync.WaitGroup
-	fileChan := make(chan int64, 8192)
+	fileChan := make(chan int64, 16384) // Increased buffer size
 
 	go func() {
 		for i := int64(0); i < totalPermutations.Int64(); i++ {
@@ -37,7 +37,7 @@ func calculatePermutationRanges(length int) {
 		close(fileChan)
 	}()
 
-	numWorkers := runtime.NumCPU() + 2 // Get the number of CPU cores
+	numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go worker(fileChan, &wg, length, totalPermutations)
@@ -59,6 +59,9 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 	random := rand.New(source)
 	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
 
+	var batch []liberdatabase.Permutation
+	batchSize := 750 // Batch size for inserts
+
 	for i := range fileChan {
 		start := big.NewInt(i)
 		startArray := indexToArray(start, length)
@@ -75,7 +78,12 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 			NumberOfPermutations: 1,
 		}
 
-		liberdatabase.InsertRecord(db, perm)
+		batch = append(batch, perm)
+
+		if len(batch) >= batchSize {
+			liberdatabase.InsertBatch(db, batch)
+			batch = batch[:0] // Clear the batch
+		}
 
 		insertCountMutex.Lock()
 		insertCounter.Add(insertCounter, big.NewInt(1))
@@ -88,6 +96,11 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 		if start.Cmp(totalPermutations) == 0 {
 			break
 		}
+	}
+
+	// Insert any remaining records in the batch
+	if len(batch) > 0 {
+		liberdatabase.InsertBatch(db, batch)
 	}
 }
 

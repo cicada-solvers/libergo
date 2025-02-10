@@ -75,7 +75,7 @@ func GetByteArrayRanges(db *gorm.DB) ([]ReadPermutation, error) {
 	var results []ReadPermutation
 	var permutations []Permutation
 
-	result := db.Model(&Permutation{}).Where("number_of_permutations = ?", 1).Limit(50000000).Find(&permutations)
+	result := db.Model(&Permutation{}).Where("number_of_permutations = ?", 1).Limit(30000000).Find(&permutations)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error querying rows: %v", result.Error)
 	}
@@ -138,5 +138,12 @@ func RemoveProcessedRows(db *gorm.DB) {
 	result := db.Delete(&Permutation{}, "processed = ?", true)
 	if result.Error != nil {
 		fmt.Printf("error deleting permutations: %v\n", result.Error)
+	}
+}
+
+func InsertBatch(db *gorm.DB, batch []Permutation) {
+	result := db.Create(&batch)
+	if result.Error != nil {
+		fmt.Printf("Error inserting batch: %v\n", result.Error)
 	}
 }
