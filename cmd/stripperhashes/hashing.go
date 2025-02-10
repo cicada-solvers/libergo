@@ -14,7 +14,7 @@ import (
 )
 
 // processTasks processes the tasks
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, rowCount *int64) {
+func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, rowCount *int) {
 	defer wg.Done()
 
 	hashCount := 0
@@ -26,7 +26,7 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		colorIndex := 0
 		for range ticker.C {
 			aps := hashCount / 4
-			*rowCount = *rowCount - int64(aps)
+			*rowCount = *rowCount - aps
 			fmt.Printf("%sArrays per minute: %d - %d Remaining\033[0m\n", colors[colorIndex], aps, *rowCount)
 			hashCount = 0
 			colorIndex = (colorIndex + 1) % len(colors)

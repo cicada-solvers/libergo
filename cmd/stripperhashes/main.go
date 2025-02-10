@@ -24,11 +24,6 @@ func main() {
 	}
 	fmt.Println("Database connection initialized")
 
-	// Run removeProcessedRows at the beginning
-	fmt.Println("Removing processed rows...")
-	liberdatabase.RemoveProcessedRows(db)
-	fmt.Println("Processed rows removed")
-
 	for {
 		fmt.Println("Fetching byte array ranges...")
 		ranges, err := liberdatabase.GetByteArrayRanges(db)
@@ -43,8 +38,7 @@ func main() {
 		}
 		fmt.Printf("Fetched %d byte array ranges\n", len(ranges))
 
-		rowCount := liberdatabase.GetCountOfPermutations(db)
-		fmt.Printf("Total number of permutations: %d\n", rowCount)
+		rowCount := len(ranges)
 
 		program := NewProgram()
 
