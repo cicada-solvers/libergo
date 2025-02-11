@@ -54,29 +54,14 @@ func main() {
 			go processTasks(program.tasks, &wg, configuration.ExistingHash, done, &once, &rowCount)
 		}
 
-		for _, r := range ranges {
-			startArray := r.StartArray
-
-			// Since startArray and stopArray are the same, we can send it directly to tasks
-			program.tasks <- startArray
-
-			select {
-			case <-done:
-				fmt.Println("Processing done signal received")
-			default:
-			}
-
-			liberdatabase.RemoveItem(db, r.ID)
+		// Send tasks individually to the channel
+		for _, perm := range ranges {
+			program.tasks <- perm
 		}
-
 		close(program.tasks)
+
 		fmt.Println("Waiting for all workers to finish...")
 		wg.Wait()
-
-		// Run removeProcessedRows at the end of each batch
-		fmt.Println("Removing processed rows...")
-		liberdatabase.RemoveProcessedRows(db)
-		fmt.Println("Processed rows removed")
 	}
 
 	fmt.Println("Program finished")

@@ -14,7 +14,7 @@ import (
 )
 
 // processTasks processes the tasks
-func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, rowCount *int) {
+func processTasks(tasks chan liberdatabase.ReadPermutation, wg *sync.WaitGroup, existingHash string, done chan struct{}, once *sync.Once, rowCount *int) {
 	defer wg.Done()
 
 	hashCount := 0
@@ -33,27 +33,32 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 		}
 	}()
 
+	var idsToRemove []string
+
 	for {
 		select {
-		case task, ok := <-tasks:
+		case perm, ok := <-tasks:
 			if !ok {
 				return
 			}
-			hashes := generateHashes(task)
 
+			idsToRemove = append(idsToRemove, perm.ID)
+			if (len(idsToRemove) % 60000) == 0 {
+				db, _ := liberdatabase.InitConnection()
+				liberdatabase.RemoveItems(db, idsToRemove)
+				idsToRemove = nil
+				closeError := liberdatabase.CloseConnection(db)
+				if closeError != nil {
+					return
+				}
+			}
+
+			hashes := generateHashes(perm.StartArray)
 			for hashName, hash := range hashes {
 				hashCount++
-
 				if hash == existingHash {
-					var taskStr string
-					for i, b := range task {
-						if i > 0 {
-							taskStr += ","
-						}
-						taskStr += fmt.Sprintf("%d", b)
-					}
-
-					output := fmt.Sprintf("Match found: %s, Hash Name: %s, Byte Array: %s\n", taskStr, hashName, hex.EncodeToString(task))
+					taskStr := fmt.Sprintf("%v", perm)
+					output := fmt.Sprintf("Match found: %s, Hash Name: %s, Byte Array: %s\n", taskStr, hashName, perm.StartArray)
 					fmt.Print(output)
 					err := liberdatabase.InsertFoundHash(taskStr, hashName)
 					if err != nil {

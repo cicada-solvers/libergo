@@ -133,6 +133,14 @@ func RemoveItem(db *gorm.DB, id string) {
 	}
 }
 
+// RemoveItems marks multiple rows as processed in the database
+func RemoveItems(db *gorm.DB, ids []string) {
+	result := db.Delete(&Permutation{}, "id IN ?", ids)
+	if result.Error != nil {
+		fmt.Printf("error deleting permutations: %v\n", result.Error)
+	}
+}
+
 // RemoveProcessedRows removes the processed rows from the database and compacts it
 func RemoveProcessedRows(db *gorm.DB) {
 	result := db.Delete(&Permutation{}, "processed = ?", true)

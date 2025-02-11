@@ -187,3 +187,12 @@ func InitConnection() (*gorm.DB, error) {
 
 	return db, nil
 }
+
+// CloseConnection closes the database connection
+func CloseConnection(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("error getting database instance: %v", err)
+	}
+	return sqlDB.Close()
+}
