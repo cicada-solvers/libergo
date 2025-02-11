@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"titler"
 )
 
 func main() {
-	fmt.Println("Generate Prime Arrays")
+	titler.PrintTitle("Generate Prime Arrays")
 	var start, end int
 	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)
