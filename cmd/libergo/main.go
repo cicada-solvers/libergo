@@ -96,7 +96,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *workersFlag != -1 {
+	if *workersFlag > 0 {
 		err := config.UpdateConfig("NumWorkers", *workersFlag)
 		if err != nil {
 			_, err := fmt.Fprintf(os.Stderr, "Error updating NumWorkers: %v\n", err)
