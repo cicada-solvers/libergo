@@ -9,9 +9,11 @@ import (
 	"os"
 	"strings"
 	"time"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Factorize")
 	startTime := time.Now() // Record the start time
 
 	// Parse command-line flags

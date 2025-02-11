@@ -5,9 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Index Directory Characters")
+
 	if len(os.Args) < 2 {
 		fmt.Println("Please provide a directory path")
 		os.Exit(1)

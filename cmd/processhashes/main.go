@@ -6,10 +6,13 @@ import (
 	"liberdatabase"
 	"math/big"
 	"sync"
+	"titler"
 )
 
 // main is the entry point of the program
 func main() {
+	titler.PrintTitle("Process Hashes")
+
 	configuration, err := config.LoadConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)

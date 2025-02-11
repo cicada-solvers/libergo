@@ -9,11 +9,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	"titler"
 
 	"config"
 )
 
 func main() {
+	titler.PrintTitle("Liber Go Configurator")
+
 	initFlag := flag.Bool("init", false, "Initialize the default configuration")
 	listFlag := flag.Bool("list", false, "List the current configuration")
 	workersFlag := flag.Int("workers", 0, "Set the number of workers")

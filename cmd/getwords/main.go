@@ -6,9 +6,12 @@ import (
 	"liberdatabase"
 	"log"
 	"runer"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Get Words")
+
 	// Define flags
 	textTypeFlag := flag.String("textType", "runes", "Type of text: latin, runeglish, or runes")
 	numberFlag := flag.Int("number", 0, "Number value")

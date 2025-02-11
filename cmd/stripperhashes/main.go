@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"liberdatabase"
 	"sync"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Single Hash Processor")
+
 	fmt.Println("Starting the program...")
 
 	configuration, err := config.LoadConfig()

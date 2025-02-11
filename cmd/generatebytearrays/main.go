@@ -4,9 +4,11 @@ import (
 	"config"
 	"fmt"
 	"math/big"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Generate Byte Arrays")
 	var length int
 	fmt.Print("Enter the array length: ")
 	_, err := fmt.Scan(&length)

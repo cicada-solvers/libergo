@@ -7,6 +7,7 @@ import (
 	"os"
 	"runer"
 	"strings"
+	"titler"
 )
 
 // ParseTextType converts a string to the corresponding TextType
@@ -97,6 +98,7 @@ func CalculateGemSumForText(input string, outputToFile bool, outputFileName stri
 }
 
 func main() {
+	titler.PrintTitle("Gematria Sum")
 	var outputToFile = false
 	input := flag.String("input", "", "Input string or file path")
 	outputFileName := flag.String("outputFileName", "", "Output file name (optional)")

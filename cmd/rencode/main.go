@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"os"
 	"runer"
+	"titler"
 )
 
 // main reads input text, encodes it, and writes the result to an output file or stdout.
 func main() {
+	titler.PrintTitle("Gematria Encoder")
+
 	// Define flags
 	textFlag := flag.String("text", "", "Text to be encoded")
 	fileFlag := flag.String("file", "", "File containing text to be encoded (overrides text flag)")

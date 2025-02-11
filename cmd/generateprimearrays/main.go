@@ -5,6 +5,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Generate Prime Arrays")
 	var start, end int
 	fmt.Print("Enter the start length: ")
 	_, err := fmt.Scan(&start)

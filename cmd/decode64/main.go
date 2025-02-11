@@ -5,9 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Decode Base64")
+
 	// Define command-line flags
 	input := flag.String("input", "", "Base64 encoded string")
 	hexFlag := flag.Bool("hex", false, "Decode as hex string")

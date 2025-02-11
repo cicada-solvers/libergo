@@ -10,6 +10,7 @@ use (
 	pkg/liberdatabase
 	pkg/utility/charindex
 	pkg/utility/decoder
+	pkg/utility/titler
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime

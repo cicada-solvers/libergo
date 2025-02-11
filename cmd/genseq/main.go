@@ -7,10 +7,13 @@ import (
 	"os"
 	"sequences"
 	"strings"
+	"titler"
 )
 
 // main is the entry point for the program
 func main() {
+	titler.PrintTitle("Sequence Generator")
+
 	// Define the named parameters
 	maxNumber := flag.Int("max", 100, "The maximum number")
 	sequenceType := flag.String("type", "default", "The type of sequence")

@@ -6,9 +6,12 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"titler"
 )
 
 func main() {
+	titler.PrintTitle("Integer Generation")
+
 	if len(os.Args) < 2 {
 		fmt.Println("Please provide the number of bits as an argument.")
 		return

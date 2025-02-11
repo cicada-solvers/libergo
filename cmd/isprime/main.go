@@ -5,10 +5,13 @@ import (
 	"math/big"
 	"os"
 	"sequences"
+	"titler"
 )
 
 // main is the entry point of the program.
 func main() {
+	titler.PrintTitle("Is Prime")
+
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: isprime <number>")
 		os.Exit(1)
