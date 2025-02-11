@@ -31,4 +31,6 @@ func main() {
 		fmt.Printf("Processing: %d\n", length)
 		calculatePermutationRanges(length)
 	}
+
+	fmt.Printf("Done generating prime arrays from %d to %d\n", start, end)
 }

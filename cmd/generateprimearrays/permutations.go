@@ -60,7 +60,7 @@ func worker(fileChan chan int64, wg *sync.WaitGroup, length int, totalPermutatio
 	nextPrintThreshold := big.NewInt(random.Int63n(100000-1000) + 1000)
 
 	var batch []liberdatabase.Permutation
-	batchSize := 750 // Batch size for inserts
+	batchSize := 2000 // Batch size for inserts
 
 	for i := range fileChan {
 		start := big.NewInt(i)
