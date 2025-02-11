@@ -50,17 +50,6 @@ func processTasks(tasks chan liberdatabase.ReadPermutation, wg *sync.WaitGroup, 
 				return
 			}
 
-			idsToRemove = append(idsToRemove, perm.ID)
-			if (len(idsToRemove) % 60000) == 0 {
-				db, _ := liberdatabase.InitConnection()
-				liberdatabase.RemoveItems(db, idsToRemove)
-				idsToRemove = nil
-				closeError := liberdatabase.CloseConnection(db)
-				if closeError != nil {
-					return
-				}
-			}
-
 			hashes := generateHashes(perm.StartArray)
 			for hashName, hash := range hashes {
 				hashCount++
@@ -73,6 +62,17 @@ func processTasks(tasks chan liberdatabase.ReadPermutation, wg *sync.WaitGroup, 
 						fmt.Printf("Error inserting found hash: %v\n", err)
 					}
 					once.Do(func() { close(done) })
+				}
+			}
+
+			idsToRemove = append(idsToRemove, perm.ID)
+			if (len(idsToRemove) % 60000) == 0 {
+				db, _ := liberdatabase.InitConnection()
+				liberdatabase.RemoveItems(db, idsToRemove)
+				idsToRemove = nil
+				closeError := liberdatabase.CloseConnection(db)
+				if closeError != nil {
+					return
 				}
 			}
 		case <-done:
