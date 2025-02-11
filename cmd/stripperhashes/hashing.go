@@ -39,6 +39,14 @@ func processTasks(tasks chan liberdatabase.ReadPermutation, wg *sync.WaitGroup, 
 		select {
 		case perm, ok := <-tasks:
 			if !ok {
+				if len(idsToRemove) > 0 {
+					db, _ := liberdatabase.InitConnection()
+					liberdatabase.RemoveItems(db, idsToRemove)
+					closeError := liberdatabase.CloseConnection(db)
+					if closeError != nil {
+						return
+					}
+				}
 				return
 			}
 
@@ -68,6 +76,14 @@ func processTasks(tasks chan liberdatabase.ReadPermutation, wg *sync.WaitGroup, 
 				}
 			}
 		case <-done:
+			if len(idsToRemove) > 0 {
+				db, _ := liberdatabase.InitConnection()
+				liberdatabase.RemoveItems(db, idsToRemove)
+				closeError := liberdatabase.CloseConnection(db)
+				if closeError != nil {
+					return
+				}
+			}
 			return
 		}
 	}
