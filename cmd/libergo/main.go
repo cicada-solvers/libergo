@@ -24,9 +24,10 @@ func main() {
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
 	reloadWordsFlag := flag.Bool("reloadwords", false, "Reload words from words.txt")
 	initTablesFlag := flag.Bool("initTables", false, "Initialize the database tables")
+	hideTitleFlag := flag.Bool("hidetitle", false, "Hide the title")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag && !*hideTitleFlag {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -61,6 +62,7 @@ func main() {
 		fmt.Printf("  MaxPermutationsPerLine:  %d\n", cfg.MaxPermutationsPerLine)
 		fmt.Printf("  MaxRangesPerSegment:     %d\n", cfg.MaxRangesPerSegment)
 		fmt.Printf("  MaxSegmentsPerPackage:   %d\n", cfg.MaxSegmentsPerPackage)
+		fmt.Printf("  HideTitle:               %t\n", cfg.HideTitle)
 		os.Exit(0)
 	}
 
@@ -96,6 +98,19 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("Tables initialized successfully.")
+		os.Exit(0)
+	}
+
+	if *hideTitleFlag {
+		err := config.UpdateConfig("HideTitle", *hideTitleFlag)
+		if err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error updating HideTitle: %v\n", err)
+			if err != nil {
+				return
+			}
+			os.Exit(1)
+		}
+		fmt.Println("HideTitle updated successfully.")
 		os.Exit(0)
 	}
 

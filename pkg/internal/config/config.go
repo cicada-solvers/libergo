@@ -17,6 +17,7 @@ type AppConfig struct {
 	MaxPermutationsPerLine  int64  `json:"max_permutations_per_line"`
 	MaxRangesPerSegment     int64  `json:"max_ranges_per_segment"`
 	MaxSegmentsPerPackage   int64  `json:"max_segments_per_package"`
+	HideTitle               bool   `json:"hide_title"`
 }
 
 // GetConfigFolderPath returns the path to the configuration folder.
@@ -111,6 +112,7 @@ func CreateDefaultConfig() error {
 		MaxPermutationsPerLine:  500000000,
 		MaxRangesPerSegment:     250,
 		MaxSegmentsPerPackage:   250,
+		HideTitle:               false,
 	}
 
 	data, err := json.MarshalIndent(defaultConfig, "", "  ")
@@ -165,6 +167,8 @@ func UpdateConfig(key string, value interface{}) error {
 		config.MaxRangesPerSegment = value.(int64)
 	case "MaxSegmentsPerPackage":
 		config.MaxSegmentsPerPackage = value.(int64)
+	case "HideTitle":
+		config.HideTitle = value.(bool)
 	default:
 		return fmt.Errorf("unknown configuration key: %s", key)
 	}
