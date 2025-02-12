@@ -104,7 +104,7 @@ func CreateDefaultConfig() error {
 	}
 
 	defaultConfig := AppConfig{
-		NumWorkers:              runtime.NumCPU(), // Set NumWorkers to the number of CPU cores
+		NumWorkers:              runtime.NumCPU() * 2, // Set NumWorkers to the number of CPU cores
 		ExistingHash:            "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4",
 		AdminConnectionString:   "postgres://postgres:lppasswd@localhost:5432/postgres",
 		GeneralConnectionString: "host=localhost user=postgres password=lppasswd dbname=libergodb port=5432 sslmode=disable TimeZone=America/Chicago search_path=public",
