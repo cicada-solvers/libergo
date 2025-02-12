@@ -124,7 +124,7 @@ func CreateDefaultConfig() error {
 	}
 
 	// Update NumWorkers to the number of CPU cores
-	err = UpdateConfig("NumWorkers", runtime.NumCPU())
+	err = UpdateConfig("NumWorkers", runtime.NumCPU()*2)
 	if err != nil {
 		return err
 	}
