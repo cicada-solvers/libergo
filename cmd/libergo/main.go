@@ -68,6 +68,7 @@ func main() {
 
 	if *initDBServerFlag {
 		executeScript()
+		ReloadWords()
 		os.Exit(0)
 	}
 
@@ -98,6 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("Tables initialized successfully.")
+		ReloadWords()
 		os.Exit(0)
 	}
 
