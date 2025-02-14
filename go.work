@@ -26,4 +26,5 @@ use (
 	cmd/indexdirectory
 	cmd/decode64
 	cmd/binstring
+	cmd/binfile
 )
