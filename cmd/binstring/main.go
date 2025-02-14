@@ -74,11 +74,9 @@ func binaryStringToText(s string) string {
 
 func textToBinaryString(s string) string {
 	var result strings.Builder
-	for i, c := range s {
+	for _, c := range s {
 		result.WriteString(fmt.Sprintf("%08b", c))
-		if (i+1)%8 == 0 {
-			result.WriteString(" ")
-		}
+		result.WriteString(" ")
 	}
 	return result.String()
 }
