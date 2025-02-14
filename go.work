@@ -25,4 +25,5 @@ use (
 	cmd/getwords
 	cmd/indexdirectory
 	cmd/decode64
+	cmd/binstring
 )
