@@ -27,4 +27,5 @@ use (
 	cmd/decode64
 	cmd/binstring
 	cmd/binfile
+	cmd/binvert
 )

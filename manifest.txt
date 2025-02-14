@@ -1,3 +1,6 @@
+binfile
+binstring
+binvert
 decode64
 factorize
 gemsum
