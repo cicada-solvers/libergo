@@ -3,6 +3,7 @@ package liberdatabase
 import (
 	"fmt"
 	"gorm.io/gorm"
+	"math/big"
 	"runer"
 	"strings"
 )
@@ -13,10 +14,14 @@ type DictionaryWord struct {
 	RuneglishWordText    string `gorm:"column:dict_runeglish"`
 	RuneWordText         string `gorm:"column:dict_rune"`
 	GemSum               int64  `gorm:"column:gem_sum"`
+	GemSumPrime          bool   `gorm:"column:gem_sum_prime"`
+	GemProduct           string `gorm:"column:gem_product"`
+	GemProductPrime      bool   `gorm:"column:gem_product_prime"`
 	DictionaryWordLength int    `gorm:"column:dict_word_length"`
 	RuneglishWordLength  int    `gorm:"column:dict_runeglish_length"`
 	RuneWordLength       int    `gorm:"column:dict_rune_length"`
 	RunePattern          string `gorm:"column:rune_pattern"`
+	Language             string `gorm:"column:language"`
 }
 
 func (DictionaryWord) TableName() string {
@@ -92,6 +97,12 @@ func GetWordsByLength(db *gorm.DB, length int, textType runer.TextType) ([]Dicti
 func GetWordsByGemSum(db *gorm.DB, gemSum int64) ([]DictionaryWord, error) {
 	var words []DictionaryWord
 	err := db.Model(&DictionaryWord{}).Where("gem_sum = ?", gemSum).Find(&words).Error
+	return words, err
+}
+
+func GetWordsByGemProduct(db *gorm.DB, gemProduct big.Int) ([]DictionaryWord, error) {
+	var words []DictionaryWord
+	err := db.Model(&DictionaryWord{}).Where("gem_product = ?", gemProduct.String()).Find(&words).Error
 	return words, err
 }
 

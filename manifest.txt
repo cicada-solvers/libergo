@@ -3,6 +3,7 @@ binstring
 binvert
 decode64
 factorize
+gemproduct
 gemsum
 generatebytearrays
 generateprimearrays

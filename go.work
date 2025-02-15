@@ -22,6 +22,7 @@ use (
 	cmd/factorize
 	cmd/intgen
 	cmd/gemsum
+	cmd/gemproduct
 	cmd/getwords
 	cmd/indexdirectory
 	cmd/decode64

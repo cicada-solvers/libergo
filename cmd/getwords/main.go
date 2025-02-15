@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"liberdatabase"
 	"log"
+	"math/big"
 	"os"
 	"runer"
+	"strconv"
 	"titler"
 )
 
@@ -15,8 +17,8 @@ func main() {
 
 	// Define flags
 	textTypeFlag := flag.String("textType", "runes", "Type of text: latin, runeglish, or runes")
-	numberFlag := flag.Int("number", 0, "Number value")
-	byFlag := flag.String("by", "", "Criteria: length, sum, or pattern")
+	numberFlag := flag.String("number", "0", "Number value")
+	byFlag := flag.String("by", "", "Criteria: length, gemsum, gemproduct, or pattern")
 	patternFlag := flag.String("pattern", "", "Pattern value")
 
 	// Parse flags
@@ -51,7 +53,11 @@ func main() {
 	// Handle the -by flag
 	switch *byFlag {
 	case "length":
-		words, err := liberdatabase.GetWordsByLength(db, *numberFlag, textType)
+		number, err := strconv.Atoi(*numberFlag)
+		if err != nil {
+			log.Fatalf("Error converting numberFlag to int: %v", err)
+		}
+		words, err := liberdatabase.GetWordsByLength(db, number, textType)
 		if err != nil {
 			log.Fatalf("Error retrieving words by length: %v", err)
 		}
@@ -60,7 +66,25 @@ func main() {
 			fmt.Println(word)
 		}
 	case "gemsum":
-		words, err := liberdatabase.GetWordsByGemSum(db, int64(*numberFlag))
+		number, err := strconv.ParseInt(*numberFlag, 10, 64)
+		if err != nil {
+			log.Fatalf("Error converting numberFlag to int64: %v", err)
+		}
+		words, err := liberdatabase.GetWordsByGemSum(db, number)
+		if err != nil {
+			log.Fatalf("Error retrieving words by gem sum: %v", err)
+		}
+
+		for _, word := range words {
+			fmt.Println(word)
+		}
+	case "gemproduct":
+		gemProduct := new(big.Int)
+		gemProduct, ok := gemProduct.SetString(*patternFlag, 10)
+		if !ok {
+			log.Fatalf("Error converting pattern to big.Int: %s", *patternFlag)
+		}
+		words, err := liberdatabase.GetWordsByGemProduct(db, *gemProduct)
 		if err != nil {
 			log.Fatalf("Error retrieving words by gem sum: %v", err)
 		}

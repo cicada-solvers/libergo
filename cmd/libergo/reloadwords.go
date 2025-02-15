@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"liberdatabase"
+	"math/big"
 	"os"
 	"path/filepath"
 	"runer"
+	"sequences"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -96,6 +98,10 @@ func ReloadWords() {
 				runeglishText := runer.PrepLatinToRune(strings.ToUpper(latinText))
 				runeText := runer.TransposeLatinToRune(runeglishText)
 				gemSum := runer.CalculateGemSum(runeText, runer.Runes)
+				gemSumBigInt := big.NewInt(gemSum)
+				gemSumPrime := sequences.IsPrime(gemSumBigInt)
+				gemProduct := runer.CalculateGemProduct(runeText, runer.Runes)
+				gemProductPrime := sequences.IsPrime(&gemProduct)
 
 				fmt.Printf("Loading Word: %s Runeglish: %s Runes: %s Gem Sum: %d\n", strings.ToUpper(latinText), runeglishText, runeText, gemSum)
 
@@ -104,9 +110,13 @@ func ReloadWords() {
 					RuneglishWordText:    runeglishText,
 					RuneWordText:         runeText,
 					GemSum:               gemSum,
+					GemSumPrime:          gemSumPrime,
+					GemProduct:           gemProduct.String(),
+					GemProductPrime:      gemProductPrime,
 					DictionaryWordLength: len(latinText),
 					RuneglishWordLength:  len(runeglishText),
 					RuneWordLength:       utf8.RuneCountInString(runeText),
+					Language:             "English",
 				}
 
 				dictionaryWord.RunePattern = dictionaryWord.GetRunePattern()
