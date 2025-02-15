@@ -29,4 +29,5 @@ use (
 	cmd/binstring
 	cmd/binfile
 	cmd/binvert
+	cmd/base60
 )
