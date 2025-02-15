@@ -1,3 +1,4 @@
+base60
 binfile
 binstring
 binvert
@@ -13,6 +14,8 @@ indexdirectory
 intgen
 isprime
 libergo
+numfile
+numstring
 processhashes
 rencode
 stripperhashes
