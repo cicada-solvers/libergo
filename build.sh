@@ -14,6 +14,8 @@ clean_binaries() {
       BINARY_NAME=$(basename "$dir")
       echo "Removing $BINARY_NAME from $dir..."
       rm -vf "$dir/$BINARY_NAME"
+      rm -vf "$dir/*.txt"
+      rm -vf "$dir/*.bin"
     fi
   done
   rm -rvf dist
@@ -51,6 +53,8 @@ dist_binaries() {
       BINARY_NAME=$(basename "$dir")
       echo "Removing $BINARY_NAME from $dir..."
       rm -vf "$dir/$BINARY_NAME"
+      rm -vf "$dir/*.txt"
+      rm -vf "$dir/*.bin"
     fi
   done
 
@@ -138,6 +142,8 @@ dist_binaries() {
       BINARY_NAME=$(basename "$dir")
       echo "Removing $BINARY_NAME from $dir..."
       rm -vf "$dir/$BINARY_NAME"
+      rm -vf "$dir/*.txt"
+      rm -vf "$dir/*.bin"
     fi
   done
 

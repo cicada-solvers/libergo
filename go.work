@@ -30,4 +30,6 @@ use (
 	cmd/binfile
 	cmd/binvert
 	cmd/base60
+	cmd/numfile
+	cmd/numstring
 )

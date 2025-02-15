@@ -65,7 +65,7 @@ func main() {
 			}
 			base10Results = append(base10Results, result.String())
 		}
-		fmt.Println(strings.Join(base10Results, "\n"))
+		fmt.Println(strings.Join(base10Results, ","))
 	} else if *base10ToBase60 != "" {
 		base10Numbers := strings.Split(*base10ToBase60, ",")
 		var base60Results []string
@@ -77,7 +77,7 @@ func main() {
 			result := Base10ToBase60(base10)
 			base60Results = append(base60Results, result)
 		}
-		fmt.Println(strings.Join(base60Results, "\n"))
+		fmt.Println(strings.Join(base60Results, ","))
 	} else {
 		fmt.Println("Please provide a flag to convert either from base60 to base10 or base10 to base60")
 		flag.Usage()
