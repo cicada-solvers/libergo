@@ -108,6 +108,7 @@ func main() {
 
 	if *input == "" {
 		fmt.Println("Input is required")
+		flag.Usage()
 		return
 	}
 

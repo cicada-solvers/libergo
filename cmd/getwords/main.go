@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"liberdatabase"
 	"log"
+	"os"
 	"runer"
 	"titler"
 )
@@ -20,6 +21,13 @@ func main() {
 
 	// Parse flags
 	flag.Parse()
+
+	// Check if required flags are provided
+	if *textTypeFlag == "" || *byFlag == "" {
+		fmt.Println("Error: textType and by flags are required")
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	// Map textTypeFlag to runer.TextType
 	var textType runer.TextType

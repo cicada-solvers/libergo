@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"titler"
 )
 
@@ -17,6 +18,13 @@ func main() {
 
 	// Parse command-line flags
 	flag.Parse()
+
+	// Check if input flag is provided
+	if *input == "" {
+		fmt.Println("Error: input flag is required")
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	// Create DecodeCommand
 	cmd := &decoder.DecodeCommand{

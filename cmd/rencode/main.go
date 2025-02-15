@@ -22,6 +22,12 @@ func main() {
 	// Parse flags
 	flag.Parse()
 
+	// Check if no flags are provided
+	if len(os.Args) == 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
 	// Display help if requested
 	if *helpFlag {
 		flag.Usage()

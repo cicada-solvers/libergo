@@ -16,6 +16,7 @@ func main() {
 
 	if *inputFile == "" || *outputFile == "" {
 		fmt.Println("Error: Both inputfile and outputfile must be specified")
+		flag.Usage()
 		return
 	}
 

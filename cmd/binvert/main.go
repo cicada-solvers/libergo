@@ -19,6 +19,7 @@ func main() {
 
 	// Check if input and output files are provided
 	if *inputFile == "" || *outputFile == "" {
+		flag.Usage()
 		log.Fatalf("Both inputfile and outputfile must be specified")
 	}
 

@@ -13,6 +13,7 @@ func main() {
 
 	if len(os.Args) < 2 {
 		fmt.Println("Please provide a directory path")
+		flag.Usage()
 		os.Exit(1)
 	}
 
@@ -21,6 +22,7 @@ func main() {
 
 	if *directory == "" {
 		fmt.Println("Directory path is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 

@@ -17,6 +17,7 @@ func main() {
 
 	if *inputFile == "" && *inputText == "" {
 		fmt.Println("Error: Either inputfile or inputtext must be specified")
+		flag.Usage()
 		return
 	}
 
