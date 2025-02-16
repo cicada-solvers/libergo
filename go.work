@@ -11,6 +11,8 @@ use (
 	pkg/utility/charindex
 	pkg/utility/decoder
 	pkg/utility/titler
+	pkg/utility/cipher
+	pkg/utility/filetypeinterrogator
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
@@ -32,4 +34,5 @@ use (
 	cmd/base60
 	cmd/numfile
 	cmd/numstring
+	cmd/identifybin
 )

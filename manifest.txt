@@ -10,6 +10,7 @@ generatebytearrays
 generateprimearrays
 genseq
 getwords
+identifybin
 indexdirectory
 intgen
 isprime

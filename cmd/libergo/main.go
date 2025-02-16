@@ -69,6 +69,11 @@ func main() {
 	if *initDBServerFlag {
 		executeScript()
 		ReloadWords()
+		loadError := liberdatabase.LoadDefinitions()
+		if loadError != nil {
+			return
+		}
+		fmt.Println("Tables loaded successfully.")
 		os.Exit(0)
 	}
 
@@ -86,6 +91,7 @@ func main() {
 
 	if *reloadWordsFlag {
 		ReloadWords()
+		fmt.Println("Tables loaded successfully.")
 		os.Exit(0)
 	}
 
@@ -100,6 +106,11 @@ func main() {
 		}
 		fmt.Println("Tables initialized successfully.")
 		ReloadWords()
+		loadError := liberdatabase.LoadDefinitions()
+		if loadError != nil {
+			return
+		}
+		fmt.Println("Tables loaded successfully.")
 		os.Exit(0)
 	}
 

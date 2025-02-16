@@ -83,6 +83,10 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
+	dbCreateError = conn.AutoMigrate(&FileTypeInfoModel{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+	}
 
 	return conn, nil
 }
@@ -97,74 +101,83 @@ func InitTables() (*gorm.DB, error) {
 	// Migrate the schemas
 	dropError := conn.Migrator().DropTable(&Factor{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError := conn.AutoMigrate(&Factor{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&DictionaryWord{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&RuneglishTextDocumentCharacter{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&RuneglishTextDocumentCharacter{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&Permutation{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&Permutation{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&TextDocument{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&TextDocument{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&RuneTextDocumentCharacter{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&RuneTextDocumentCharacter{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&TextDocumentCharacter{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	dropError = conn.Migrator().DropTable(&FoundHashes{})
 	if dropError != nil {
-		fmt.Printf("Error dropping Factor table: %v\n", dropError)
+		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dropError = conn.Migrator().DropTable(&FileTypeInfoModel{})
+	if dropError != nil {
+		fmt.Printf("Error dropping table: %v\n", dropError)
+	}
+	dbCreateError = conn.AutoMigrate(&FileTypeInfoModel{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	return conn, nil

@@ -126,6 +126,10 @@ dist_binaries() {
   cp words.txt "$DIST_DIR/mac_amd64"
   cp words.txt "$DIST_DIR/mac_arm64"
   cp words.txt "$DIST_DIR/windows"
+  cp definitions_flat "$DIST_DIR/linux"
+  cp definitions_flat "$DIST_DIR/mac_amd64"
+  cp definitions_flat "$DIST_DIR/mac_arm64"
+  cp definitions_flat "$DIST_DIR/windows"
 
   echo "Compressing directories..."
   tar -czvf "$DIST_DIR/linux_$VERSION.tar.gz" -C "$DIST_DIR" linux

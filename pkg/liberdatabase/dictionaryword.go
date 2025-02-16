@@ -100,6 +100,13 @@ func GetWordsByGemSum(db *gorm.DB, gemSum int64) ([]DictionaryWord, error) {
 	return words, err
 }
 
+// GetAllWords retrieves words based on their gem sum
+func GetAllWords(db *gorm.DB, gemSum int64) ([]DictionaryWord, error) {
+	var words []DictionaryWord
+	err := db.Model(&DictionaryWord{}).Find(&words).Error
+	return words, err
+}
+
 func GetWordsByGemProduct(db *gorm.DB, gemProduct big.Int) ([]DictionaryWord, error) {
 	var words []DictionaryWord
 	err := db.Model(&DictionaryWord{}).Where("gem_product = ?", gemProduct.String()).Find(&words).Error
