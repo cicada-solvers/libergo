@@ -38,6 +38,7 @@ func main() {
 		fmt.Println(" - totient_prime")
 		fmt.Println(" - fibonacci")
 		fmt.Println(" - zekendorf")
+		fmt.Println(" - lucas")
 		fmt.Println("\nFlags:")
 		fmt.Println(" -max: The maximum number (default: 100)")
 		fmt.Println(" -type: The type of sequence (default: default)")
@@ -87,6 +88,8 @@ func main() {
 		sequence, err = sequences.GetFibonacciSequence(big.NewInt(int64(*maxNumber)))
 	case "zekendorf":
 		sequence, err = sequences.GetZekendorfRepresentationSequence(big.NewInt(int64(*maxNumber)), *positional)
+	case "lucas":
+		sequence, err = sequences.GenerateLucas(big.NewInt(int64(*maxNumber)), *positional)
 	default:
 		fmt.Printf("Unknown sequence type: %s\n", *sequenceType)
 		os.Exit(1)
