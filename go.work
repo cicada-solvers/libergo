@@ -35,4 +35,5 @@ use (
 	cmd/numfile
 	cmd/numstring
 	cmd/identifybin
+	cmd/coller
 )

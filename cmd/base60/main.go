@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -50,13 +51,31 @@ func handleError(err error) {
 	os.Exit(1)
 }
 
+// replaceInvalidChars replaces all characters that are not base60 or base10 with a comma.
+func replaceInvalidChars(baseString string) string {
+	re := regexp.MustCompile(`[^0-9A-Za-z]`)
+	return re.ReplaceAllString(baseString, ",")
+}
+
 func main() {
+	fileFlag := flag.String("file", "", "Filename to read base60 or base10 numbers from")
 	base60ToBase10 := flag.String("base60ToBase10", "", "Convert base60 to base10")
 	base10ToBase60 := flag.String("base10ToBase60", "", "Convert base10 to base60")
 	flag.Parse()
 
 	if *base60ToBase10 != "" {
-		base60Numbers := strings.Split(*base60ToBase10, ",")
+		var base60Numbers []string
+		if *fileFlag != "" {
+			data, err := os.ReadFile(*fileFlag)
+			if err != nil {
+				handleError(err)
+			}
+
+			base60Numbers = strings.Split(replaceInvalidChars(string(data)), ",")
+		} else {
+			base60Numbers = strings.Split(replaceInvalidChars(*base60ToBase10), ",")
+		}
+
 		var base10Results []string
 		for _, base60Number := range base60Numbers {
 			result, err := Base60ToBase10(strings.TrimSpace(base60Number))
@@ -67,7 +86,19 @@ func main() {
 		}
 		fmt.Println(strings.Join(base10Results, ","))
 	} else if *base10ToBase60 != "" {
-		base10Numbers := strings.Split(*base10ToBase60, ",")
+		var base10Numbers []string
+
+		if *fileFlag != "" {
+			data, err := os.ReadFile(*fileFlag)
+			if err != nil {
+				handleError(err)
+			}
+
+			base10Numbers = strings.Split(replaceInvalidChars(string(data)), ",")
+		} else {
+			base10Numbers = strings.Split(replaceInvalidChars(*base10ToBase60), ",")
+		}
+
 		var base60Results []string
 		for _, base10Number := range base10Numbers {
 			base10 := new(big.Int)

@@ -32,7 +32,6 @@ func GenerateLucasSequence(maxNumber *big.Int) (*NumericSequence, error) {
 }
 
 // GetLucasNumberAtPosition returns the Lucas number at the nth position.
-// GetLucasNumberAtPosition returns the Lucas number at the nth position.
 func GetLucasNumberAtPosition(n *big.Int) (*NumericSequence, error) {
 	if n.Cmp(big.NewInt(0)) < 0 {
 		return nil, fmt.Errorf("position cannot be negative")
