@@ -10,7 +10,7 @@ import (
 
 // main reads input text, encodes it, and writes the result to an output file or stdout.
 func main() {
-	titler.PrintTitle("Gematria Encoder")
+	titler.PrintTitle("Gematria Encoder / Decoder")
 
 	// Define flags
 	textFlag := flag.String("text", "", "Text to be encoded")
