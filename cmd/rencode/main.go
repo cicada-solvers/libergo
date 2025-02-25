@@ -15,7 +15,7 @@ func main() {
 	// Define flags
 	textFlag := flag.String("text", "", "Text to be encoded")
 	fileFlag := flag.String("file", "", "File containing text to be encoded (overrides text flag)")
-	encodingType := flag.String("type", "latin-to-rune", "Type of encoding: 'latin-to-rune' or 'rune-to-latin'")
+	encodingType := flag.String("type", "l2r", "Type of encoding: 'l2r' or 'r2l'")
 	outputFile := flag.String("output", "", "Output file to write the encoded text")
 	helpFlag := flag.Bool("help", false, "Display help")
 
@@ -50,10 +50,10 @@ func main() {
 	// Perform encoding
 	var encodedText string
 	switch *encodingType {
-	case "latin-to-rune":
+	case "l2r":
 		prepped := runer.PrepLatinToRune(inputText)
 		encodedText = runer.TransposeLatinToRune(prepped)
-	case "rune-to-latin":
+	case "r2l":
 		encodedText = runer.TransposeRuneToLatin(inputText)
 	default:
 		fmt.Println("Invalid encoding type:", *encodingType)
