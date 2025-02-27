@@ -13,8 +13,8 @@ func main() {
 	// Parse flags
 	flag.Parse()
 
-	// Check if no flags are provided
-	if len(flag.Args()) == 0 {
+	// Check if the text flag is empty
+	if *textFlag == "" {
 		flag.Usage()
 		return
 	}
@@ -28,5 +28,5 @@ func main() {
 	pattern := dw.GetRunePattern()
 
 	// Output the result
-	fmt.Println("Rune Pattern:", pattern)
+	fmt.Println("Pattern:", pattern)
 }
