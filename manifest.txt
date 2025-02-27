@@ -4,6 +4,7 @@ binstring
 binvert
 coller
 decode64
+dpattern
 factorize
 gemproduct
 gemsum
