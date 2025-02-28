@@ -6,8 +6,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"math/big"
+	"os"
 	"sequences"
 )
 
@@ -47,7 +49,10 @@ func main() {
 	btnCounter := 1
 	for _, num := range primeSequence.Sequence {
 		value := int(num.Int64())
-		buttonLabel := repo.GetRuneFromValue(value)
+		labelOne := repo.GetRuneFromValue(value)
+		labelTwo := repo.GetCharFromRune(labelOne)
+
+		buttonLabel := fmt.Sprintf("%s \\ %s", labelOne, labelTwo)
 		buttons[btnCounter] = widget.NewButton(buttonLabel, func() {
 			displayRune := repo.GetRuneFromValue(value)
 			tmpText := displayText.Text
@@ -121,6 +126,49 @@ func main() {
 	gemProdBox := container.NewHBox(gemProdLabel, gemProdText)
 	grid := container.NewGridWithColumns(4, buttonObjects...)
 	content := container.NewVBox(display, latin, gemSumBox, gemProdBox, grid)
+
+	// Create the menu
+	fileMenu := fyne.NewMenu("File",
+		fyne.NewMenuItem("Save", func() {
+			dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
+				if err == nil && writer != nil {
+					defer func(writer fyne.URIWriteCloser) {
+						err := writer.Close()
+						if err != nil {
+							fmt.Println("Error closing file:", err)
+							os.Exit(1)
+						}
+					}(writer)
+					_, err := writer.Write([]byte(fmt.Sprintf("Runes: %s\nLatin: %s\nGematria Sum: %d\nGematria Product: %s",
+						displayText.Text, latinText.Text, gemValue, gemProdText.Text)))
+					if err != nil {
+						return
+					}
+				}
+			}, w)
+		}),
+		fyne.NewMenuItem("Exit", func() {
+			a.Quit()
+		}),
+	)
+
+	copyMenu := fyne.NewMenu("Copy",
+		fyne.NewMenuItem("Copy Runes", func() {
+			w.Clipboard().SetContent(displayText.Text)
+		}),
+		fyne.NewMenuItem("Copy Latin", func() {
+			w.Clipboard().SetContent(latinText.Text)
+		}),
+		fyne.NewMenuItem("Copy Gematria Sum", func() {
+			w.Clipboard().SetContent(gemText.Text)
+		}),
+		fyne.NewMenuItem("Copy Gematria Product", func() {
+			w.Clipboard().SetContent(gemProdText.Text)
+		}),
+	)
+
+	mainMenu := fyne.NewMainMenu(fileMenu, copyMenu)
+	w.SetMainMenu(mainMenu)
 
 	w.SetContent(content)
 	w.ShowAndRun()
