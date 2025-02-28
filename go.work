@@ -37,4 +37,5 @@ use (
 	cmd/identifybin
 	cmd/coller
 	cmd/dpattern
+	cmd/runecalc
 )
