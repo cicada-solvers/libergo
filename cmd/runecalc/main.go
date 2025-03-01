@@ -244,8 +244,8 @@ func main() {
 							os.Exit(1)
 						}
 					}(writer)
-					content := fmt.Sprintf("Runes: %s\nLatin: %s\nGematria Sum: %d\nIs Prime: %t\nIs Emirp: %t\nValues: %v",
-						displayText.Text, latinText.Text, gemValue, gemPrimeCheckbox.Checked, gemSumEmirpCheckbox.Checked, values)
+					content := fmt.Sprintf("Runes: %s\nLatin: %s\nGematria Sum: %d\nIs Prime: %t\nIs Emirp: %t\nValues: %v\nWord Values: %v\n",
+						displayText.Text, latinText.Text, gemValue, gemPrimeCheckbox.Checked, gemSumEmirpCheckbox.Checked, values, wordValues)
 					_, err := writer.Write([]byte(content))
 					if err != nil {
 						return
