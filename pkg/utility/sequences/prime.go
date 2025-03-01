@@ -29,6 +29,32 @@ func IsPrime(number *big.Int) bool {
 	return true
 }
 
+// IsEmirp checks if a number is an emirp (reversible prime).
+func IsEmirp(number *big.Int) bool {
+	if !IsPrime(number) {
+		return false
+	}
+
+	// Reverse the digits of the number
+	reversedStr := reverseString(number.String())
+	reversedNumber := new(big.Int)
+	reversedNumber, ok := reversedNumber.SetString(reversedStr, 10)
+	if !ok {
+		return false
+	}
+
+	return IsPrime(reversedNumber)
+}
+
+// reverseString reverses a string.
+func reverseString(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
+}
+
 // YieldPrimesAsc yields prime numbers in descending order up to the given number.
 func YieldPrimesAsc(maxNumber *big.Int) <-chan *big.Int {
 	one := big.NewInt(1)

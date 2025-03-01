@@ -21,4 +21,4 @@ numfile
 numstring
 processhashes
 rencode
-stripperhashes
+runecalc
