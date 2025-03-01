@@ -19,6 +19,12 @@ import (
 	"unicode/utf8"
 )
 
+type ButtonInfo struct {
+	ButtonLabel string
+	LabelTwo    string
+	Value       int
+}
+
 func main() {
 	a := app.New()
 	w := a.NewWindow("Rune Calculator")
@@ -49,8 +55,8 @@ func main() {
 
 	primeSequence, _ := sequences.GetPrimeSequence(big.NewInt(int64(109)), false)
 	btnCounter := 0
-	var buttonLabels []string
-	buttonLabelMap := make(map[string]int)
+
+	var buttonInfos []ButtonInfo
 
 	for _, num := range primeSequence.Sequence {
 		value := int(num.Int64())
@@ -58,15 +64,20 @@ func main() {
 		labelTwo := repo.GetCharFromRune(labelOne)
 
 		buttonLabel := fmt.Sprintf("%s \\ %s", labelOne, labelTwo)
-		buttonLabels = append(buttonLabels, buttonLabel)
-		buttonLabelMap[buttonLabel] = value
+		buttonInfos = append(buttonInfos, ButtonInfo{
+			ButtonLabel: buttonLabel,
+			LabelTwo:    labelTwo,
+			Value:       value,
+		})
 	}
 
-	sort.Strings(buttonLabels)
+	sort.Slice(buttonInfos, func(i, j int) bool {
+		return buttonInfos[i].LabelTwo < buttonInfos[j].LabelTwo
+	})
 
-	for _, buttonLabel := range buttonLabels {
-		value := buttonLabelMap[buttonLabel]
-		buttons[btnCounter] = widget.NewButton(buttonLabel, func() {
+	for _, buttonInfo := range buttonInfos {
+		value := buttonInfo.Value
+		buttons[btnCounter] = widget.NewButton(buttonInfo.ButtonLabel, func() {
 			displayRune := repo.GetRuneFromValue(value)
 			tmpText := displayText.Text
 			tmpText = tmpText + displayRune
@@ -281,8 +292,8 @@ func main() {
 			}, func(b bool) {
 				if b {
 					entry.Text = strings.ToUpper(entry.Text)
-					latinText.SetText(entry.Text)
-					runes := runer.TransposeLatinToRune(entry.Text)
+					latinText.SetText(runer.PrepLatinToRune(entry.Text))
+					runes := runer.TransposeLatinToRune(latinText.Text)
 					displayText.SetText(runes)
 					gemValue = runer.CalculateGemSum(runes, runer.Runes)
 					gemText.SetText(fmt.Sprintf("%d", gemValue))
