@@ -77,13 +77,11 @@ func main() {
 			defer mu.Unlock()
 
 			displayRune := repo.GetRuneFromValue(value)
-			tmpText := displayText.Text
-			tmpText = tmpText + displayRune
+			tmpText := displayText.Text + displayRune
 			displayText.SetText(tmpText)
 
 			latinRune := repo.GetCharFromRune(displayRune)
-			latinTmpText := latinText.Text
-			latinTmpText = latinTmpText + latinRune
+			latinTmpText := latinText.Text + latinRune
 			latinText.SetText(latinTmpText)
 
 			gemValue += int64(value)
@@ -128,12 +126,10 @@ func main() {
 		mu.Lock()
 		defer mu.Unlock()
 
-		tmpText := displayText.Text
-		tmpText = tmpText + "•"
+		tmpText := displayText.Text + "•"
 		displayText.SetText(tmpText)
 
-		latinTmpText := latinText.Text
-		latinTmpText = latinTmpText + " "
+		latinTmpText := latinText.Text + " "
 		latinText.SetText(latinTmpText)
 	})
 
@@ -143,12 +139,10 @@ func main() {
 		mu.Lock()
 		defer mu.Unlock()
 
-		tmpText := displayText.Text
-		tmpText = tmpText + "'"
+		tmpText := displayText.Text + "'"
 		displayText.SetText(tmpText)
 
-		latinTmpText := latinText.Text
-		latinTmpText = latinTmpText + "'"
+		latinTmpText := latinText.Text + "'"
 		latinText.SetText(latinTmpText)
 	})
 
@@ -158,12 +152,10 @@ func main() {
 		mu.Lock()
 		defer mu.Unlock()
 
-		tmpText := displayText.Text
-		tmpText = tmpText + "\""
+		tmpText := displayText.Text + "\""
 		displayText.SetText(tmpText)
 
-		latinTmpText := latinText.Text
-		latinTmpText = latinTmpText + "\""
+		latinTmpText := latinText.Text + "\""
 		latinText.SetText(latinTmpText)
 	})
 
@@ -173,12 +165,10 @@ func main() {
 		mu.Lock()
 		defer mu.Unlock()
 
-		tmpText := displayText.Text
-		tmpText = tmpText + "⊹"
+		tmpText := displayText.Text + "⊹"
 		displayText.SetText(tmpText)
 
-		latinTmpText := latinText.Text
-		latinTmpText = latinTmpText + "."
+		latinTmpText := latinText.Text + "."
 		latinText.SetText(latinTmpText)
 	})
 
@@ -268,15 +258,15 @@ func main() {
 	entry := widget.NewEntry()
 	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
 
-	options := []string{"Load from Latin", "Load from Runes"}
+	options := []string{"From Latin", "From Runes"}
 	combo := widget.NewSelect(options, nil)
 	loadButton := widget.NewButton("Load", func() {
 		selectedOption := combo.Selected
-		if selectedOption == "Load from Latin" {
+		if selectedOption == "From Latin" {
 			latinText.SetText(runer.PrepLatinToRune(strings.ToUpper(entry.Text)))
 			runes := runer.TransposeLatinToRune(latinText.Text)
 			displayText.SetText(runes)
-		} else if selectedOption == "Load from Runes" {
+		} else if selectedOption == "From Runes" {
 			displayText.SetText(entry.Text)
 			latinText.SetText(runer.TransposeRuneToLatin(entry.Text))
 		}
@@ -303,12 +293,13 @@ func main() {
 	controls := container.NewBorder(nil, nil, nil, container.NewHBox(combo, loadButton), entry)
 
 	// Create the About button
-	aboutButton := widget.NewButton("About", func() {
+	aboutButton := widget.NewButtonWithIcon("About", theme.HelpIcon(), func() {
 		parsedURL, err := url.Parse("https://github.com/cmbsolver/libergo")
 		if err == nil {
 			_ = fyne.CurrentApp().OpenURL(parsedURL)
 		}
 	})
+	aboutButton.Importance = widget.LowImportance
 
 	content := container.NewVBox(
 		container.NewBorder(nil, nil, aboutButton, nil),

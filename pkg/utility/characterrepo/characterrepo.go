@@ -157,293 +157,139 @@ func (repo *CharacterRepo) GetGematriaRunes() []string {
 	}
 }
 
+var runeToCharMap = map[string]string{
+	"ᛝ": "ING",
+	"ᛟ": "OE",
+	"ᛇ": "EO",
+	"ᛡ": "IO",
+	"ᛠ": "EA",
+	"ᚫ": "AE",
+	"ᚦ": "TH",
+	"ᚠ": "F",
+	"ᚢ": "U",
+	"ᚩ": "O",
+	"ᚱ": "R",
+	"ᚳ": "C",
+	"ᚷ": "G",
+	"ᚹ": "W",
+	"ᚻ": "H",
+	"ᚾ": "N",
+	"ᛁ": "I",
+	"ᛄ": "J",
+	"ᛈ": "P",
+	"ᛉ": "X",
+	"ᛋ": "S",
+	"ᛏ": "T",
+	"ᛒ": "B",
+	"ᛖ": "E",
+	"ᛗ": "M",
+	"ᛚ": "L",
+	"ᛞ": "D",
+	"ᚪ": "A",
+	"ᚣ": "Y",
+	"•": " ",
+	"⊹": ".",
+}
+
 func (repo *CharacterRepo) GetCharFromRune(value string) string {
-	var retval string
-	switch value {
-	case "ᛝ":
-		retval = "ING"
-	case "ᛟ":
-		retval = "OE"
-	case "ᛇ":
-		retval = "EO"
-	case "ᛡ":
-		retval = "IO"
-	case "ᛠ":
-		retval = "EA"
-	case "ᚫ":
-		retval = "AE"
-	case "ᚦ":
-		retval = "TH"
-	case "ᚠ":
-		retval = "F"
-	case "ᚢ":
-		retval = "U"
-	case "ᚩ":
-		retval = "O"
-	case "ᚱ":
-		retval = "R"
-	case "ᚳ":
-		retval = "C"
-	case "ᚷ":
-		retval = "G"
-	case "ᚹ":
-		retval = "W"
-	case "ᚻ":
-		retval = "H"
-	case "ᚾ":
-		retval = "N"
-	case "ᛁ":
-		retval = "I"
-	case "ᛄ":
-		retval = "J"
-	case "ᛈ":
-		retval = "P"
-	case "ᛉ":
-		retval = "X"
-	case "ᛋ":
-		retval = "S"
-	case "ᛏ":
-		retval = "T"
-	case "ᛒ":
-		retval = "B"
-	case "ᛖ":
-		retval = "E"
-	case "ᛗ":
-		retval = "M"
-	case "ᛚ":
-		retval = "L"
-	case "ᛞ":
-		retval = "D"
-	case "ᚪ":
-		retval = "A"
-	case "ᚣ":
-		retval = "Y"
-	case "•":
-		retval = " "
-	case "⊹":
-		retval = "."
-	default:
-		retval = value
+	if char, exists := runeToCharMap[value]; exists {
+		return char
 	}
-	return retval
+	return value
+}
+
+var charToRuneMap = map[string]string{
+	"ING": "ᛝ",
+	"NG":  "ᛝ",
+	"OE":  "ᛟ",
+	"EO":  "ᛇ",
+	"IO":  "ᛡ",
+	"IA":  "ᛡ",
+	"EA":  "ᛠ",
+	"AE":  "ᚫ",
+	"TH":  "ᚦ",
+	"F":   "ᚠ",
+	"V":   "ᚢ",
+	"U":   "ᚢ",
+	"O":   "ᚩ",
+	"R":   "ᚱ",
+	"Q":   "ᚳ",
+	"K":   "ᚳ",
+	"C":   "ᚳ",
+	"G":   "ᚷ",
+	"W":   "ᚹ",
+	"H":   "ᚻ",
+	"N":   "ᚾ",
+	"I":   "ᛁ",
+	"J":   "ᛄ",
+	"P":   "ᛈ",
+	"X":   "ᛉ",
+	"Z":   "ᛋ",
+	"S":   "ᛋ",
+	"T":   "ᛏ",
+	"B":   "ᛒ",
+	"E":   "ᛖ",
+	"M":   "ᛗ",
+	"L":   "ᛚ",
+	"D":   "ᛞ",
+	"A":   "ᚪ",
+	"Y":   "ᚣ",
+	" ":   "•",
+	".":   "⊹",
 }
 
 func (repo *CharacterRepo) GetRuneFromChar(value string) string {
-	var retval string
-	switch value {
-	case "ING", "NG":
-		retval = "ᛝ"
-	case "OE":
-		retval = "ᛟ"
-	case "EO":
-		retval = "ᛇ"
-	case "IO", "IA":
-		retval = "ᛡ"
-	case "EA":
-		retval = "ᛠ"
-	case "AE":
-		retval = "ᚫ"
-	case "TH":
-		retval = "ᚦ"
-	case "F":
-		retval = "ᚠ"
-	case "V", "U":
-		retval = "ᚢ"
-	case "O":
-		retval = "ᚩ"
-	case "R":
-		retval = "ᚱ"
-	case "Q", "K", "C":
-		retval = "ᚳ"
-	case "G":
-		retval = "ᚷ"
-	case "W":
-		retval = "ᚹ"
-	case "H":
-		retval = "ᚻ"
-	case "N":
-		retval = "ᚾ"
-	case "I":
-		retval = "ᛁ"
-	case "J":
-		retval = "ᛄ"
-	case "P":
-		retval = "ᛈ"
-	case "X":
-		retval = "ᛉ"
-	case "Z", "S":
-		retval = "ᛋ"
-	case "T":
-		retval = "ᛏ"
-	case "B":
-		retval = "ᛒ"
-	case "E":
-		retval = "ᛖ"
-	case "M":
-		retval = "ᛗ"
-	case "L":
-		retval = "ᛚ"
-	case "D":
-		retval = "ᛞ"
-	case "A":
-		retval = "ᚪ"
-	case "Y":
-		retval = "ᚣ"
-	case " ":
-		retval = "•"
-	case ".":
-		retval = "⊹"
-	default:
-		retval = value
+	if runeChar, exists := charToRuneMap[value]; exists {
+		return runeChar
 	}
-	return retval
+	return value
+}
+
+var runeSet = map[string]struct{}{
+	"ᛝ": {}, "ᛟ": {}, "ᛇ": {}, "ᛡ": {}, "ᛠ": {}, "ᚫ": {}, "ᚦ": {}, "ᚠ": {},
+	"ᚢ": {}, "ᚩ": {}, "ᚱ": {}, "ᚳ": {}, "ᚷ": {}, "ᚹ": {}, "ᚻ": {}, "ᚾ": {},
+	"ᛁ": {}, "ᛄ": {}, "ᛈ": {}, "ᛉ": {}, "ᛋ": {}, "ᛏ": {}, "ᛒ": {}, "ᛖ": {},
+	"ᛗ": {}, "ᛚ": {}, "ᛞ": {}, "ᚪ": {}, "ᚣ": {},
+}
+
+var dunkusSet = map[string]struct{}{
+	"•": {}, "⊹": {},
 }
 
 func (repo *CharacterRepo) IsRune(value string, includeDunkus bool) bool {
 	if includeDunkus {
-		if value == "•" || value == "⊹" {
+		if _, exists := dunkusSet[value]; exists {
 			return true
 		}
 	}
+	_, exists := runeSet[value]
+	return exists
+}
 
-	switch value {
-	case "ᛝ", "ᛟ", "ᛇ", "ᛡ", "ᛠ", "ᚫ", "ᚦ", "ᚠ", "ᚢ", "ᚩ", "ᚱ", "ᚳ", "ᚷ", "ᚹ", "ᚻ", "ᚾ", "ᛁ", "ᛄ", "ᛈ", "ᛉ", "ᛋ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛞ", "ᚪ", "ᚣ":
-		return true
-	default:
-		return false
-	}
+var runeToValueMap = map[string]int{
+	"ᛝ": 79, "ᛟ": 83, "ᛇ": 41, "ᛡ": 107, "ᛠ": 109, "ᚫ": 101, "ᚦ": 5, "ᚠ": 2,
+	"ᚢ": 3, "ᚩ": 7, "ᚱ": 11, "ᚳ": 13, "ᚷ": 17, "ᚹ": 19, "ᚻ": 23, "ᚾ": 29,
+	"ᛁ": 31, "ᛄ": 37, "ᛈ": 43, "ᛉ": 47, "ᛋ": 53, "ᛏ": 59, "ᛒ": 61, "ᛖ": 67,
+	"ᛗ": 71, "ᛚ": 73, "ᛞ": 89, "ᚪ": 97, "ᚣ": 103,
 }
 
 func (repo *CharacterRepo) GetValueFromRune(rune string) int {
-	var retval int
-	switch rune {
-	case "ᛝ":
-		retval = 79
-	case "ᛟ":
-		retval = 83
-	case "ᛇ":
-		retval = 41
-	case "ᛡ":
-		retval = 107
-	case "ᛠ":
-		retval = 109
-	case "ᚫ":
-		retval = 101
-	case "ᚦ":
-		retval = 5
-	case "ᚠ":
-		retval = 2
-	case "ᚢ":
-		retval = 3
-	case "ᚩ":
-		retval = 7
-	case "ᚱ":
-		retval = 11
-	case "ᚳ":
-		retval = 13
-	case "ᚷ":
-		retval = 17
-	case "ᚹ":
-		retval = 19
-	case "ᚻ":
-		retval = 23
-	case "ᚾ":
-		retval = 29
-	case "ᛁ":
-		retval = 31
-	case "ᛄ":
-		retval = 37
-	case "ᛈ":
-		retval = 43
-	case "ᛉ":
-		retval = 47
-	case "ᛋ":
-		retval = 53
-	case "ᛏ":
-		retval = 59
-	case "ᛒ":
-		retval = 61
-	case "ᛖ":
-		retval = 67
-	case "ᛗ":
-		retval = 71
-	case "ᛚ":
-		retval = 73
-	case "ᛞ":
-		retval = 89
-	case "ᚪ":
-		retval = 97
-	case "ᚣ":
-		retval = 103
-	default:
-		retval = 0
+	if value, exists := runeToValueMap[rune]; exists {
+		return value
 	}
-	return retval
+	return 0
+}
+
+var valueToRuneMap = map[int]string{
+	2: "ᚠ", 3: "ᚢ", 5: "ᚦ", 7: "ᚩ", 11: "ᚱ", 13: "ᚳ", 17: "ᚷ", 19: "ᚹ",
+	23: "ᚻ", 29: "ᚾ", 31: "ᛁ", 37: "ᛄ", 41: "ᛇ", 43: "ᛈ", 47: "ᛉ", 53: "ᛋ",
+	59: "ᛏ", 61: "ᛒ", 67: "ᛖ", 71: "ᛗ", 73: "ᛚ", 79: "ᛝ", 83: "ᛟ", 89: "ᛞ",
+	97: "ᚪ", 101: "ᚫ", 103: "ᚣ", 107: "ᛡ", 109: "ᛠ",
 }
 
 func (repo *CharacterRepo) GetRuneFromValue(value int) string {
-	var retval string
-	switch value {
-	case 2:
-		retval = "ᚠ"
-	case 3:
-		retval = "ᚢ"
-	case 5:
-		retval = "ᚦ"
-	case 7:
-		retval = "ᚩ"
-	case 11:
-		retval = "ᚱ"
-	case 13:
-		retval = "ᚳ"
-	case 17:
-		retval = "ᚷ"
-	case 19:
-		retval = "ᚹ"
-	case 23:
-		retval = "ᚻ"
-	case 29:
-		retval = "ᚾ"
-	case 31:
-		retval = "ᛁ"
-	case 37:
-		retval = "ᛄ"
-	case 41:
-		retval = "ᛇ"
-	case 43:
-		retval = "ᛈ"
-	case 47:
-		retval = "ᛉ"
-	case 53:
-		retval = "ᛋ"
-	case 59:
-		retval = "ᛏ"
-	case 61:
-		retval = "ᛒ"
-	case 67:
-		retval = "ᛖ"
-	case 71:
-		retval = "ᛗ"
-	case 73:
-		retval = "ᛚ"
-	case 79:
-		retval = "ᛝ"
-	case 83:
-		retval = "ᛟ"
-	case 89:
-		retval = "ᛞ"
-	case 97:
-		retval = "ᚪ"
-	case 101:
-		retval = "ᚫ"
-	case 103:
-		retval = "ᚣ"
-	case 107:
-		retval = "ᛡ"
-	case 109:
-		retval = "ᛠ"
-	default:
-		retval = ""
+	if runeChar, exists := valueToRuneMap[value]; exists {
+		return runeChar
 	}
-	return retval
+	return ""
 }
