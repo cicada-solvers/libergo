@@ -27,6 +27,7 @@ type ButtonInfo struct {
 
 func main() {
 	a := app.New()
+	a.Settings().SetTheme(&runeTheme{})
 	w := a.NewWindow("Rune Calculator")
 
 	repo := runelib.NewCharacterRepo()

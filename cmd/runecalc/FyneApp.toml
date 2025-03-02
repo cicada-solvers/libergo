@@ -1,6 +1,8 @@
+Website = https://www.cmbsolver.com/
+
 [Details]
   Icon = "Icon.png"
   Name = "Rune Calculator"
   ID = "com.runecalc.app"
   Version = "1.0.0"
-  Build = 5
+  Build = 7
