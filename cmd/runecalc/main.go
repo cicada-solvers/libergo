@@ -23,6 +23,7 @@ func main() {
 	w := a.NewWindow("Rune Calculator")
 
 	// Create the new controls
+	calculateTextLabel := widget.NewLabel("Text To Calculate:")
 	entry := widget.NewEntry()
 	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
 
@@ -290,7 +291,7 @@ func main() {
 		wordValuesText.SetText(fmt.Sprintf("%v", wordValues))
 	})
 
-	controls := container.NewBorder(nil, nil, nil, container.NewHBox(combo, loadButton), entry)
+	controls := container.NewBorder(calculateTextLabel, nil, nil, container.NewHBox(combo, loadButton), entry)
 
 	// Create the About button
 	aboutButton := widget.NewButtonWithIcon("About", theme.HelpIcon(), func() {
