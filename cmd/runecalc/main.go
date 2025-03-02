@@ -18,25 +18,29 @@ import (
 )
 
 func main() {
-	a := app.New()
+	a := app.NewWithID("com.cmbsolver.runecalc")
 	a.Settings().SetTheme(&runeTheme{})
 	w := a.NewWindow("Rune Calculator")
 
+	// Create the new controls
+	entry := widget.NewEntry()
+	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
+
 	repo := runelib.NewCharacterRepo()
-	displayLabel := widget.NewLabel("Runes")
+	displayLabel := widget.NewLabel("Runes:")
 	displayText := widget.NewLabel("")
 
-	latinLabel := widget.NewLabel("Latin")
+	latinLabel := widget.NewLabel("Runeglish:")
 	latinText := widget.NewLabel("")
 
 	var gemValue int64
-	gemLabel := widget.NewLabel("Gematria Sum")
+	gemLabel := widget.NewLabel("Gematria Sum:")
 	gemText := widget.NewLabel("")
 	gemPrimeCheckbox := widget.NewCheck("Is Prime", nil)
 	gemSumEmirpCheckbox := widget.NewCheck("Is Emirp", nil)
 
-	valuesLabel := widget.NewLabel("Values:")
-	wordValuesLabel := widget.NewLabel("Word Values:")
+	valuesLabel := widget.NewLabel("Rune Values:")
+	wordValuesLabel := widget.NewLabel("Word Sums:")
 	valuesText := widget.NewLabel("")
 	wordValuesText := widget.NewLabel("")
 
@@ -116,6 +120,7 @@ func main() {
 		gemSumEmirpCheckbox.SetChecked(false)
 		valuesText.SetText("")
 		wordValuesText.SetText("")
+		entry.SetText("")
 		values = nil
 		wordValues = nil
 	})
@@ -253,10 +258,6 @@ func main() {
 	valuesContainer := container.NewHBox(copyValuesButton, valuesLabel, valuesText)
 	wordValuesContainer := container.NewHBox(copyWordValuesButton, wordValuesLabel, wordValuesText)
 
-	// Create the new controls
-	entry := widget.NewEntry()
-	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
-
 	options := []string{"From Latin", "From Runes"}
 	combo := widget.NewSelect(options, nil)
 	loadButton := widget.NewButton("Load", func() {
@@ -306,8 +307,8 @@ func main() {
 		display,
 		latin,
 		gemSumBox,
-		valuesContainer,
 		wordValuesContainer,
+		valuesContainer,
 		specialButtonsGrid,
 		container.NewGridWithColumns(4, buttonObjects...),
 	)
