@@ -9,13 +9,13 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"math/big"
 	"net/url"
 	"os"
 	"runer"
 	"sequences"
 	"sort"
 	"strings"
+	"sync"
 	"unicode/utf8"
 )
 
@@ -37,7 +37,7 @@ func main() {
 	latinLabel := widget.NewLabel("Latin")
 	latinText := widget.NewLabel("")
 
-	var gemValue = int64(0)
+	var gemValue int64
 	gemLabel := widget.NewLabel("Gematria Sum")
 	gemText := widget.NewLabel("")
 	gemPrimeCheckbox := widget.NewCheck("Is Prime", nil)
@@ -54,13 +54,13 @@ func main() {
 	buttons := make([]*widget.Button, 29)
 	specialButtons := make([]*widget.Button, 5)
 
-	primeSequence, _ := sequences.GetPrimeSequence(big.NewInt(int64(109)), false)
+	primeSequence, _ := sequences.GetPrimeSequence64(int64(109), false)
 	btnCounter := 0
 
 	var buttonInfos []ButtonInfo
 
 	for _, num := range primeSequence.Sequence {
-		value := int(num.Int64())
+		value := int(num)
 		labelOne := repo.GetRuneFromValue(value)
 		labelTwo := repo.GetCharFromRune(labelOne)
 
@@ -76,9 +76,14 @@ func main() {
 		return buttonInfos[i].LabelTwo < buttonInfos[j].LabelTwo
 	})
 
+	var mu sync.Mutex
+
 	for _, buttonInfo := range buttonInfos {
 		value := buttonInfo.Value
 		buttons[btnCounter] = widget.NewButton(buttonInfo.ButtonLabel, func() {
+			mu.Lock()
+			defer mu.Unlock()
+
 			displayRune := repo.GetRuneFromValue(value)
 			tmpText := displayText.Text
 			tmpText = tmpText + displayRune
@@ -91,8 +96,8 @@ func main() {
 
 			gemValue += int64(value)
 			gemText.SetText(fmt.Sprintf("%d", gemValue))
-			gemPrimeCheckbox.SetChecked(sequences.IsPrime(big.NewInt(gemValue)))
-			gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp(big.NewInt(gemValue)))
+			gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
+			gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
 
 			if value > 0 {
 				values = append(values, int64(value))
@@ -110,6 +115,9 @@ func main() {
 	// clear Button
 	clearButtonLabel := "CLR"
 	specialButtons[0] = widget.NewButton(clearButtonLabel, func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		displayText.SetText("")
 		latinText.SetText("")
 		gemValue = int64(0)
@@ -125,6 +133,9 @@ func main() {
 	// space Button
 	spaceButtonLabel := "•"
 	specialButtons[1] = widget.NewButton(spaceButtonLabel, func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		tmpText := displayText.Text
 		tmpText = tmpText + "•"
 		displayText.SetText(tmpText)
@@ -137,6 +148,9 @@ func main() {
 	// tick Button
 	tickButtonLabel := "'"
 	specialButtons[2] = widget.NewButton(tickButtonLabel, func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		tmpText := displayText.Text
 		tmpText = tmpText + "'"
 		displayText.SetText(tmpText)
@@ -149,6 +163,9 @@ func main() {
 	// double tick Button
 	doubleTickButtonLabel := "\""
 	specialButtons[3] = widget.NewButton(doubleTickButtonLabel, func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		tmpText := displayText.Text
 		tmpText = tmpText + "\""
 		displayText.SetText(tmpText)
@@ -161,6 +178,9 @@ func main() {
 	// period Button
 	periodButtonLabel := "⊹"
 	specialButtons[4] = widget.NewButton(periodButtonLabel, func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		tmpText := displayText.Text
 		tmpText = tmpText + "⊹"
 		displayText.SetText(tmpText)
@@ -172,6 +192,9 @@ func main() {
 
 	// Backspace Button
 	backspaceButton := widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
+		mu.Lock()
+		defer mu.Unlock()
+
 		tmpText := displayText.Text
 		if utf8.RuneCountInString(tmpText) > 0 {
 			_, size := utf8.DecodeLastRuneInString(tmpText)
@@ -183,8 +206,8 @@ func main() {
 
 		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
 		gemText.SetText(fmt.Sprintf("%d", gemValue))
-		gemPrimeCheckbox.SetChecked(sequences.IsPrime(big.NewInt(gemValue)))
-		gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp(big.NewInt(gemValue)))
+		gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
+		gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
 
 		values = nil
 		for _, runeCharacter := range displayText.Text {
@@ -298,8 +321,8 @@ func main() {
 					displayText.SetText(runes)
 					gemValue = runer.CalculateGemSum(runes, runer.Runes)
 					gemText.SetText(fmt.Sprintf("%d", gemValue))
-					gemPrimeCheckbox.SetChecked(sequences.IsPrime(big.NewInt(gemValue)))
-					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp(big.NewInt(gemValue)))
+					gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
+					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
 
 					values = nil
 					for _, runeCharacter := range runes {
@@ -327,8 +350,8 @@ func main() {
 
 					gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
 					gemText.SetText(fmt.Sprintf("%d", gemValue))
-					gemPrimeCheckbox.SetChecked(sequences.IsPrime(big.NewInt(gemValue)))
-					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp(big.NewInt(gemValue)))
+					gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
+					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
 
 					values = nil
 					for _, runeCharacter := range displayText.Text {

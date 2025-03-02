@@ -9,3 +9,11 @@ type NumericSequence struct {
 	Sequence []*big.Int
 	Result   *big.Int
 }
+
+// NumericSequence64 represents a sequence of numbers.
+type NumericSequence64 struct {
+	Name     string
+	Number   int64
+	Sequence []int64
+	Result   int64
+}
