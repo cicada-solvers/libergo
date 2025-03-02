@@ -41,7 +41,6 @@ build_binaries() {
 }
 
 # Function to build distribution binaries
-# Function to build distribution binaries
 dist_binaries() {
   read -p "Enter version number: " VERSION
   DIST_DIR="dist/$VERSION"
@@ -76,32 +75,40 @@ dist_binaries() {
         exit 1
       fi
 
-      echo "Building $BINARY_NAME for Mac (amd64)..."
-      BINARY_DIR="$DIST_DIR/mac_amd64"
-      GOOS=darwin GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
-      if [ $? -ne 0 ]; then
-        echo "Failed to build $BINARY_NAME for Mac (amd64)"
-        exit 1
+      if [ "$BINARY_NAME" != "runecalc" ]; then
+        echo "Building $BINARY_NAME for Mac (amd64)..."
+        BINARY_DIR="$DIST_DIR/mac_amd64"
+        GOOS=darwin GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
+        if [ $? -ne 0 ]; then
+          echo "Failed to build $BINARY_NAME for Mac (amd64)"
+          exit 1
+        fi
+
+        echo "Building $BINARY_NAME for Mac (arm64)..."
+        BINARY_DIR="$DIST_DIR/mac_arm64"
+        GOOS=darwin GOARCH=arm64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
+        if [ $? -ne 0 ]; then
+          echo "Failed to build $BINARY_NAME for Mac (arm64)"
+          exit 1
+        fi
+
+        echo "Building $BINARY_NAME for Windows..."
+        BINARY_DIR="$DIST_DIR/windows"
+        GOOS=windows GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME.exe"
+        if [ $? -ne 0 ]; then
+          echo "Failed to build $BINARY_NAME for Windows"
+          exit 1
+        fi
+        cd - > /dev/null
+      else
+        echo "Skipping $BINARY_NAME for Mac and Windows..."
       fi
 
-      echo "Building $BINARY_NAME for Mac (arm64)..."
-      BINARY_DIR="$DIST_DIR/mac_arm64"
-      GOOS=darwin GOARCH=arm64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
-      if [ $? -ne 0 ]; then
-        echo "Failed to build $BINARY_NAME for Mac (arm64)"
-        exit 1
-      fi
-
-      echo "Building $BINARY_NAME for Windows..."
-      BINARY_DIR="$DIST_DIR/windows"
-      GOOS=windows GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME.exe"
-      if [ $? -ne 0 ]; then
-        echo "Failed to build $BINARY_NAME for Windows"
-        exit 1
-      fi
       cd - > /dev/null
     fi
   done
+
+  cd - > /dev/null
 
   echo "Copying additional files..."
   cp install.sh "$DIST_DIR/linux"
