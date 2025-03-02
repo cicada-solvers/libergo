@@ -6,11 +6,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"net/url"
-	"os"
 	"runer"
 	"sequences"
 	"sort"
@@ -18,12 +16,6 @@ import (
 	"sync"
 	"unicode/utf8"
 )
-
-type ButtonInfo struct {
-	ButtonLabel string
-	LabelTwo    string
-	Value       int
-}
 
 func main() {
 	a := app.New()
@@ -239,14 +231,88 @@ func main() {
 	// Create a new grid for the specified buttons
 	specialButtonsGrid := container.NewGridWithColumns(5, specialButtonObjects...)
 
-	display := container.NewBorder(nil, nil, displayLabel, backspaceButton, displayText)
-	latin := container.NewHBox(latinLabel, latinText)
+	// Create copy buttons
+	copyDisplayButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+		fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(displayText.Text)
+	})
+	copyDisplayButton.Importance = widget.LowImportance
+
+	copyLatinButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+		fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(latinText.Text)
+	})
+	copyLatinButton.Importance = widget.LowImportance
+
+	copyGemButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+		fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(gemText.Text)
+	})
+	copyGemButton.Importance = widget.LowImportance
+
+	copyValuesButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+		fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(valuesText.Text)
+	})
+	copyValuesButton.Importance = widget.LowImportance
+
+	copyWordValuesButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+		fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(wordValuesText.Text)
+	})
+	copyWordValuesButton.Importance = widget.LowImportance
+
+	display := container.NewBorder(nil, nil, container.NewHBox(copyDisplayButton, displayLabel), backspaceButton, displayText)
+	latin := container.NewHBox(copyLatinButton, latinLabel, latinText)
 	gemSumBox := container.NewBorder(nil, nil, nil, nil,
-		container.NewHBox(gemLabel, gemText, gemPrimeCheckbox, gemSumEmirpCheckbox))
-	valuesContainer := container.NewHBox(valuesLabel, valuesText)
-	wordValuesContainer := container.NewHBox(wordValuesLabel, wordValuesText)
+		container.NewHBox(copyGemButton, gemLabel, gemText, gemPrimeCheckbox, gemSumEmirpCheckbox))
+	valuesContainer := container.NewHBox(copyValuesButton, valuesLabel, valuesText)
+	wordValuesContainer := container.NewHBox(copyWordValuesButton, wordValuesLabel, wordValuesText)
+
+	// Create the new controls
+	entry := widget.NewEntry()
+	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
+
+	options := []string{"Load from Latin", "Load from Runes"}
+	combo := widget.NewSelect(options, nil)
+	loadButton := widget.NewButton("Load", func() {
+		selectedOption := combo.Selected
+		if selectedOption == "Load from Latin" {
+			latinText.SetText(runer.PrepLatinToRune(strings.ToUpper(entry.Text)))
+			runes := runer.TransposeLatinToRune(latinText.Text)
+			displayText.SetText(runes)
+		} else if selectedOption == "Load from Runes" {
+			displayText.SetText(entry.Text)
+			latinText.SetText(runer.TransposeRuneToLatin(entry.Text))
+		}
+
+		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
+		gemText.SetText(fmt.Sprintf("%d", gemValue))
+		gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
+		gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
+
+		values = nil
+		for _, runeCharacter := range displayText.Text {
+			runeValue := int64(repo.GetValueFromRune(string(runeCharacter)))
+			if runeValue > 0 {
+				values = append(values, runeValue)
+			}
+		}
+
+		valuesText.SetText(fmt.Sprintf("%v", values))
+
+		wordValues = calculateWordGemSums(displayText.Text, repo)
+		wordValuesText.SetText(fmt.Sprintf("%v", wordValues))
+	})
+
+	controls := container.NewBorder(nil, nil, nil, container.NewHBox(combo, loadButton), entry)
+
+	// Create the About button
+	aboutButton := widget.NewButton("About", func() {
+		parsedURL, err := url.Parse("https://github.com/cmbsolver/libergo")
+		if err == nil {
+			_ = fyne.CurrentApp().OpenURL(parsedURL)
+		}
+	})
 
 	content := container.NewVBox(
+		container.NewBorder(nil, nil, aboutButton, nil),
+		controls,
 		display,
 		latin,
 		gemSumBox,
@@ -256,141 +322,14 @@ func main() {
 		container.NewGridWithColumns(4, buttonObjects...),
 	)
 
-	// Create the "About" window
-	aboutWindow := func() {
-		about := a.NewWindow("About")
-		aboutLabel := widget.NewLabel("Written by cmbsolver")
-		hyperlink := widget.NewHyperlink("https://github.com/cmbsolver/libergo", parseURL("https://github.com/cmbsolver/libergo"))
-		aboutContent := container.NewVBox(aboutLabel, hyperlink)
-		about.SetContent(aboutContent)
-		about.Resize(fyne.NewSize(300, 100))
-		about.Show()
-	}
-
-	// Create the menu
-	fileMenu := fyne.NewMenu("File",
-		fyne.NewMenuItem("Save", func() {
-			dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
-				if err == nil && writer != nil {
-					defer func(writer fyne.URIWriteCloser) {
-						err := writer.Close()
-						if err != nil {
-							fmt.Println("Error closing file:", err)
-							os.Exit(1)
-						}
-					}(writer)
-					content := fmt.Sprintf("Runes: %s\nLatin: %s\nGematria Sum: %d\nIs Prime: %t\nIs Emirp: %t\nValues: %v\nWord Values: %v\n",
-						displayText.Text, latinText.Text, gemValue, gemPrimeCheckbox.Checked, gemSumEmirpCheckbox.Checked, values, wordValues)
-					_, err := writer.Write([]byte(content))
-					if err != nil {
-						return
-					}
-				}
-			}, w)
-		}),
-	)
-
-	copyMenu := fyne.NewMenu("Copy",
-		fyne.NewMenuItem("Copy Runes", func() {
-			w.Clipboard().SetContent(displayText.Text)
-		}),
-		fyne.NewMenuItem("Copy Latin", func() {
-			w.Clipboard().SetContent(latinText.Text)
-		}),
-		fyne.NewMenuItem("Copy Gematria Sum", func() {
-			w.Clipboard().SetContent(gemText.Text)
-		}),
-		fyne.NewMenuItem("Copy Values", func() {
-			w.Clipboard().SetContent(valuesText.Text)
-		}),
-		fyne.NewMenuItem("Copy Word Values", func() {
-			w.Clipboard().SetContent(wordValuesText.Text)
-		}),
-	)
-
-	loadMenu := fyne.NewMenu("Load",
-		fyne.NewMenuItem("Load from Latin", func() {
-			entry := widget.NewEntry()
-			dialog.ShowForm("Enter Latin Text", "Load", "Cancel", []*widget.FormItem{
-				widget.NewFormItem("Latin Text", entry),
-			}, func(b bool) {
-				if b {
-					entry.Text = strings.ToUpper(entry.Text)
-					latinText.SetText(runer.PrepLatinToRune(entry.Text))
-					runes := runer.TransposeLatinToRune(latinText.Text)
-					displayText.SetText(runes)
-					gemValue = runer.CalculateGemSum(runes, runer.Runes)
-					gemText.SetText(fmt.Sprintf("%d", gemValue))
-					gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
-					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
-
-					values = nil
-					for _, runeCharacter := range runes {
-						runeValue := int64(repo.GetValueFromRune(string(runeCharacter)))
-						if runeValue > 0 {
-							values = append(values, runeValue)
-						}
-					}
-
-					valuesText.SetText(fmt.Sprintf("%v", values))
-
-					wordValues = calculateWordGemSums(displayText.Text, repo)
-					wordValuesText.SetText(fmt.Sprintf("%v", wordValues))
-				}
-			}, w)
-		}),
-		fyne.NewMenuItem("Load from Runes", func() {
-			entry := widget.NewEntry()
-			dialog.ShowForm("Enter Runes", "Load", "Cancel", []*widget.FormItem{
-				widget.NewFormItem("Runes", entry),
-			}, func(b bool) {
-				if b {
-					displayText.SetText(entry.Text)
-					latinText.SetText(runer.TransposeRuneToLatin(entry.Text))
-
-					gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
-					gemText.SetText(fmt.Sprintf("%d", gemValue))
-					gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
-					gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
-
-					values = nil
-					for _, runeCharacter := range displayText.Text {
-						runeValue := int64(repo.GetValueFromRune(string(runeCharacter)))
-						if runeValue > 0 {
-							values = append(values, runeValue)
-						}
-					}
-
-					valuesText.SetText(fmt.Sprintf("%v", values))
-
-					wordValues = calculateWordGemSums(displayText.Text, repo)
-					wordValuesText.SetText(fmt.Sprintf("%v", wordValues))
-				}
-			}, w)
-		}),
-	)
-
-	helpMenu := fyne.NewMenu("Help",
-		fyne.NewMenuItem("About", func() {
-			aboutWindow()
-		}),
-	)
-
-	mainMenu := fyne.NewMainMenu(fileMenu, copyMenu, loadMenu, helpMenu)
-	w.SetMainMenu(mainMenu)
-
 	w.SetContent(content)
 	w.ShowAndRun()
 }
 
-// Helper function to parse URL
-func parseURL(urlStr string) *url.URL {
-	uri, err := url.Parse(urlStr)
-	if err != nil {
-		fmt.Println("Error parsing URL:", err)
-		return nil
-	}
-	return uri
+type ButtonInfo struct {
+	ButtonLabel string
+	LabelTwo    string
+	Value       int
 }
 
 func calculateWordGemSums(sentence string, repo *runelib.CharacterRepo) []int64 {
