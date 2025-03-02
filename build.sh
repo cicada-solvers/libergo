@@ -59,7 +59,7 @@ dist_binaries() {
 
   # Create manifest.txt
   MANIFEST_FILE="manifest.txt"
-  > "$MANIFEST_FILE"
+  echo "" > "$MANIFEST_FILE"
 
   for dir in $CMD_DIR/*; do
     if [ -d "$dir" ]; then
@@ -67,7 +67,7 @@ dist_binaries() {
       echo "$BINARY_NAME" >> "$MANIFEST_FILE"
 
       echo "Building $BINARY_NAME for Linux..."
-      cd "$dir"
+      pushd "$dir" > /dev/null
       BINARY_DIR="$DIST_DIR/linux"
       GOOS=linux GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
       if [ $? -ne 0 ]; then
@@ -99,16 +99,15 @@ dist_binaries() {
           echo "Failed to build $BINARY_NAME for Windows"
           exit 1
         fi
-        cd - > /dev/null
       else
         echo "Skipping $BINARY_NAME for Mac and Windows..."
+        rm -fv runecalc.tar.xz
+        fyne package -os linux
+        cp -f runecalc.tar.xz "../../$BINARY_DIR/runecalc.tar.xz"
       fi
-
-      cd - > /dev/null
+      popd > /dev/null
     fi
   done
-
-  cd - > /dev/null
 
   echo "Copying additional files..."
   cp install.sh "$DIST_DIR/linux"
