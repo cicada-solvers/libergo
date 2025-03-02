@@ -249,8 +249,7 @@ func main() {
 
 	display := container.NewBorder(nil, nil, container.NewHBox(copyDisplayButton, displayLabel), backspaceButton, displayText)
 	latin := container.NewHBox(copyLatinButton, latinLabel, latinText)
-	gemSumBox := container.NewBorder(nil, nil, nil, nil,
-		container.NewHBox(copyGemButton, gemLabel, gemText, gemPrimeCheckbox, gemSumEmirpCheckbox))
+	gemSumBox := container.NewHBox(copyGemButton, gemLabel, gemText, gemPrimeCheckbox, gemSumEmirpCheckbox)
 	valuesContainer := container.NewHBox(copyValuesButton, valuesLabel, valuesText)
 	wordValuesContainer := container.NewHBox(copyWordValuesButton, wordValuesLabel, wordValuesText)
 
