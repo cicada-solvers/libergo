@@ -38,7 +38,7 @@ I don't use Windows so if anyone wants to help, it would be much appreciated.
 - coller - Used for adjusting columns of text.
 - decode64 - Decodes base64 encoded text.
 - dpattern - Gets the pattern of letters in a string.
-- factorize - Factorizes a number (slow, but works).  I need to switch this out to a sieve.
+- factorize - Factorizes a number
 - gemproduct - Gets the gematria product of a string.
 - gemsum - Gets the gematria sum of a string.
 - getwords - Gets the words of a value.

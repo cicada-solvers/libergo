@@ -21,6 +21,20 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 
 	// Check if n is divisible by x
 	for counter.Cmp(number) <= 0 {
+		stringVal := counter.String()
+		if len(stringVal) > 1 {
+			if stringVal[len(stringVal)-1:] == "5" ||
+				stringVal[len(stringVal)-1:] == "0" ||
+				stringVal[len(stringVal)-1:] == "2" ||
+				stringVal[len(stringVal)-1:] == "4" ||
+				stringVal[len(stringVal)-1:] == "6" ||
+				stringVal[len(stringVal)-1:] == "8" {
+				// Skip even numbers, 5, and 0
+				counter.Add(counter, big.NewInt(1))
+				continue
+			}
+		}
+
 		if new(big.Int).Mod(number, counter).Cmp(zero) == 0 {
 			number = n.Div(number, counter)
 
