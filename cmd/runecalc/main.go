@@ -294,7 +294,7 @@ func main() {
 	controls := container.NewBorder(calculateTextLabel, nil, nil, container.NewHBox(combo, loadButton), entry)
 
 	// Create the About button
-	aboutButton := widget.NewButtonWithIcon("About", theme.HelpIcon(), func() {
+	aboutButton := widget.NewButtonWithIcon("Source Code", theme.HelpIcon(), func() {
 		parsedURL, err := url.Parse("https://github.com/cmbsolver/libergo")
 		if err == nil {
 			_ = fyne.CurrentApp().OpenURL(parsedURL)
@@ -302,8 +302,16 @@ func main() {
 	})
 	aboutButton.Importance = widget.LowImportance
 
+	redirectButton := widget.NewButtonWithIcon("cmbsolver.com", theme.HomeIcon(), func() {
+		parsedURL, err := url.Parse("https://cmbsolver.com")
+		if err == nil {
+			_ = fyne.CurrentApp().OpenURL(parsedURL)
+		}
+	})
+	redirectButton.Importance = widget.LowImportance
+
 	content := container.NewVBox(
-		container.NewBorder(nil, nil, aboutButton, nil),
+		container.NewHBox(redirectButton, aboutButton),
 		controls,
 		display,
 		latin,
