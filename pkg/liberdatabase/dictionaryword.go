@@ -10,18 +10,20 @@ import (
 
 type DictionaryWord struct {
 	gorm.Model
-	DictionaryWordText   string `gorm:"column:dict_word"`
-	RuneglishWordText    string `gorm:"column:dict_runeglish"`
-	RuneWordText         string `gorm:"column:dict_rune"`
-	GemSum               int64  `gorm:"column:gem_sum"`
-	GemSumPrime          bool   `gorm:"column:gem_sum_prime"`
-	GemProduct           string `gorm:"column:gem_product"`
-	GemProductPrime      bool   `gorm:"column:gem_product_prime"`
-	DictionaryWordLength int    `gorm:"column:dict_word_length"`
-	RuneglishWordLength  int    `gorm:"column:dict_runeglish_length"`
-	RuneWordLength       int    `gorm:"column:dict_rune_length"`
-	RunePattern          string `gorm:"column:rune_pattern"`
-	Language             string `gorm:"column:language"`
+	DictionaryWordText          string `gorm:"column:dict_word"`
+	RuneglishWordText           string `gorm:"column:dict_runeglish"`
+	RuneWordText                string `gorm:"column:dict_rune"`
+	RuneWordTextNoDoublet       string `gorm:"column:dict_rune_no_doublet"`
+	GemSum                      int64  `gorm:"column:gem_sum"`
+	GemSumPrime                 bool   `gorm:"column:gem_sum_prime"`
+	GemProduct                  string `gorm:"column:gem_product"`
+	GemProductPrime             bool   `gorm:"column:gem_product_prime"`
+	DictionaryWordLength        int    `gorm:"column:dict_word_length"`
+	RuneglishWordLength         int    `gorm:"column:dict_runeglish_length"`
+	RuneWordLength              int    `gorm:"column:dict_rune_length"`
+	RunePattern                 string `gorm:"column:rune_pattern"`
+	RunePatternNoDoubletPattern string `gorm:"column:rune_pattern_no_doublet"`
+	Language                    string `gorm:"column:language"`
 }
 
 func (DictionaryWord) TableName() string {
@@ -57,6 +59,53 @@ func (dw DictionaryWord) GetRunePattern() string {
 	}
 
 	return strings.Join(runes, ",")
+}
+
+func (dw DictionaryWord) GetRunePatternNoDoublet() string {
+	patternDictionary := make(map[int]string)
+	var runes []string
+	counter := 1
+
+	for _, character := range dw.RuneWordTextNoDoublet {
+		if character == '\'' {
+			runes = append(runes, "'")
+			continue
+		}
+
+		found := false
+		for key, value := range patternDictionary {
+			if value == string(character) {
+				runes = append(runes, fmt.Sprintf("%d", key))
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			runes = append(runes, fmt.Sprintf("%d", counter))
+			patternDictionary[counter] = string(character)
+			counter++
+		}
+	}
+
+	return strings.Join(runes, ",")
+}
+
+// GetRuneWordToRuneWordNoDoublet converts a rune word to a rune word with no doublet characters
+func (dw DictionaryWord) GetRuneWordToRuneWordNoDoublet() string {
+	var runes []string
+	var lastCharacter string
+
+	for _, character := range dw.RuneWordText {
+		if string(character) == lastCharacter {
+			continue
+		}
+
+		runes = append(runes, string(character))
+		lastCharacter = string(character)
+	}
+
+	return strings.Join(runes, "")
 }
 
 // String returns a string representation of the dictionary word
@@ -101,7 +150,7 @@ func GetWordsByGemSum(db *gorm.DB, gemSum int64) ([]DictionaryWord, error) {
 }
 
 // GetAllWords retrieves words based on their gem sum
-func GetAllWords(db *gorm.DB, gemSum int64) ([]DictionaryWord, error) {
+func GetAllWords(db *gorm.DB) ([]DictionaryWord, error) {
 	var words []DictionaryWord
 	err := db.Model(&DictionaryWord{}).Find(&words).Error
 	return words, err

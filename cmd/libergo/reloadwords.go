@@ -120,6 +120,8 @@ func ReloadWords() {
 				}
 
 				dictionaryWord.RunePattern = dictionaryWord.GetRunePattern()
+				dictionaryWord.RuneWordTextNoDoublet = dictionaryWord.GetRuneWordToRuneWordNoDoublet()
+				dictionaryWord.RunePatternNoDoubletPattern = dictionaryWord.GetRunePatternNoDoublet()
 
 				err = liberdatabase.InsertDictionaryWord(db, dictionaryWord)
 				if err != nil {
@@ -146,4 +148,67 @@ func ReloadWords() {
 			return
 		}
 	}
+}
+
+func GenerateSQLScript(words []liberdatabase.DictionaryWord, outputPath string) error {
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("error creating SQL script file: %v", err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("error closing SQL script file: %v\n", err)
+		}
+	}(file)
+
+	createTableSQL := `
+CREATE TABLE IF NOT EXISTS dictionary_words (
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ dict_word VARCHAR(255) NOT NULL,
+ dict_runeglish VARCHAR(255) NOT NULL,
+ dict_rune VARCHAR(255) NOT NULL,
+ dict_rune_no_doublet VARCHAR(255) NOT NULL,
+ gem_sum BIGINT NOT NULL,
+ gem_sum_prime BOOLEAN NOT NULL,
+ gem_product VARCHAR(2048) NOT NULL,
+ gem_product_prime BOOLEAN NOT NULL,
+ dict_word_length INT NOT NULL,
+ dict_runeglish_length INT NOT NULL,
+ dict_rune_length INT NOT NULL,
+ rune_pattern VARCHAR(255) NOT NULL,
+ rune_pattern_no_doublet VARCHAR(255) NOT NULL,
+ language VARCHAR(255) NOT NULL
+);
+`
+	_, err = file.WriteString(createTableSQL)
+	if err != nil {
+		return fmt.Errorf("error writing create table statement to SQL script file: %v", err)
+	}
+
+	for _, word := range words {
+		sql := fmt.Sprintf(
+			"INSERT INTO dictionary_words (dict_word, dict_runeglish, dict_rune, dict_rune_no_doublet, gem_sum, gem_sum_prime, gem_product, gem_product_prime, dict_word_length, dict_runeglish_length, dict_rune_length, rune_pattern, rune_pattern_no_doublet, language) VALUES ('%s', '%s', '%s', '%s', %d, %t, '%s', %t, %d, %d, %d, '%s', '%s', '%s');\n",
+			strings.ReplaceAll(word.DictionaryWordText, "'", "''"),
+			strings.ReplaceAll(word.RuneglishWordText, "'", "''"),
+			strings.ReplaceAll(word.RuneWordText, "'", "''"),
+			strings.ReplaceAll(word.RuneWordTextNoDoublet, "'", "''"),
+			word.GemSum,
+			word.GemSumPrime,
+			strings.ReplaceAll(word.GemProduct, "'", "''"),
+			word.GemProductPrime,
+			word.DictionaryWordLength,
+			word.RuneglishWordLength,
+			word.RuneWordLength,
+			strings.ReplaceAll(word.RunePattern, "'", "''"),
+			strings.ReplaceAll(word.RunePatternNoDoubletPattern, "'", "''"),
+			strings.ReplaceAll(word.Language, "'", "''"),
+		)
+		_, err := file.WriteString(sql)
+		if err != nil {
+			return fmt.Errorf("error writing to SQL script file: %v", err)
+		}
+	}
+
+	return nil
 }

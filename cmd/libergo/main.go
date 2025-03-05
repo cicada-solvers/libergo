@@ -24,10 +24,11 @@ func main() {
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
 	reloadWordsFlag := flag.Bool("reloadwords", false, "Reload words from words.txt")
 	initTablesFlag := flag.Bool("initTables", false, "Initialize the database tables")
+	generateScript := flag.Bool("generateScript", false, "Generates the script to initialize the database")
 	hideTitleFlag := flag.Bool("hidetitle", false, "Hide the title")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag && !*hideTitleFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag && !*hideTitleFlag && !*generateScript {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -124,6 +125,34 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("HideTitle updated successfully.")
+		os.Exit(0)
+	}
+
+	if *generateScript {
+		conn, _ := liberdatabase.InitConnection()
+		words, _ := liberdatabase.GetAllWords(conn)
+		chunkSize := 25000
+		totalWords := len(words)
+		numFiles := (totalWords + chunkSize - 1) / chunkSize
+
+		for i := 0; i < numFiles; i++ {
+			start := i * chunkSize
+			end := start + chunkSize
+			if end > totalWords {
+				end = totalWords
+			}
+			chunk := words[start:end]
+			fileName := fmt.Sprintf("dbscript_%04d.sql", i+1)
+			err := GenerateSQLScript(chunk, fileName)
+			if err != nil {
+				_, err := fmt.Fprintf(os.Stderr, "Error generating script %s: %v\n", fileName, err)
+				if err != nil {
+					return
+				}
+				os.Exit(1)
+			}
+			fmt.Printf("Script %s generated successfully.\n", fileName)
+		}
 		os.Exit(0)
 	}
 
