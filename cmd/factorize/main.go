@@ -48,6 +48,12 @@ func main() {
 	}
 
 	// Establish database connection
+	createErr := liberdatabase.InitSQLiteTables()
+	if createErr != nil {
+		fmt.Printf("Error initializing SQLite tables: %v\n", createErr)
+		os.Exit(1)
+	}
+
 	db, connError := liberdatabase.InitConnection()
 	if connError != nil {
 		fmt.Printf("Error initializing database connection: %v\n", connError)

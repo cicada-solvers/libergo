@@ -13,7 +13,7 @@ type Factor struct {
 }
 
 func (Factor) TableName() string {
-	return "public.factors"
+	return "factors"
 }
 
 // GetFactorsByMainID retrieves all factors from the factors table based on the mainid.

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"
+	"path/filepath"
 )
 
 // InitDatabase initializes the PostgreSQL database
@@ -99,20 +101,11 @@ func InitTables() (*gorm.DB, error) {
 	}
 
 	// Migrate the schemas
-	dropError := conn.Migrator().DropTable(&Factor{})
+	dropError := conn.Migrator().DropTable(&DictionaryWord{})
 	if dropError != nil {
 		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
-	dbCreateError := conn.AutoMigrate(&Factor{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&DictionaryWord{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
+	dbCreateError := conn.AutoMigrate(&DictionaryWord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
@@ -199,6 +192,39 @@ func InitConnection() (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+// InitSQLiteConnection initializes the SQLite database
+func InitSQLiteConnection() (*gorm.DB, error) {
+	fldrPath, err := config.GetConfigFolderPath()
+	if err != nil {
+		return nil, fmt.Errorf("error loading config: %v", err)
+	}
+
+	databasePath := filepath.Join(fldrPath, "/libergodb.db")
+
+	db, err := gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("error opening SQLite database: %v", err)
+	}
+	return db, nil
+}
+
+// InitSQLiteTables initializes the SQLite database tables
+func InitSQLiteTables() error {
+	// Now we need to put in our migrations.
+	conn, err := InitSQLiteConnection()
+	if err != nil {
+		return nil
+	}
+
+	// Migrate the schemas
+	dbCreateError := conn.AutoMigrate(&Factor{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	return nil
 }
 
 // CloseConnection closes the database connection
