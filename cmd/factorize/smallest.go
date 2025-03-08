@@ -13,6 +13,7 @@ import (
 func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64, p *tea.Program) bool {
 	counter := big.NewInt(2)
 	zero := big.NewInt(0)
+	one := big.NewInt(1)
 	number := new(big.Int).Set(n)
 
 	if lastSeq > 0 {
@@ -60,7 +61,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64, p *tea.Pro
 			liberdatabase.InsertFactor(db, numberFactor)
 			break
 		} else {
-			counter.Add(counter, big.NewInt(1))
+			counter.Add(counter, one)
 		}
 	}
 

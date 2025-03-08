@@ -51,9 +51,3 @@ func tickCmd() tea.Cmd {
 type counterMsg struct {
 	counter *big.Int
 }
-
-func updateCounterCmd(counter *big.Int) tea.Cmd {
-	return func() tea.Msg {
-		return counterMsg{counter: counter}
-	}
-}
