@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
 	"liberdatabase"
 	"math/big"
@@ -14,21 +15,16 @@ import (
 
 func main() {
 	titler.PrintTitle("Factorize")
-	startTime := time.Now() // Record the start time
+	startTime := time.Now()
 
-	// Parse command-line flags
 	flag.Parse()
 
-	// Check if the number is provided as an argument
 	if len(flag.Args()) < 1 {
 		fmt.Println("Please provide a number to be factorized as an argument.")
 		os.Exit(1)
 	}
 
-	// Read input number
 	numberStr := flag.Arg(0)
-
-	// Convert input to bigint
 	number := new(big.Int)
 	number, ok := number.SetString(numberStr, 10)
 	if !ok {
@@ -42,12 +38,10 @@ func main() {
 	}
 
 	if number.ProbablyPrime(20) {
-		// You don't need to factorize a prime number
 		fmt.Printf("%s : 1,%s\n", numberStr, numberStr)
 		return
 	}
 
-	// Establish database connection
 	createErr := liberdatabase.InitSQLiteTables()
 	if createErr != nil {
 		fmt.Printf("Error initializing SQLite tables: %v\n", createErr)
@@ -60,44 +54,45 @@ func main() {
 		os.Exit(1)
 	}
 
-	// The mainId is the number being factorized
 	mainId := uuid.New().String()
 
-	// Perform factorization
-	factorize(db, mainId, number, 0)
+	fmt.Printf("Processing %s (%d bits)...\n", numberStr, number.BitLen())
 
-	// Output prime factors
+	p := tea.NewProgram(model{counter: big.NewInt(0)})
+	go func() {
+		factorize(db, mainId, number, 0, p)
+		p.Send(tea.Quit())
+	}()
+
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error starting Bubble Tea program: %v\n", err)
+		os.Exit(1)
+	}
+
 	output := strings.Builder{}
 	firstTime := true
-
-	// Initialize the last sequence number
 	var lastSeqNumber int64 = 0
 
-	// Loop to get factors until nil is returned
 	for {
 		factor := liberdatabase.GetFactorsByMainID(db, mainId, lastSeqNumber)
 		if factor == nil {
 			break
 		}
 
-		// Update the last sequence number
 		lastSeqNumber = factor.SeqNumber
 
 		if !firstTime {
 			output.WriteString(",")
 		}
 
-		// Append factor to output
 		output.WriteString(factor.Factor)
-
 		firstTime = false
 	}
 
 	fmt.Println(numberStr, ":", output.String())
-
 	liberdatabase.RemoveFactorsByMainID(db, mainId)
 
-	endTime := time.Now()                        // Record the end time
-	duration := endTime.Sub(startTime)           // Calculate the duration
-	fmt.Printf("Execution time: %v\n", duration) // Print the log message
+	endTime := time.Now()
+	duration := endTime.Sub(startTime)
+	fmt.Printf("Execution time: %v\n", duration)
 }
