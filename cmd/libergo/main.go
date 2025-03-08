@@ -153,6 +153,17 @@ func main() {
 			}
 			fmt.Printf("Script %s generated successfully.\n", fileName)
 		}
+
+		infos, _ := liberdatabase.GetAllFileTypeInfo()
+		dbErr := GenerateMySQLScript(infos)
+		if dbErr != nil {
+			_, err := fmt.Fprintf(os.Stderr, "Error generating MySQL script: %v\n", dbErr)
+			if err != nil {
+				return
+			}
+			os.Exit(1)
+		}
+
 		os.Exit(0)
 	}
 

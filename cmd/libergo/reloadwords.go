@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"config"
+	"encoding/hex"
 	"fmt"
 	"gorm.io/gorm"
 	"liberdatabase"
@@ -207,6 +208,55 @@ CREATE TABLE IF NOT EXISTS dictionary_words (
 		_, err := file.WriteString(sql)
 		if err != nil {
 			return fmt.Errorf("error writing to SQL script file: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func GenerateMySQLScript(fileTypeInfoModels []liberdatabase.FileTypeInfo) error {
+	file, err := os.Create("file_type_info_mysql.sql")
+	if err != nil {
+		return err
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(file)
+
+	writer := bufio.NewWriter(file)
+	defer func(writer *bufio.Writer) {
+		err := writer.Flush()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(writer)
+
+	_, err = writer.WriteString("CREATE TABLE IF NOT EXISTS file_type_info (\n" +
+		"  id BIGINT AUTO_INCREMENT PRIMARY KEY,\n" +
+		"  name VARCHAR(255),\n" +
+		"  file_type VARCHAR(255),\n" +
+		"  mime_type VARCHAR(255),\n" +
+		"  header BLOB,\n" +
+		"  alias TEXT,\n" +
+		"  offset INT,\n" +
+		"  sub_header BLOB\n" +
+		");\n\n")
+	if err != nil {
+		return err
+	}
+
+	for _, model := range fileTypeInfoModels {
+		header := hex.EncodeToString([]byte(model.Header))
+		subHeader := hex.EncodeToString([]byte(model.SubHeader))
+		alias := strings.Join(model.Alias, ",")
+
+		_, err = writer.WriteString(fmt.Sprintf("INSERT INTO file_type_info (name, file_type, mime_type, header, alias, offset, sub_header) VALUES ('%s', '%s', '%s', x'%s', '%s', %d, x'%s');\n",
+			model.Name, model.FileType, model.MimeType, header, alias, model.Offset, subHeader))
+		if err != nil {
+			return err
 		}
 	}
 
