@@ -154,7 +154,7 @@ func main() {
 			fmt.Printf("Script %s generated successfully.\n", fileName)
 		}
 
-		infos, _ := liberdatabase.GetAllFileTypeInfo()
+		infos, _ := liberdatabase.GetAllFileTypeInfoModels()
 		dbErr := GenerateMySQLScript(infos)
 		if dbErr != nil {
 			_, err := fmt.Fprintf(os.Stderr, "Error generating MySQL script: %v\n", dbErr)

@@ -172,3 +172,23 @@ func GetAllFileTypeInfo() ([]FileTypeInfo, error) {
 
 	return fileTypeInfos, nil
 }
+
+func GetAllFileTypeInfoModels() ([]FileTypeInfoModel, error) {
+	db, err := InitConnection()
+	if err != nil {
+		return nil, err
+	}
+	defer func(db *gorm.DB) {
+		err := CloseConnection(db)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(db)
+
+	var fileTypeInfoModels []FileTypeInfoModel
+	if err := db.Find(&fileTypeInfoModels).Error; err != nil {
+		return nil, err
+	}
+
+	return fileTypeInfoModels, nil
+}
