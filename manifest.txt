@@ -1,4 +1,4 @@
-
+aes
 base60
 binfile
 binstring
@@ -12,9 +12,6 @@ gemsum
 generatebytearrays
 generateprimearrays
 genseq
-getwords
-identifybin
-indexdirectory
 intgen
 isprime
 libergo
@@ -23,4 +20,5 @@ numstring
 processhashes
 rencode
 runecalc
+runecalc2
 stripperhashes

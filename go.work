@@ -8,11 +8,10 @@ use (
 	pkg/utility/hashinglib
 	pkg/internal/config
 	pkg/liberdatabase
-	pkg/utility/charindex
 	pkg/utility/decoder
 	pkg/utility/titler
 	pkg/utility/cipher
-	pkg/utility/filetypeinterrogator
+	pkg/lgstructs
 	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
@@ -25,8 +24,6 @@ use (
 	cmd/intgen
 	cmd/gemsum
 	cmd/gemproduct
-	cmd/getwords
-	cmd/indexdirectory
 	cmd/decode64
 	cmd/binstring
 	cmd/binfile
@@ -34,8 +31,8 @@ use (
 	cmd/base60
 	cmd/numfile
 	cmd/numstring
-	cmd/identifybin
 	cmd/coller
 	cmd/dpattern
 	cmd/runecalc
+	cmd/runecalc2
 )

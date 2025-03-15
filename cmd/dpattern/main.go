@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"liberdatabase"
+	"lgstructs"
 )
 
 func main() {
@@ -20,12 +20,12 @@ func main() {
 	}
 
 	// Create a DictionaryWord instance
-	dw := liberdatabase.DictionaryWord{
+	dw := lgstructs.DictionaryWord{
 		RuneWordText: *textFlag,
 	}
 
 	// Get the rune pattern
-	pattern := dw.GetRunePattern()
+	pattern := lgstructs.GetRunePattern(dw)
 
 	// Output the result
 	fmt.Println("Pattern:", pattern)

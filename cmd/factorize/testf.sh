@@ -22,5 +22,5 @@ fi
 
 # Read each line from the input file and factorize the number
 while IFS= read -r number; do
-  ./factorize "$number"
+  ./factorize "$number" >> "$output_file"
 done < "$input_file"

@@ -1,4 +1,4 @@
-module runecalc
+module runecalctwo
 
 go 1.24
 

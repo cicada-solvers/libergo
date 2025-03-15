@@ -1,18 +1,17 @@
-package filetypeinterrogator
+package lgstructs
 
 import (
 	"bytes"
 	"io"
-	"liberdatabase"
 )
 
 // FileTypeInterrogator is the default implementation with updated definitions.
 type FileTypeInterrogator struct {
-	definitions []liberdatabase.FileTypeInfo
+	definitions []FileTypeInfo
 }
 
 // NewFileTypeInterrogator initializes a new instance of FileTypeInterrogator with the default definitions.
-func NewFileTypeInterrogator(definitions []liberdatabase.FileTypeInfo) *FileTypeInterrogator {
+func NewFileTypeInterrogator(definitions []FileTypeInfo) *FileTypeInterrogator {
 	return &FileTypeInterrogator{definitions: definitions}
 }
 
@@ -35,12 +34,12 @@ func (fti *FileTypeInterrogator) GetAvailableMimeTypes() []string {
 }
 
 // AvailableTypes retrieves available types that are supported based on the current definitions.
-func (fti *FileTypeInterrogator) AvailableTypes() []liberdatabase.FileTypeInfo {
+func (fti *FileTypeInterrogator) AvailableTypes() []FileTypeInfo {
 	return fti.definitions
 }
 
 // DetectType detects the file type based on the file content.
-func (fti *FileTypeInterrogator) DetectType(fileContent []byte) *liberdatabase.FileTypeInfo {
+func (fti *FileTypeInterrogator) DetectType(fileContent []byte) *FileTypeInfo {
 	for _, def := range fti.definitions {
 		if bytes.HasPrefix(fileContent, def.Header) {
 			return &def
@@ -50,7 +49,7 @@ func (fti *FileTypeInterrogator) DetectType(fileContent []byte) *liberdatabase.F
 }
 
 // DetectTypeFromStream detects the file type based on the input stream.
-func (fti *FileTypeInterrogator) DetectTypeFromStream(inputStream io.Reader) (*liberdatabase.FileTypeInfo, error) {
+func (fti *FileTypeInterrogator) DetectTypeFromStream(inputStream io.Reader) (*FileTypeInfo, error) {
 	buffer := make([]byte, 512)
 	_, err := inputStream.Read(buffer)
 	if err != nil {

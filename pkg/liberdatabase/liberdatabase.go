@@ -53,31 +53,7 @@ func InitDatabase() (*gorm.DB, error) {
 	}
 
 	// Migrate the schemas
-	dbCreateError := conn.AutoMigrate(&Factor{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&RuneglishTextDocumentCharacter{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&Permutation{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&TextDocument{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&RuneTextDocumentCharacter{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
-	}
-	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
+	dbCreateError := conn.AutoMigrate(&Permutation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
@@ -85,9 +61,9 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
-	dbCreateError = conn.AutoMigrate(&FileTypeInfoModel{})
+	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
-		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
 	return conn, nil
@@ -101,74 +77,19 @@ func InitTables() (*gorm.DB, error) {
 	}
 
 	// Migrate the schemas
-	dropError := conn.Migrator().DropTable(&DictionaryWord{})
+	dropError := conn.Migrator().DropTable(&Permutation{})
 	if dropError != nil {
 		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
-	dbCreateError := conn.AutoMigrate(&DictionaryWord{})
+	dbCreateError := conn.AutoMigrate(&Permutation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
-
-	dropError = conn.Migrator().DropTable(&RuneglishTextDocumentCharacter{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&RuneglishTextDocumentCharacter{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&Permutation{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&Permutation{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&TextDocument{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&TextDocument{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&RuneTextDocumentCharacter{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&RuneTextDocumentCharacter{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&TextDocumentCharacter{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&TextDocumentCharacter{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
 	dropError = conn.Migrator().DropTable(&FoundHashes{})
 	if dropError != nil {
 		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dropError = conn.Migrator().DropTable(&FileTypeInfoModel{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dbCreateError = conn.AutoMigrate(&FileTypeInfoModel{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
@@ -208,6 +129,37 @@ func InitSQLiteConnection() (*gorm.DB, error) {
 		return nil, fmt.Errorf("error opening SQLite database: %v", err)
 	}
 	return db, nil
+}
+
+func InitPrimesConnection() (*gorm.DB, error) {
+	fldrPath, err := config.GetConfigFolderPath()
+	if err != nil {
+		return nil, fmt.Errorf("error loading config: %v", err)
+	}
+
+	databasePath := filepath.Join(fldrPath, "/primes.db")
+
+	db, err := gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("error opening SQLite database: %v", err)
+	}
+	return db, nil
+}
+
+func InitPrimeTables() error {
+	// Now we need to put in our migrations.
+	conn, err := InitPrimesConnection()
+	if err != nil {
+		return nil
+	}
+
+	// Migrate the schemas
+	dbCreateError := conn.AutoMigrate(&Prime{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	return nil
 }
 
 // InitSQLiteTables initializes the SQLite database tables

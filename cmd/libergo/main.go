@@ -22,13 +22,10 @@ func main() {
 	workersFlag := flag.Int("workers", 0, "Set the number of workers")
 	initDBServerFlag := flag.Bool("initdbserver", false, "Initialize the podman database server")
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
-	reloadWordsFlag := flag.Bool("reloadwords", false, "Reload words from words.txt")
-	initTablesFlag := flag.Bool("initTables", false, "Initialize the database tables")
-	generateScript := flag.Bool("generateScript", false, "Generates the script to initialize the database")
 	hideTitleFlag := flag.Bool("hidetitle", false, "Hide the title")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*reloadWordsFlag && !*initTablesFlag && !*hideTitleFlag && !*generateScript {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*hideTitleFlag {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -69,11 +66,6 @@ func main() {
 
 	if *initDBServerFlag {
 		executeScript()
-		ReloadWords()
-		loadError := liberdatabase.LoadDefinitions()
-		if loadError != nil {
-			return
-		}
 		fmt.Println("Tables loaded successfully.")
 		os.Exit(0)
 	}
@@ -90,31 +82,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *reloadWordsFlag {
-		ReloadWords()
-		fmt.Println("Tables loaded successfully.")
-		os.Exit(0)
-	}
-
-	if *initTablesFlag {
-		_, err := liberdatabase.InitTables()
-		if err != nil {
-			_, err := fmt.Fprintf(os.Stderr, "Error initializing tables: %v\n", err)
-			if err != nil {
-				return
-			}
-			os.Exit(1)
-		}
-		fmt.Println("Tables initialized successfully.")
-		ReloadWords()
-		loadError := liberdatabase.LoadDefinitions()
-		if loadError != nil {
-			return
-		}
-		fmt.Println("Tables loaded successfully.")
-		os.Exit(0)
-	}
-
 	if *hideTitleFlag {
 		err := config.UpdateConfig("HideTitle", *hideTitleFlag)
 		if err != nil {
@@ -125,45 +92,6 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("HideTitle updated successfully.")
-		os.Exit(0)
-	}
-
-	if *generateScript {
-		conn, _ := liberdatabase.InitConnection()
-		words, _ := liberdatabase.GetAllWords(conn)
-		chunkSize := 25000
-		totalWords := len(words)
-		numFiles := (totalWords + chunkSize - 1) / chunkSize
-
-		for i := 0; i < numFiles; i++ {
-			start := i * chunkSize
-			end := start + chunkSize
-			if end > totalWords {
-				end = totalWords
-			}
-			chunk := words[start:end]
-			fileName := fmt.Sprintf("dbscript_%04d.sql", i+1)
-			err := GenerateSQLScript(chunk, fileName)
-			if err != nil {
-				_, err := fmt.Fprintf(os.Stderr, "Error generating script %s: %v\n", fileName, err)
-				if err != nil {
-					return
-				}
-				os.Exit(1)
-			}
-			fmt.Printf("Script %s generated successfully.\n", fileName)
-		}
-
-		infos, _ := liberdatabase.GetAllFileTypeInfoModels()
-		dbErr := GenerateMySQLScript(infos)
-		if dbErr != nil {
-			_, err := fmt.Fprintf(os.Stderr, "Error generating MySQL script: %v\n", dbErr)
-			if err != nil {
-				return
-			}
-			os.Exit(1)
-		}
-
 		os.Exit(0)
 	}
 

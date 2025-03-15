@@ -23,9 +23,10 @@ func main() {
 	w := a.NewWindow("Rune Calculator")
 
 	// Create the new controls
-	calculateTextLabel := widget.NewLabel("Text To Calculate:")
 	entry := widget.NewEntry()
-	entry.Resize(fyne.NewSize(300, entry.MinSize().Height)) // Set the width to 300
+	entry.Resize(fyne.NewSize(300, entry.MinSize().Height*3)) // Set the width to 300
+	entry.MultiLine = true
+	entry.SetPlaceHolder("Text to Calculate")
 
 	repo := runelib.NewCharacterRepo()
 	displayLabel := widget.NewLabel("Runes:")
@@ -291,7 +292,7 @@ func main() {
 		wordValuesText.SetText(fmt.Sprintf("%v", wordValues))
 	})
 
-	controls := container.NewBorder(calculateTextLabel, nil, nil, container.NewHBox(combo, loadButton), entry)
+	controls := container.NewBorder(nil, nil, nil, container.NewHBox(combo, loadButton), entry)
 
 	// Create the About button
 	aboutButton := widget.NewButtonWithIcon("Source Code", theme.HelpIcon(), func() {
