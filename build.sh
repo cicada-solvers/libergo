@@ -75,7 +75,7 @@ dist_binaries() {
         exit 1
       fi
 
-      if [ "$BINARY_NAME" != "runecalc" ]; then
+      if [ "$BINARY_NAME" != "runecalc" ] && [ "$BINARY_NAME" != "runecalc2" ]; then
         echo "Building $BINARY_NAME for Mac (amd64)..."
         BINARY_DIR="$DIST_DIR/mac_amd64"
         GOOS=darwin GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
@@ -102,8 +102,10 @@ dist_binaries() {
       else
         echo "Skipping $BINARY_NAME for Mac and Windows..."
         rm -fv runecalc.tar.xz
+        rm -fv runecalc2.tar.xz
         fyne package -os linux
         cp -f runecalc.tar.xz "../../$BINARY_DIR/runecalc.tar.xz"
+        cp -f runecalc2.tar.xz "../../$BINARY_DIR/runecalc2.tar.xz"
       fi
       popd > /dev/null
     fi
