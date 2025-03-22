@@ -35,4 +35,5 @@ use (
 	cmd/dpattern
 	cmd/runecalc
 	cmd/runecalc2
+	cmd/rdtext
 )
