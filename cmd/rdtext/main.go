@@ -16,21 +16,23 @@ import (
 )
 
 var fileMutex sync.Mutex
-
 var processedCounter = big.NewInt(0)
 var rateCounter = big.NewInt(0)
 
+// ColInformation represents the column information with its name and row counts.
 type ColInformation struct {
 	ColName   string
 	RowCounts int
 }
 
+// Sentence represents a sentence with its content, output file name, and column index.
 type Sentence struct {
 	Content     string
 	Output      string
 	ColumnIndex int
 }
 
+// main is the entry point of the program.
 func main() {
 	// Define command-line flags
 	inputFile := flag.String("input", "", "Path to the input Excel file")
@@ -87,6 +89,7 @@ func main() {
 	}
 }
 
+// permuteCols permutes the columns in the Excel file and writes the sentences to the output file.
 func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int) (err error) {
 	localBuilder := cloneStringBuilder(&builder)
 
@@ -104,6 +107,8 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 			}
 
 			localBuilder.WriteString(spacer + cellValue)
+
+			fmt.Printf("Looped Index: %d:%d\n", currentColIdx, i)
 
 			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1)
 			if permuteErr != nil {
@@ -148,6 +153,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 	return nil
 }
 
+// calculateProbabilityAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
 func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
 	one := big.NewInt(1)
 
@@ -199,6 +205,7 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 	}
 }
 
+// analyzeText analyzes the given text and returns the part-of-speech counts and total word count.
 func analyzeText(text string) (map[string]int, int) {
 	doc, err := prose.NewDocument(text)
 	if err != nil {
@@ -248,6 +255,7 @@ func analyzeText(text string) (map[string]int, int) {
 	return posCounts, totalWords
 }
 
+// calculateSentenceProbability calculates the probability of a sentence being a valid English sentence.
 func calculateSentenceProbability(posCounts map[string]int, totalWords int) float64 {
 	if totalWords == 0 {
 		return 0.0
