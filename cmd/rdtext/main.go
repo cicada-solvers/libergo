@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jdkato/prose/v2"
 	"log"
+	"math/big"
 	"os"
 	"runtime"
 	"strings"
@@ -15,6 +16,9 @@ import (
 )
 
 var fileMutex sync.Mutex
+
+var processedCounter = big.NewInt(0)
+var rateCounter = big.NewInt(0)
 
 type ColInformation struct {
 	ColName   string
@@ -65,6 +69,17 @@ func main() {
 	// Initialize a strings.Builder
 	var builder strings.Builder
 
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
+			rateCounter.SetInt64(int64(0))
+		}
+	}()
+
 	// Call permuteCols with the provided output file name
 	err = permuteCols(f, *outputFile, sheetName, colInfo, builder, 0)
 	if err != nil {
@@ -89,9 +104,6 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 			}
 
 			localBuilder.WriteString(spacer + cellValue)
-
-			// Write the builder content to the console
-			fmt.Printf("%d %s\n", currentColIdx, localBuilder.String())
 
 			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1)
 			if permuteErr != nil {
@@ -137,17 +149,13 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 }
 
 func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
+	one := big.NewInt(1)
+
 	defer wg.Done()
 
 	for sentence := range sentChan {
-		// Write the builder content to the console
-		fmt.Printf("%d %s\n", sentence.ColumnIndex, sentence.Content)
-
 		posCounts, totalWords := analyzeText(sentence.Content)
 		probability := calculateSentenceProbability(posCounts, totalWords)
-
-		fmt.Printf("POS Counts: %+v\n", posCounts)
-		fmt.Printf("Total Words: %d\n", totalWords)
 
 		if probability > 0 {
 			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
@@ -185,6 +193,9 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 				break
 			}
 		}
+
+		processedCounter.Add(processedCounter, one)
+		rateCounter.Add(rateCounter, one)
 	}
 }
 
