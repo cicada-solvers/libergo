@@ -6,14 +6,25 @@ import (
 	"github.com/jdkato/prose/v2"
 	"log"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 )
 
+var fileMutex sync.Mutex
+
 type ColInformation struct {
 	ColName   string
 	RowCounts int
+}
+
+type Sentence struct {
+	Content     string
+	Output      string
+	ColumnIndex int
 }
 
 func main() {
@@ -63,8 +74,9 @@ func main() {
 
 func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int) (err error) {
 	localBuilder := cloneStringBuilder(&builder)
-	for i := 3; i < cols[currentColIdx].RowCounts+3; i++ {
-		if currentColIdx < (len(cols) - 1) {
+
+	if currentColIdx < (len(cols) - 1) {
+		for i := 3; i < cols[currentColIdx].RowCounts+3; i++ {
 			localBuilder = cloneStringBuilder(&builder)
 			cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", cols[currentColIdx].ColName, i))
 			if cellError != nil {
@@ -85,52 +97,95 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 			if permuteErr != nil {
 				return fmt.Errorf("Failed to permute columns: %v\n", permuteErr)
 			}
-		} else {
-			cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", cols[currentColIdx].ColName, i))
-			if cellError != nil {
-				return fmt.Errorf("Failed to get cell value: %v\n", cellError)
+		}
+	} else {
+		var wg sync.WaitGroup
+		sentenceChan := make(chan Sentence, 16384) // Increased buffer size
+
+		go func() {
+			for i := 3; i < cols[currentColIdx].RowCounts+3; i++ {
+				cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", cols[currentColIdx].ColName, i))
+				if cellError != nil {
+					fmt.Printf("Failed to get cell value: %v\n", cellError)
+				}
+
+				localBuilder = cloneStringBuilder(&builder)
+
+				localBuilder.WriteString(" " + cellValue)
+
+				sentence := Sentence{
+					Content:     localBuilder.String(),
+					Output:      outputName,
+					ColumnIndex: currentColIdx,
+				}
+
+				sentenceChan <- sentence
 			}
+			close(sentenceChan)
+		}()
 
-			localBuilder = cloneStringBuilder(&builder)
+		numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+		}
 
-			localBuilder.WriteString(" " + cellValue)
+		wg.Wait()
+	}
 
-			// Write the builder content to the console
-			fmt.Printf("%d %s\n", currentColIdx, localBuilder.String())
+	return nil
+}
 
-			posCounts, totalWords := analyzeText(localBuilder.String())
-			probability := calculateSentenceProbability(posCounts, totalWords)
+func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-			fmt.Printf("POS Counts: %+v\n", posCounts)
-			fmt.Printf("Total Words: %d\n", totalWords)
+	for sentence := range sentChan {
+		// Write the builder content to the console
+		fmt.Printf("%d %s\n", sentence.ColumnIndex, sentence.Content)
 
-			if probability > 0 {
-				fmt.Printf("Sentence Probability: %.2f%%\n", probability)
+		posCounts, totalWords := analyzeText(sentence.Content)
+		probability := calculateSentenceProbability(posCounts, totalWords)
 
-				// Write the content to the output file
-				outputBytes := []byte(localBuilder.String() + "\n\n")
-				file, openError := os.OpenFile(outputName, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		fmt.Printf("POS Counts: %+v\n", posCounts)
+		fmt.Printf("Total Words: %d\n", totalWords)
+
+		if probability > 0 {
+			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
+
+			// Write the content to the output file
+			outputBytes := []byte(sentence.Content + "\n\n")
+
+			for {
+				fileMutex.Lock()
+				file, openError := os.OpenFile(sentence.Output, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 				if openError != nil {
-					fmt.Printf("Failed to close file: %v\n", openError)
-					return err
+					fmt.Printf("Failed to open file: %v\n", openError)
+					fileMutex.Unlock()
+					time.Sleep(100 * time.Millisecond) // Wait before retrying
+					continue
 				}
 
 				_, writeErr := file.Write(outputBytes)
 				if writeErr != nil {
-					fmt.Printf("Failed to close file: %v\n", writeErr)
-					return writeErr
+					fmt.Printf("Failed to write to file: %v\n", writeErr)
+					err := file.Close()
+					if err != nil {
+						fmt.Printf("Failed to close file: %v\n", err)
+					}
+					fileMutex.Unlock()
+					time.Sleep(100 * time.Millisecond) // Wait before retrying
+					continue
 				}
 
 				closeError := file.Close()
 				if closeError != nil {
 					fmt.Printf("Failed to close file: %v\n", closeError)
-					return writeErr
 				}
+				fileMutex.Unlock()
+				break
 			}
 		}
 	}
-
-	return nil
 }
 
 func analyzeText(text string) (map[string]int, int) {
