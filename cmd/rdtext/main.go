@@ -69,8 +69,14 @@ func main() {
 	// Process each file
 	for _, inputFile := range files {
 		infoFile, _ := os.Stat(inputFile)
-
 		fmt.Printf("Processing file: %s\n", infoFile.Name())
+
+		// Create the output file name
+		outputFile := filepath.Join(*outputDirectory, filepath.Base(inputFile)+".txt")
+		_, outError := os.Stat(outputFile)
+		if !os.IsNotExist(outError) {
+			continue
+		}
 
 		// Open the Excel file
 		f, fileErr := excelize.OpenFile(inputFile)
@@ -96,9 +102,6 @@ func main() {
 				rateCounter.SetInt64(int64(0))
 			}
 		}()
-
-		// Create the output file name
-		outputFile := filepath.Join(*outputDirectory, filepath.Base(inputFile)+".txt")
 
 		// Call permuteCols with the provided output file name
 		permuteErr := permuteCols(f, outputFile, sheetName, colInfo, builder, 0)
