@@ -41,6 +41,10 @@ func main() {
 	outputDirectory := flag.String("output", "", "Path to the output files")
 	sheetName := "Worksheet"
 
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
 	// Parse the flags
 	flag.Parse()
 
@@ -69,20 +73,14 @@ func main() {
 		fmt.Printf("Processing file: %s\n", infoFile.Name())
 
 		// Open the Excel file
-		f, err := excelize.OpenFile(inputFile)
-		if err != nil {
-			log.Fatalf("Failed to open the Excel file: %v", err)
+		f, fileErr := excelize.OpenFile(inputFile)
+		if fileErr != nil {
+			log.Fatalf("Failed to open the Excel file: %v", fileErr)
 		}
-		defer func(f *excelize.File) {
-			err := f.Close()
-			if err != nil {
-				log.Fatalf("Failed to close the Excel file: %v", err)
-			}
-		}(f)
 
-		colInfo, err := getColInformation(f, sheetName)
-		if err != nil {
-			fmt.Printf("Failed to get column info: %v", err)
+		colInfo, excelErr := getColInformation(f, sheetName)
+		if excelErr != nil {
+			fmt.Printf("Failed to get column info: %v", excelErr)
 			return
 		}
 
@@ -91,10 +89,6 @@ func main() {
 
 		// Initialize a strings.Builder
 		var builder strings.Builder
-
-		// We are going to put timer to see how many we have processed.
-		processedTicker := time.NewTicker(time.Minute)
-		defer processedTicker.Stop()
 
 		go func() {
 			for range processedTicker.C {
@@ -107,9 +101,14 @@ func main() {
 		outputFile := filepath.Join(*outputDirectory, filepath.Base(inputFile)+".txt")
 
 		// Call permuteCols with the provided output file name
-		err = permuteCols(f, outputFile, sheetName, colInfo, builder, 0)
-		if err != nil {
-			fmt.Printf("Failed to permute cols: %v", err)
+		permuteErr := permuteCols(f, outputFile, sheetName, colInfo, builder, 0)
+		if permuteErr != nil {
+			fmt.Printf("Failed to permute cols: %v", permuteErr)
+		}
+
+		closeErr := f.Close()
+		if closeErr != nil {
+			log.Fatalf("Failed to close the Excel file: %v", closeErr)
 		}
 	}
 }
