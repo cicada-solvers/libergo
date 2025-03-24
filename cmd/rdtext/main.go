@@ -64,6 +64,8 @@ func main() {
 
 	// Process each file
 	for _, inputFile := range files {
+		fmt.Printf("Processing file: %s\n", inputFile)
+
 		// Open the Excel file
 		f, err := excelize.OpenFile(inputFile)
 		if err != nil {
