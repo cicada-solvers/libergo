@@ -7,7 +7,9 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,58 +37,92 @@ type Sentence struct {
 // main is the entry point of the program.
 func main() {
 	// Define command-line flags
-	inputFile := flag.String("input", "", "Path to the input Excel file")
-	outputFile := flag.String("output", "", "Path to the output file")
+	inputDirectory := flag.String("input", "", "Path to the input Excel files")
+	outputDirectory := flag.String("output", "", "Path to the output files")
 	sheetName := "Worksheet"
 
 	// Parse the flags
 	flag.Parse()
 
-	// Check if the input file is provided
-	if *inputFile == "" {
-		log.Fatalf("Input file is required")
+	// Check if the input directory is provided
+	if *inputDirectory == "" {
+		log.Fatalf("Input directory is required")
 	}
 
-	// Open the Excel file
-	f, err := excelize.OpenFile(*inputFile)
+	// Get all Excel files from the input directory
+	files, err := getExcelFiles(*inputDirectory)
 	if err != nil {
-		log.Fatalf("Failed to open the Excel file: %v", err)
+		log.Fatalf("Failed to get Excel files: %v", err)
 	}
-	defer func(f *excelize.File) {
-		err := f.Close()
+
+	// Sort files by size (smallest first)
+	sort.Slice(files, func(i, j int) bool {
+		infoI, _ := os.Stat(files[i])
+		infoJ, _ := os.Stat(files[j])
+		return infoI.Size() < infoJ.Size()
+	})
+
+	// Process each file
+	for _, inputFile := range files {
+		// Open the Excel file
+		f, err := excelize.OpenFile(inputFile)
 		if err != nil {
-			log.Fatalf("Failed to close the Excel file: %v", err)
+			log.Fatalf("Failed to open the Excel file: %v", err)
 		}
-	}(f)
+		defer func(f *excelize.File) {
+			err := f.Close()
+			if err != nil {
+				log.Fatalf("Failed to close the Excel file: %v", err)
+			}
+		}(f)
 
-	colInfo, err := getColInformation(f, sheetName)
-	if err != nil {
-		fmt.Printf("Failed to get column info: %v", err)
-		return
-	}
-
-	// Print the column information
-	fmt.Printf("%v\n", colInfo)
-
-	// Initialize a strings.Builder
-	var builder strings.Builder
-
-	// We are going to put timer to see how many we have processed.
-	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
-
-	go func() {
-		for range processedTicker.C {
-			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
-			rateCounter.SetInt64(int64(0))
+		colInfo, err := getColInformation(f, sheetName)
+		if err != nil {
+			fmt.Printf("Failed to get column info: %v", err)
+			return
 		}
-	}()
 
-	// Call permuteCols with the provided output file name
-	err = permuteCols(f, *outputFile, sheetName, colInfo, builder, 0)
-	if err != nil {
-		fmt.Printf("Failed to permute cols: %v", err)
+		// Print the column information
+		fmt.Printf("%v\n", colInfo)
+
+		// Initialize a strings.Builder
+		var builder strings.Builder
+
+		// We are going to put timer to see how many we have processed.
+		processedTicker := time.NewTicker(time.Minute)
+		defer processedTicker.Stop()
+
+		go func() {
+			for range processedTicker.C {
+				fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
+				rateCounter.SetInt64(int64(0))
+			}
+		}()
+
+		// Create the output file name
+		outputFile := filepath.Join(*outputDirectory, filepath.Base(inputFile)+".txt")
+
+		// Call permuteCols with the provided output file name
+		err = permuteCols(f, outputFile, sheetName, colInfo, builder, 0)
+		if err != nil {
+			fmt.Printf("Failed to permute cols: %v", err)
+		}
 	}
+}
+
+// getExcelFiles returns a list of Excel files in the given directory
+func getExcelFiles(dir string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".xlsx") {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }
 
 // permuteCols permutes the columns in the Excel file and writes the sentences to the output file.
@@ -333,6 +369,10 @@ func getColInformation(f *excelize.File, sheetName string) (cols []ColInformatio
 			} else {
 				break
 			}
+		}
+
+		if colInfo.RowCounts <= 0 {
+			colInfo.RowCounts = 1
 		}
 
 		cols = append(cols, colInfo)
