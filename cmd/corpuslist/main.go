@@ -67,6 +67,7 @@ func main() {
 		}
 
 		dictList = append(dictList, dictWord)
+		delete(wordList, word) // Remove the word from wordList
 
 		if len(dictList) >= 250000 {
 			outputFile := fmt.Sprintf("%s_%05d.sql", outputBase, outputCounter)
