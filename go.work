@@ -36,4 +36,5 @@ use (
 	cmd/runecalc
 	cmd/runecalc2
 	cmd/rdtext
+	cmd/corpuslist
 )
