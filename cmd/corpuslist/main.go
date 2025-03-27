@@ -2,14 +2,17 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"lgstructs"
 	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runer"
 	"sequences"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -69,21 +72,21 @@ func main() {
 		dictList = append(dictList, dictWord)
 		delete(wordList, word) // Remove the word from wordList
 
-		if len(dictList) >= 250000 {
-			outputFile := fmt.Sprintf("%s_%05d.sql", outputBase, outputCounter)
-			writeSqlFile(outputFile, dictList)
+		if len(dictList) >= 500000 {
+			outputFile := fmt.Sprintf("%s_%05d.csv", outputBase, outputCounter)
+			writeCsvFile(outputFile, dictList)
 			outputCounter++
 			dictList = dictList[:0]
 		}
 	}
 
-	outputFile := fmt.Sprintf("%s_%05d.sql", outputBase, outputCounter)
-	writeSqlFile(outputFile, dictList)
+	outputFile := fmt.Sprintf("%s_%05d.csv", outputBase, outputCounter)
+	writeCsvFile(outputFile, dictList)
 }
 
-// writeSqlFile writes the dictionary words to a SQL file
-func writeSqlFile(outputFile string, dictList []lgstructs.DictionaryWord) {
-	// Create the SQL file
+// writeCsvFile writes the dictionary words to a CSV file
+func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
+	// Create the CSV file
 	file, err := os.Create(outputFile)
 	if err != nil {
 		fmt.Printf("Failed to create output file: %v\n", err)
@@ -96,76 +99,56 @@ func writeSqlFile(outputFile string, dictList []lgstructs.DictionaryWord) {
 		}
 	}(file)
 
-	writer := bufio.NewWriter(file)
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
 
-	// Write the CREATE TABLE statement
-	createTableSQL := `
-CREATE TABLE IF NOT EXISTS dictionary_words (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    dict_word VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    dict_runeglish VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    dict_rune VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    dict_rune_no_doublet VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    gem_sum BIGINT NOT NULL,
-    gem_sum_prime TINYINT(1) NOT NULL,
-    gem_product VARCHAR(2048) COLLATE utf8mb4_general_ci NOT NULL,
-    gem_product_prime TINYINT(1) NOT NULL,
-    dict_word_length INT NOT NULL,
-    dict_runeglish_length INT NOT NULL,
-    dict_rune_length INT NOT NULL,
-    rune_pattern VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    rune_pattern_no_doublet VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL,
-    language VARCHAR(255) COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`
-	_, err = writer.WriteString(createTableSQL + "\n")
-	if err != nil {
-		fmt.Printf("Failed to write to output file: %v\n", err)
+	// Write the header
+	header := []string{
+		"dict_word", "dict_runeglish", "dict_rune", "dict_rune_no_doublet",
+		"gem_sum", "gem_sum_prime", "gem_product", "gem_product_prime",
+		"dict_word_length", "dict_runeglish_length", "dict_rune_length",
+		"rune_pattern", "rune_pattern_no_doublet", "language",
+	}
+	if err := writer.Write(header); err != nil {
+		fmt.Printf("Failed to write header to output file: %v\n", err)
 		return
 	}
 
-	// Write the INSERT statements
+	// Write the data
 	for _, dictWord := range dictList {
-		insertSQL := fmt.Sprintf(`
-INSERT INTO dictionary_words (
-    dict_word, dict_runeglish, dict_rune, dict_rune_no_doublet, gem_sum, gem_sum_prime, gem_product, gem_product_prime, dict_word_length, dict_runeglish_length, dict_rune_length, rune_pattern, rune_pattern_no_doublet, language
-) VALUES ('%s', '%s', '%s', '%s', %d, %t, '%s', %t, %d, %d, %d, '%s', '%s', '%s');
-`,
-			escapeString(dictWord.DictionaryWordText),
-			escapeString(dictWord.RuneglishWordText),
-			escapeString(dictWord.RuneWordText),
-			escapeString(dictWord.RuneWordTextNoDoublet),
-			dictWord.GemSum,
-			dictWord.GemSumPrime,
-			escapeString(dictWord.GemProduct),
-			dictWord.GemProductPrime,
-			dictWord.DictionaryWordLength,
-			dictWord.RuneglishWordLength,
-			dictWord.RuneWordLength,
-			escapeString(dictWord.RunePattern),
-			escapeString(dictWord.RunePatternNoDoubletPattern),
-			escapeString(dictWord.Language),
-		)
-		_, err = writer.WriteString(insertSQL + "\n")
-		if err != nil {
-			fmt.Printf("Failed to write to output file: %v\n", err)
+		pprime := 0
+		if dictWord.GemProductPrime {
+			pprime = 1
+		}
+
+		gprime := 0
+		if dictWord.GemSumPrime {
+			gprime = 1
+		}
+
+		record := []string{
+			dictWord.DictionaryWordText,
+			dictWord.RuneglishWordText,
+			dictWord.RuneWordText,
+			dictWord.RuneWordTextNoDoublet,
+			strconv.Itoa(int(dictWord.GemSum)),
+			strconv.Itoa(gprime),
+			dictWord.GemProduct,
+			strconv.Itoa(pprime),
+			strconv.Itoa(dictWord.DictionaryWordLength),
+			strconv.Itoa(dictWord.RuneglishWordLength),
+			strconv.Itoa(dictWord.RuneWordLength),
+			dictWord.RunePattern,
+			dictWord.RunePatternNoDoubletPattern,
+			dictWord.Language,
+		}
+		if err := writer.Write(record); err != nil {
+			fmt.Printf("Failed to write record to output file: %v\n", err)
 			return
 		}
 	}
 
-	// Flush the writer
-	err = writer.Flush()
-	if err != nil {
-		fmt.Printf("Failed to flush output file: %v\n", err)
-		return
-	}
-
-	fmt.Printf("SQL file created successfully: %s\n", outputFile)
-}
-
-// escapeString escapes single quotes in a string for SQL insertion
-func escapeString(str string) string {
-	return strings.ReplaceAll(str, "'", "''")
+	fmt.Printf("CSV file created successfully: %s\n", outputFile)
 }
 
 // processFile reads a file and adds all words to the word list
@@ -183,6 +166,7 @@ func processFile(filePath string, wordList map[string]bool) {
 	}(file)
 
 	reader := bufio.NewReader(file)
+	re := regexp.MustCompile(`[^\w]+`)
 	for {
 		line, readError := reader.ReadString('\n')
 		if readError != nil {
@@ -191,9 +175,11 @@ func processFile(filePath string, wordList map[string]bool) {
 			}
 			break
 		}
-		words := strings.Fields(line)
+		words := re.Split(line, -1)
 		for _, word := range words {
-			wordList[word] = true
+			if word != "" {
+				wordList[word] = true
+			}
 		}
 	}
 }

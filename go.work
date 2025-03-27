@@ -37,4 +37,5 @@ use (
 	cmd/runecalc2
 	cmd/rdtext
 	cmd/corpuslist
+	cmd/runedonkey
 )
