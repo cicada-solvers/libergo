@@ -185,6 +185,7 @@ func main() {
 			}
 
 			outfile := fmt.Sprintf("%s_%s_%s.xlsx", corpus, actionName, *outputFile)
+			fmt.Println("Generating Excel for:", corpus, actionName)
 
 			genError := runeDonkey.GenerateExcelFromValues(*text, runer.Runes, action, outfile)
 			if genError != nil {
