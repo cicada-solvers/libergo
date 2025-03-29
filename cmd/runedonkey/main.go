@@ -17,6 +17,7 @@ const (
 	GemSum Actions = iota
 	WordLength
 	RuneLength
+	RuneNoDoubletLength
 	RuneglishLength
 	RunePattern
 	RunePatternNoDoublet
@@ -74,7 +75,7 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 			sum := runer.CalculateGemSum(word, textType)
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", sum))
 			break
-		case WordLength, RuneLength, RuneglishLength:
+		case WordLength, RuneLength, RuneglishLength, RuneNoDoubletLength:
 			length := len(word)
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", length))
 			break
@@ -106,6 +107,9 @@ func (rd *RuneDonkey) queryDatabase(field Actions, value string) []string {
 		break
 	case RuneglishLength:
 		rows = rd.DB.Table("dictionary_words").Where("dict_runeglish_length = ?", value).Select("dict_word")
+		break
+	case RuneNoDoubletLength:
+		rows = rd.DB.Table("dictionary_words").Where("dict_rune_no_doublet_length = ?", value).Select("dict_word")
 		break
 	case RunePattern:
 		rows = rd.DB.Table("dictionary_words").Where("rune_pattern = ?", value).Select("dict_word")
@@ -176,6 +180,9 @@ func main() {
 			case RuneglishLength:
 				actionName = "RuneglishLength"
 				break
+			case RuneNoDoubletLength:
+				actionName = "RuneNoDoubletLength"
+				break
 			case RunePattern:
 				actionName = "RunePattern"
 				break
@@ -184,7 +191,7 @@ func main() {
 				break
 			}
 
-			outfile := fmt.Sprintf("%s_%s_%s.xlsx", corpus, actionName, *outputFile)
+			outfile := fmt.Sprintf("%s_%s_%s", corpus, actionName, *outputFile)
 			fmt.Println("Generating Excel for:", corpus, actionName)
 
 			genError := runeDonkey.GenerateExcelFromValues(*text, runer.Runes, action, outfile)
@@ -193,6 +200,15 @@ func main() {
 				return
 			}
 		}
-	}
 
+		// Get the underlying sql.DB object and defer its closure
+		sqlDB, err := db.DB()
+		if err != nil {
+			panic("failed to get database object")
+		}
+		cerr := sqlDB.Close()
+		if cerr != nil {
+			return
+		}
+	}
 }

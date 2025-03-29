@@ -17,6 +17,7 @@ type DictionaryWord struct {
 	DictionaryWordLength        int    `json:"dict_word_length"`
 	RuneglishWordLength         int    `json:"dict_runeglish_length"`
 	RuneWordLength              int    `json:"dict_rune_length"`
+	DictRuneNoDoubletLength     int    `json:"dict_rune_no_doublet_length"`
 	RunePattern                 string `json:"rune_pattern"`
 	RunePatternNoDoubletPattern string `json:"rune_pattern_no_doublet"`
 	Language                    string `json:"language"`

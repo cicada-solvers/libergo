@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"lgstructs"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -63,6 +64,7 @@ func main() {
 			GemProductPrime:             sequences.IsPrime(&gemProd),
 			DictionaryWordLength:        len(word),
 			RuneglishWordLength:         len(runeglish),
+			DictRuneNoDoubletLength:     utf8.RuneCountInString(runeTextNoDoublet),
 			RuneWordLength:              utf8.RuneCountInString(runeText),
 			RunePattern:                 lgstructs.GetRunePattern(word),
 			RunePatternNoDoubletPattern: lgstructs.GetRunePattern(runeTextNoDoublet),
@@ -72,7 +74,7 @@ func main() {
 		dictList = append(dictList, dictWord)
 		delete(wordList, word) // Remove the word from wordList
 
-		if len(dictList) >= 500000 {
+		if len(dictList) >= math.MaxInt-1 {
 			outputFile := fmt.Sprintf("%s_%05d.csv", outputBase, outputCounter)
 			writeCsvFile(outputFile, dictList)
 			outputCounter++
@@ -107,7 +109,8 @@ func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
 		"dict_word", "dict_runeglish", "dict_rune", "dict_rune_no_doublet",
 		"gem_sum", "gem_sum_prime", "gem_product", "gem_product_prime",
 		"dict_word_length", "dict_runeglish_length", "dict_rune_length",
-		"rune_pattern", "rune_pattern_no_doublet", "language",
+		"rune_pattern", "rune_pattern_no_doublet", "dict_rune_no_doublet_length",
+		"language",
 	}
 	if err := writer.Write(header); err != nil {
 		fmt.Printf("Failed to write header to output file: %v\n", err)
@@ -140,6 +143,7 @@ func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
 			strconv.Itoa(dictWord.RuneWordLength),
 			dictWord.RunePattern,
 			dictWord.RunePatternNoDoubletPattern,
+			strconv.Itoa(dictWord.DictRuneNoDoubletLength),
 			dictWord.Language,
 		}
 		if err := writer.Write(record); err != nil {
