@@ -9,6 +9,7 @@ import (
 	"lgstructs"
 	"runer"
 	"strings"
+	"unicode/utf8"
 )
 
 type Actions int
@@ -75,8 +76,12 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 			sum := runer.CalculateGemSum(word, textType)
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", sum))
 			break
-		case WordLength, RuneLength, RuneglishLength, RuneNoDoubletLength:
+		case WordLength, RuneglishLength:
 			length := len(word)
+			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", length))
+			break
+		case RuneLength, RuneNoDoubletLength:
+			length := utf8.RuneCountInString(word)
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", length))
 			break
 		case RunePattern:
