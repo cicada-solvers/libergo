@@ -39,7 +39,7 @@ func main() {
 	// Define command-line flags
 	inputDirectory := flag.String("input", "", "Path to the input Excel files")
 	outputDirectory := flag.String("output", "", "Path to the output files")
-	sheetName := "Worksheet"
+	sheetName := "Sheet1"
 
 	// We are going to put timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
@@ -77,6 +77,10 @@ func main() {
 		if !os.IsNotExist(outError) {
 			continue
 		}
+
+		// Write the content to the output file
+		outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
+		WriteContentsToOutputFile(outputFile, outputBytes)
 
 		// Open the Excel file
 		f, fileErr := excelize.OpenFile(inputFile)
@@ -211,39 +215,43 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 			// Write the content to the output file
 			outputBytes := []byte(sentence.Content + "\n\n")
 
-			for {
-				fileMutex.Lock()
-				file, openError := os.OpenFile(sentence.Output, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-				if openError != nil {
-					fmt.Printf("Failed to open file: %v\n", openError)
-					fileMutex.Unlock()
-					time.Sleep(100 * time.Millisecond) // Wait before retrying
-					continue
-				}
-
-				_, writeErr := file.Write(outputBytes)
-				if writeErr != nil {
-					fmt.Printf("Failed to write to file: %v\n", writeErr)
-					err := file.Close()
-					if err != nil {
-						fmt.Printf("Failed to close file: %v\n", err)
-					}
-					fileMutex.Unlock()
-					time.Sleep(100 * time.Millisecond) // Wait before retrying
-					continue
-				}
-
-				closeError := file.Close()
-				if closeError != nil {
-					fmt.Printf("Failed to close file: %v\n", closeError)
-				}
-				fileMutex.Unlock()
-				break
-			}
+			WriteContentsToOutputFile(sentence.Output, outputBytes)
 		}
 
 		processedCounter.Add(processedCounter, one)
 		rateCounter.Add(rateCounter, one)
+	}
+}
+
+func WriteContentsToOutputFile(outputfile string, outputBytes []byte) {
+	for {
+		fileMutex.Lock()
+		file, openError := os.OpenFile(outputfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		if openError != nil {
+			fmt.Printf("Failed to open file: %v\n", openError)
+			fileMutex.Unlock()
+			time.Sleep(100 * time.Millisecond) // Wait before retrying
+			continue
+		}
+
+		_, writeErr := file.Write(outputBytes)
+		if writeErr != nil {
+			fmt.Printf("Failed to write to file: %v\n", writeErr)
+			err := file.Close()
+			if err != nil {
+				fmt.Printf("Failed to close file: %v\n", err)
+			}
+			fileMutex.Unlock()
+			time.Sleep(100 * time.Millisecond) // Wait before retrying
+			continue
+		}
+
+		closeError := file.Close()
+		if closeError != nil {
+			fmt.Printf("Failed to close file: %v\n", closeError)
+		}
+		fileMutex.Unlock()
+		break
 	}
 }
 
