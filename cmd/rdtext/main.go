@@ -59,7 +59,7 @@ func main() {
 		log.Fatalf("Failed to get Excel files: %v", err)
 	}
 
-	// Sort files by size (smallest first)
+	// Sort files by size (largest first)
 	sort.Slice(files, func(i, j int) bool {
 		infoI, _ := os.Stat(files[i])
 		infoJ, _ := os.Stat(files[j])
@@ -187,7 +187,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 			close(sentenceChan)
 		}()
 
-		numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
+		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
 			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
