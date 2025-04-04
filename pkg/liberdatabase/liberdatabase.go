@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -131,6 +132,15 @@ func InitSQLiteConnection() (*gorm.DB, error) {
 	return db, nil
 }
 
+func InitMySQLConnection() (*gorm.DB, error) {
+	dsn := fmt.Sprintf("%s%d%s", "runedonkey:dpasswd@tcp(localhost:", 3306, ")/wordsdb?charset=utf8mb4&parseTime=True&loc=Local")
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("error opening MySQL database: %v", err)
+	}
+	return db, nil
+}
+
 func InitPrimesConnection() (*gorm.DB, error) {
 	fldrPath, err := config.GetConfigFolderPath()
 	if err != nil {
@@ -174,6 +184,27 @@ func InitSQLiteTables() error {
 	dbCreateError := conn.AutoMigrate(&Factor{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	return nil
+}
+
+func InitMySqlTables() error {
+	// Now we need to put in our migrations.
+	conn, err := InitMySQLConnection()
+	if err != nil {
+		return nil
+	}
+
+	// Migrate the schemas
+	dbCreateError := conn.AutoMigrate(&SentenceRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	closeError := CloseConnection(conn)
+	if closeError != nil {
+		return closeError
 	}
 
 	return nil

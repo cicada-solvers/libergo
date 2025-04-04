@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jdkato/prose/v2"
+	"liberdatabase"
 	"log"
 	"math/big"
 	"os"
@@ -29,6 +30,7 @@ type ColInformation struct {
 
 // Sentence represents a sentence with its content, output file name, and column index.
 type Sentence struct {
+	FileName    string
 	Content     string
 	Output      string
 	ColumnIndex int
@@ -59,6 +61,11 @@ func main() {
 		log.Fatalf("Failed to get Excel files: %v", err)
 	}
 
+	createErr := liberdatabase.InitMySqlTables()
+	if createErr != nil {
+		return
+	}
+
 	// Sort files by size (largest first)
 	sort.Slice(files, func(i, j int) bool {
 		infoI, _ := os.Stat(files[i])
@@ -79,8 +86,8 @@ func main() {
 		}
 
 		// Write the content to the output file
-		outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
-		WriteContentsToOutputFile(outputFile, outputBytes)
+		//outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
+		//WriteContentsToOutputFile(outputFile, outputBytes)
 
 		// Open the Excel file
 		f, fileErr := excelize.OpenFile(inputFile)
@@ -108,7 +115,7 @@ func main() {
 		}()
 
 		// Call permuteCols with the provided output file name
-		permuteErr := permuteCols(f, outputFile, sheetName, colInfo, builder, 0)
+		permuteErr := permuteCols(f, outputFile, sheetName, colInfo, builder, 0, filepath.Base(inputFile))
 		if permuteErr != nil {
 			fmt.Printf("Failed to permute cols: %v", permuteErr)
 		}
@@ -136,7 +143,7 @@ func getExcelFiles(dir string) ([]string, error) {
 }
 
 // permuteCols permutes the columns in the Excel file and writes the sentences to the output file.
-func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int) (err error) {
+func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int, filename string) (err error) {
 	localBuilder := cloneStringBuilder(&builder)
 
 	if currentColIdx < (len(cols) - 1) {
@@ -156,7 +163,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 
 			fmt.Printf("Looped Index: %d:%d\n", currentColIdx, i)
 
-			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1)
+			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1, filename)
 			if permuteErr != nil {
 				return fmt.Errorf("Failed to permute columns: %v\n", permuteErr)
 			}
@@ -177,6 +184,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 				localBuilder.WriteString(" " + cellValue)
 
 				sentence := Sentence{
+					FileName:    filename,
 					Content:     localBuilder.String(),
 					Output:      outputName,
 					ColumnIndex: currentColIdx,
@@ -190,13 +198,44 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
-			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+			//go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+			go insertSentenceToDB(sentenceChan, &wg)
 		}
 
 		wg.Wait()
 	}
 
 	return nil
+}
+
+func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
+	// Create a new SentenceRecord
+	defer wg.Done()
+
+	conn, connErr := liberdatabase.InitMySQLConnection()
+	if connErr != nil {
+		fmt.Printf("error initializing MySQL connection: %v", connErr)
+	}
+
+	for sentence := range sentChan {
+		record := liberdatabase.SentenceRecord{
+			FileName:     sentence.FileName,
+			DictSentence: sentence.Content,
+		}
+
+		// Insert the record into the database
+		err := liberdatabase.AddSentenceRecord(conn, record)
+		if err != nil {
+			fmt.Printf("error inserting sentence record: %v", err)
+		}
+
+		processedCounter.Add(processedCounter, big.NewInt(1))
+	}
+
+	closeError := liberdatabase.CloseConnection(conn)
+	if closeError != nil {
+		fmt.Printf("error closing MySQL connection: %v", closeError)
+	}
 }
 
 // calculateProbabilityAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
