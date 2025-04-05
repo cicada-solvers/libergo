@@ -134,11 +134,18 @@ func main() {
 		}
 
 		var wg sync.WaitGroup
-		sentenceChan := make(chan string, 16384) // Increased buffer size
+		sentenceChan := make(chan Sentence, 16384) // Increased buffer size
 
 		go func() {
 			for _, record := range records {
-				sentenceChan <- record.DictSentence
+				// Create a new Sentence instance
+				sentence := Sentence{
+					FileName:    record.FileName,
+					Content:     record.DictSentence,
+					Output:      outputFile,
+					ColumnIndex: 0, // Set the column index as needed
+				}
+				sentenceChan <- sentence
 			}
 			close(sentenceChan)
 		}()
@@ -271,22 +278,22 @@ func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
 }
 
 // calculateProbabilityAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
-func calculateProbabilityAndWriteToFile(sentChan chan string, wg *sync.WaitGroup) {
+func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
 	one := big.NewInt(1)
 
 	defer wg.Done()
 
 	for sentence := range sentChan {
-		posCounts, totalWords := analyzeText(sentence)
+		posCounts, totalWords := analyzeText(sentence.Content)
 		probability := calculateSentenceProbability(posCounts, totalWords)
 
 		if probability > 0 {
 			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
 
 			// Write the content to the output file
-			outputBytes := []byte(sentence + "\n\n")
+			outputBytes := []byte(sentence.Content + "\n\n")
 
-			WriteContentsToOutputFile(sentence, outputBytes)
+			WriteContentsToOutputFile(sentence.Output, outputBytes)
 		}
 
 		processedCounter.Add(processedCounter, one)
