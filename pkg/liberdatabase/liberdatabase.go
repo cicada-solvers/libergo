@@ -180,6 +180,12 @@ func InitSQLiteTables() error {
 		return nil
 	}
 
+	// Remove the old table if it exists
+	dropError := conn.Migrator().DropTable(&Factor{})
+	if dropError != nil {
+		fmt.Printf("Error dropping table: %v\n", dropError)
+	}
+
 	// Migrate the schemas
 	dbCreateError := conn.AutoMigrate(&Factor{})
 	if dbCreateError != nil {

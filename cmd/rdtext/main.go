@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -61,20 +60,13 @@ func main() {
 		log.Fatalf("Failed to get Excel files: %v", err)
 	}
 
-	createErr := liberdatabase.InitMySqlTables()
-	if createErr != nil {
-		return
-	}
-
-	// Sort files by size (largest first)
-	sort.Slice(files, func(i, j int) bool {
-		infoI, _ := os.Stat(files[i])
-		infoJ, _ := os.Stat(files[j])
-		return infoI.Size() < infoJ.Size()
-	})
-
 	// Process each file
 	for _, inputFile := range files {
+		createErr := liberdatabase.InitMySqlTables()
+		if createErr != nil {
+			return
+		}
+
 		infoFile, _ := os.Stat(inputFile)
 		fmt.Printf("Processing file: %s\n", infoFile.Name())
 
