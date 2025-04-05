@@ -86,8 +86,8 @@ func main() {
 		}
 
 		// Write the content to the output file
-		//outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
-		//WriteContentsToOutputFile(outputFile, outputBytes)
+		outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
+		WriteContentsToOutputFile(outputFile, outputBytes)
 
 		// Open the Excel file
 		f, fileErr := excelize.OpenFile(inputFile)
@@ -123,6 +123,46 @@ func main() {
 		closeErr := f.Close()
 		if closeErr != nil {
 			log.Fatalf("Failed to close the Excel file: %v", closeErr)
+		}
+
+		// Reset counters
+		processedCounter.SetInt64(int64(0))
+		rateCounter.SetInt64(int64(0))
+
+		// Now we are going to remove the million records from the database.
+		conn, connErr := liberdatabase.InitMySQLConnection()
+		if connErr != nil {
+			fmt.Printf("error initializing MySQL connection: %v", connErr)
+		}
+
+		// Get the top million sentence records
+		records, getErr := liberdatabase.GetTopMillionSentenceRecords(conn, filepath.Base(inputFile))
+		if getErr != nil {
+			fmt.Printf("error getting top million sentence records: %v", getErr)
+		}
+
+		var wg sync.WaitGroup
+		sentenceChan := make(chan string, 16384) // Increased buffer size
+
+		go func() {
+			for _, record := range records {
+				sentenceChan <- record.DictSentence
+			}
+			close(sentenceChan)
+		}()
+
+		numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+		}
+
+		wg.Wait()
+
+		// Remove the million records from the database
+		removeErr := liberdatabase.RemoveMillionSentenceRecords(conn, records)
+		if removeErr != nil {
+			fmt.Printf("error removing million sentence records: %v", removeErr)
 		}
 	}
 }
@@ -161,7 +201,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 
 			localBuilder.WriteString(spacer + cellValue)
 
-			fmt.Printf("Looped Index: %d:%d\n", currentColIdx, i)
+			//fmt.Printf("Looped Index: %d:%d\n", currentColIdx, i)
 
 			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1, filename)
 			if permuteErr != nil {
@@ -195,10 +235,9 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 			close(sentenceChan)
 		}()
 
-		numWorkers := runtime.NumCPU() // Adjusted number of workers
+		numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
-			//go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
 			go insertSentenceToDB(sentenceChan, &wg)
 		}
 
@@ -230,6 +269,7 @@ func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
 		}
 
 		processedCounter.Add(processedCounter, big.NewInt(1))
+		rateCounter.Add(rateCounter, big.NewInt(1))
 	}
 
 	closeError := liberdatabase.CloseConnection(conn)
@@ -239,22 +279,22 @@ func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
 }
 
 // calculateProbabilityAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
-func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
+func calculateProbabilityAndWriteToFile(sentChan chan string, wg *sync.WaitGroup) {
 	one := big.NewInt(1)
 
 	defer wg.Done()
 
 	for sentence := range sentChan {
-		posCounts, totalWords := analyzeText(sentence.Content)
+		posCounts, totalWords := analyzeText(sentence)
 		probability := calculateSentenceProbability(posCounts, totalWords)
 
 		if probability > 0 {
 			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
 
 			// Write the content to the output file
-			outputBytes := []byte(sentence.Content + "\n\n")
+			outputBytes := []byte(sentence + "\n\n")
 
-			WriteContentsToOutputFile(sentence.Output, outputBytes)
+			WriteContentsToOutputFile(sentence, outputBytes)
 		}
 
 		processedCounter.Add(processedCounter, one)

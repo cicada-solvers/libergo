@@ -20,9 +20,9 @@ func AddSentenceRecord(db *gorm.DB, record SentenceRecord) error {
 	return nil
 }
 
-func GetTopMillionSentenceRecords(db *gorm.DB) ([]SentenceRecord, error) {
+func GetTopMillionSentenceRecords(db *gorm.DB, fileName string) ([]SentenceRecord, error) {
 	var records []SentenceRecord
-	result := db.Limit(1000000).Find(&records)
+	result := db.Model(&SentenceRecord{}).Where("file_name = ?", fileName).Limit(1000000).Find(&records)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error retrieving top million sentence records: %v", result.Error)
 	}
