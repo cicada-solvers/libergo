@@ -35,5 +35,6 @@ for FILE in "$INPUT_DIRECTORY"/*; do
 
     # Call the rdtext binary with the file name
     ./rdtext -input="$FILE" -output="$OUT_FILE"
+    sleep 60
   fi
 done
