@@ -4,6 +4,7 @@ binfile
 binstring
 binvert
 coller
+corpuslist
 decode64
 dpattern
 factorize
@@ -18,7 +19,9 @@ libergo
 numfile
 numstring
 processhashes
+rdtext
 rencode
 runecalc
 runecalc2
+runedonkey
 stripperhashes
