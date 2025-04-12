@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// Get the rune pattern
-	pattern := lgstructs.GetRunePattern(dw)
+	pattern := lgstructs.GetRunePattern(dw.RuneWordText)
 
 	// Output the result
 	fmt.Println("Pattern:", pattern)
