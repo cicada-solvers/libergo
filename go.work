@@ -38,4 +38,5 @@ use (
 	cmd/rdtext
 	cmd/corpuslist
 	cmd/runedonkey
+	cmd/cipherval
 )

@@ -3,14 +3,15 @@ package cipher
 import (
 	"errors"
 	"fmt"
+	"runer"
 	"strings"
 )
 
-func BulkDecodeAffineCipher(alphabet []string, text string, maxValue int) (string, error) {
+func BulkDecodeAffineCipher(alphabet []string, text string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 
-	for a := 0; a < maxValue; a++ {
-		for b := 0; b < maxValue; b++ {
+	for a := 0; a < len(alphabet)+1; a++ {
+		for b := 0; b < len(alphabet)+1; b++ {
 			fmt.Printf("Trying %d, %d:\n", a, b)
 			decoded, err := DecodeAffineCipher(text, a, b, alphabet)
 			if err != nil {
@@ -18,6 +19,12 @@ func BulkDecodeAffineCipher(alphabet []string, text string, maxValue int) (strin
 			}
 
 			result.WriteString(fmt.Sprintf("Multiplier: %d, Shift: %d - %s\n", a, b, decoded))
+
+			if decodeToLatin {
+				// Decode to Latin if needed
+				decodedLatin := runer.TransposeRuneToLatin(decoded)
+				result.WriteString(fmt.Sprintf("Multiplier: %d, Shift: %d - %s\n", a, b, decodedLatin))
+			}
 
 			fmt.Println(decoded)
 		}

@@ -2,18 +2,23 @@ package cipher
 
 import (
 	"fmt"
+	"runer"
 	"strings"
 )
 
 // BulkDecodeCaesarString decodes the given text using the Caesar cipher with the provided alphabet and key.
-func BulkDecodeCaesarString(alphabet []string, text []string) (string, error) {
+func BulkDecodeCaesarString(alphabet []string, text []string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 
 	for i := 0; i < len(alphabet); i++ {
 		fmt.Printf("Trying %d:\n", i)
 		decoded := DecodeCaesarCipher(alphabet, text, []int{i})
-
 		result.WriteString(fmt.Sprintf("Shift: %d - %s\n", i, strings.Join(decoded, "")))
+
+		if decodeToLatin {
+			decodedLatin := runer.TransposeRuneToLatin(strings.Join(decoded, ""))
+			result.WriteString(fmt.Sprintf("Shift: %d - %s\n", i, decodedLatin))
+		}
 	}
 
 	return result.String(), nil
@@ -60,14 +65,4 @@ func DecodeCaesarCipher(alphabet, text []string, key []int) []string {
 	}
 
 	return result
-}
-
-// indexOf returns the index of the target string in the slice, or -1 if not found.
-func indexOf(slice []string, target string) int {
-	for i, v := range slice {
-		if v == target {
-			return i
-		}
-	}
-	return -1
 }

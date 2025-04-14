@@ -1,6 +1,7 @@
 package runelib
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -122,39 +123,31 @@ func (repo *CharacterRepo) GetASCIICharFromDec(dec int, includeControlCharacters
 	return ""
 }
 
-// GetGematriaRunes returns a list of runes used in the Elder Futhark alphabet.
+// GetGematriaRunes returns a list of runes used in the rune alphabet.
 func (repo *CharacterRepo) GetGematriaRunes() []string {
-	return []string{
-		"ᛝ", // ING
-		"ᛟ", // OE
-		"ᛇ", // EO
-		"ᛡ", // IO
-		"ᛠ", // EA
-		"ᚫ", // AE
-		"ᚦ", // TH
-		"ᚠ", // F
-		"ᚢ", // U
-		"ᚩ", // O
-		"ᚱ", // R
-		"ᚳ", // C/K
-		"ᚷ", // G
-		"ᚹ", // W
-		"ᚻ", // H
-		"ᚾ", // N
-		"ᛁ", // I
-		"ᛄ", // J
-		"ᛈ", // P
-		"ᛉ", // X
-		"ᛋ", // S/Z
-		"ᛏ", // T
-		"ᛒ", // B
-		"ᛖ", // E
-		"ᛗ", // M
-		"ᛚ", // L
-		"ᛞ", // D
-		"ᚪ", // A
-		"ᚣ", // Y
+	var retval []string
+
+	// Create a slice of key-value pairs
+	type kv struct {
+		Key   string
+		Value int
 	}
+	var sortedRunes []kv
+	for k, v := range runeToValueMap {
+		sortedRunes = append(sortedRunes, kv{k, v})
+	}
+
+	// Sort the slice by the integer values
+	sort.Slice(sortedRunes, func(i, j int) bool {
+		return sortedRunes[i].Value < sortedRunes[j].Value
+	})
+
+	// Print the sorted runes
+	for _, kv := range sortedRunes {
+		retval = append(retval, kv.Key)
+	}
+
+	return retval
 }
 
 var runeToCharMap = map[string]string{
