@@ -101,14 +101,12 @@ func main() {
 			return
 		}
 
-		decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, *text, 1)
-
-		// for i := 1; i <= 10; i++ {
-		// decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, *text, i)
-		// if decodeErr != nil {
-		// fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
-		// }
-		// }
+		for i := 1; i <= 10; i++ {
+			decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, *text, i)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+			}
+		}
 	}
 
 	// Write the decoded text to the output file
