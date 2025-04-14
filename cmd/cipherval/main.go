@@ -75,21 +75,29 @@ func main() {
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
 		}
+		// Write the decoded text to the output file
+		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 	case "affine":
 		decodedText, decodeErr = cipher.BulkDecodeAffineCipher(alphabetSet, *text, decodeToLatin)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
 		}
+		// Write the decoded text to the output file
+		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 	case "atbash":
 		decodedText, decodeErr = cipher.BulkDecodeAtbashString(alphabetSet, *text, decodeToLatin)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
 		}
+		// Write the decoded text to the output file
+		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 	case "trithemius":
 		decodedText, decodeErr = cipher.BulkDecodeTrithemiusString(alphabetSet, *text, decodeToLatin)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
 		}
+		// Write the decoded text to the output file
+		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 	case "vigenere":
 		if *wordFile == "" {
 			log.Fatal("The -wordfile flag is required for Vigenere cipher")
@@ -106,11 +114,12 @@ func main() {
 			if decodeErr != nil {
 				fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
 			}
+
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 		}
 	}
 
-	// Write the decoded text to the output file
-	_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 }
 
 // ReadWordsFromCSVColumn reads all the words from a specific column in a CSV file.
