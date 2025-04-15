@@ -86,17 +86,18 @@ func BulkDecodeVigenereCipher(alphabet, wordList, latinList []string, text strin
 	go func() {
 		wg.Wait()
 
-		result.Reset()
-		for _, key := range topResults {
-			result.WriteString(key.Text)
-		}
-
 		close(resultsChan)
 	}()
 
 	// Collect results
-	for range resultsChan {
+	for decText := range resultsChan {
+		topResults = append(topResults, decText)
 		topResults = sortTopResults(topResults)
+	}
+
+	result.Reset()
+	for _, key := range topResults {
+		result.WriteString(key.Text)
 	}
 
 	return result.String(), nil
