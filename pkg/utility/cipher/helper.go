@@ -84,8 +84,8 @@ func sortTopResults(results []DecipheredText) []DecipheredText {
 		return sortedList[i].Count > sortedList[j].Count
 	})
 
-	if len(sortedList) > 100 {
-		sortedList = sortedList[:100]
+	if len(sortedList) > 500 {
+		sortedList = sortedList[:500]
 	}
 
 	return sortedList
