@@ -18,6 +18,7 @@ func main() {
 	outputFile := flag.String("output", "", "The output file to write the results")
 	wordFile := flag.String("wordfile", "", "The CSV file of words to try for brute force decoding")
 	ciphertype := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
+	maxDepth := flag.Int("maxdepth", 1, "The maximum depth for brute force decoding (default is 10)")
 
 	// Parse the flags
 	flag.Parse()
@@ -43,6 +44,7 @@ func main() {
 	fmt.Printf("Output File: %s\n", *outputFile)
 	fmt.Printf("Word File: %s\n", *wordFile)
 	fmt.Printf("Cipher: %s\n", *ciphertype)
+	fmt.Printf("Max Depth: %d\n", *maxDepth)
 
 	// Add your decoding logic here
 	// Determine the alphabet to use
@@ -109,15 +111,18 @@ func main() {
 			return
 		}
 
-		for i := 1; i <= 10; i++ {
-			decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, *text, i)
-			if decodeErr != nil {
-				fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
-			}
-
-			// Write the decoded text to the output file
-			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
+		if csvErr != nil {
+			return
 		}
+
+		decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, latinList, *text, *maxDepth)
+		if decodeErr != nil {
+			fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+		}
+
+		// Write the decoded text to the output file
+		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 	}
 
 }
