@@ -39,4 +39,5 @@ use (
 	cmd/corpuslist
 	cmd/runedonkey
 	cmd/cipherval
+	cmd/mob
 )

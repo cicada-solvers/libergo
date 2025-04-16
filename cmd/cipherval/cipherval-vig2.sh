@@ -3,9 +3,9 @@
 declare -a arr=("dwyl" "tfcom" "pgb")
 END=10
 
-for i in "${arr[@]}"
+for depth in $(seq 1 $END)
 do
-  for depth in $(seq 1 $END)
+  for i in "${arr[@]}"
   do
     echo "Section 0-2"
 
