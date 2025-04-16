@@ -67,7 +67,7 @@ func countWords(text string) int64 {
 	var count int64
 	for _, word := range latinWordList {
 		if strings.Contains(text, word) {
-			count++
+			count = count + int64(len(word))
 		}
 	}
 	return count
