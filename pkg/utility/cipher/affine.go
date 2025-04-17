@@ -7,6 +7,26 @@ import (
 	"strings"
 )
 
+func BulkDecodeAffineCipherRaw(alphabet []string, text string) (string, error) {
+	var result strings.Builder
+
+	for a := 0; a < len(alphabet)+1; a++ {
+		for b := 0; b < len(alphabet)+1; b++ {
+			fmt.Printf("Trying %d, %d:\n", a, b)
+			decoded, err := DecodeAffineCipher(text, a, b, alphabet)
+			if err != nil {
+				continue
+			}
+
+			result.WriteString(fmt.Sprintf("%d/%d : %s\n", a, b, decoded))
+
+			fmt.Println(decoded)
+		}
+	}
+
+	return result.String(), nil
+}
+
 func BulkDecodeAffineCipher(alphabet []string, text string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 
@@ -61,28 +81,6 @@ func DecodeAffineCipher(text string, a, b int, alphabet []string) (string, error
 				result.WriteString(strings.ToUpper(decodedChar))
 			} else {
 				result.WriteString(decodedChar)
-			}
-		} else {
-			result.WriteRune(c)
-		}
-	}
-	return result.String(), nil
-}
-
-// EncodeAffineCipher encodes the given text using the affine cipher with the given multiplier and shift.
-func EncodeAffineCipher(text string, a, b int, alphabet []string) (string, error) {
-	m := len(alphabet)
-
-	var result strings.Builder
-	for _, c := range text {
-		if strings.ContainsRune(strings.Join(alphabet, ""), c) {
-			index := strings.Index(strings.Join(alphabet, ""), strings.ToLower(string(c)))
-			encodedIndex := (a*index + b) % m
-			encodedChar := alphabet[encodedIndex]
-			if strings.ToUpper(string(c)) == string(c) {
-				result.WriteString(strings.ToUpper(encodedChar))
-			} else {
-				result.WriteString(encodedChar)
 			}
 		} else {
 			result.WriteRune(c)

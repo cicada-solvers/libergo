@@ -19,6 +19,7 @@ func main() {
 	wordFile := flag.String("wordfile", "", "The CSV file of words to try for brute force decoding")
 	ciphertype := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
 	maxDepth := flag.Int("maxdepth", 1, "The maximum depth for brute force decoding (default is 10)")
+	isRaw := flag.String("raw", "n", "If true, the text is not decoded and is written as is to the output file")
 
 	// Parse the flags
 	flag.Parse()
@@ -36,7 +37,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create output file: %v", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalf("Failed to close output file: %v", err)
+		}
+	}(file)
 
 	// Print the parsed flags (for debugging or further processing)
 	fmt.Printf("Text: %s\n", *text)
@@ -45,6 +51,7 @@ func main() {
 	fmt.Printf("Word File: %s\n", *wordFile)
 	fmt.Printf("Cipher: %s\n", *ciphertype)
 	fmt.Printf("Max Depth: %d\n", *maxDepth)
+	fmt.Printf("IsRaw: %t\n", *isRaw == "n")
 
 	// Add your decoding logic here
 	// Determine the alphabet to use
@@ -64,67 +71,159 @@ func main() {
 		columnIndex = 0
 	}
 
-	// Write the text to the output file
-	_, err = file.WriteString(fmt.Sprintf("Text: %s\n", *text))
-
 	// Now we are going to decode the text based on the cipher type
 	var decodedText string
 	var decodeErr error
 
-	switch strings.ToLower(*ciphertype) {
-	case "caesar":
-		decodedText, decodeErr = cipher.BulkDecodeCaesarString(alphabetSet, strings.Split(*text, ""), decodeToLatin)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
-		}
-		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
-	case "affine":
-		decodedText, decodeErr = cipher.BulkDecodeAffineCipher(alphabetSet, *text, decodeToLatin)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
-		}
-		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
-	case "atbash":
-		decodedText, decodeErr = cipher.BulkDecodeAtbashString(alphabetSet, *text, decodeToLatin)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
-		}
-		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
-	case "trithemius":
-		decodedText, decodeErr = cipher.BulkDecodeTrithemiusString(alphabetSet, *text, decodeToLatin)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
-		}
-		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
-	case "vigenere":
-		if *wordFile == "" {
-			log.Fatal("The -wordfile flag is required for Vigenere cipher")
-		}
+	if *isRaw == "y" {
+		switch strings.ToLower(*ciphertype) {
+		case "caesar":
+			decodedText, decodeErr = cipher.BulkDecodeCaesarStringRaw(alphabetSet, strings.Split(*text, ""))
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		case "affine":
+			decodedText, decodeErr = cipher.BulkDecodeAffineCipherRaw(alphabetSet, *text)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		case "atbash":
+			decodedText, decodeErr = cipher.BulkDecodeAtbashStringRaw(alphabetSet, *text)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		case "trithemius":
+			decodedText, decodeErr = cipher.BulkDecodeTrithemiusStringRaw(alphabetSet, *text)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		case "vigenere":
+			if *wordFile == "" {
+				log.Fatal("The -wordfile flag is required for Vigenere cipher")
+			}
 
-		// Read words from the CSV file
-		wordlist, csvErr := ReadWordsFromCSVColumn(*wordFile, columnIndex)
-		if csvErr != nil {
-			return
-		}
+			// Read words from the CSV file
+			wordlist, csvErr := ReadWordsFromCSVColumn(*wordFile, columnIndex)
+			if csvErr != nil {
+				return
+			}
 
-		latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
-		if csvErr != nil {
-			return
-		}
+			latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
+			if csvErr != nil {
+				return
+			}
 
-		decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, latinList, *text, *maxDepth)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
-		}
+			decodedText, decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, latinList, *text, *maxDepth, file)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+			}
+		case "autokey":
+			if *wordFile == "" {
+				log.Fatal("The -wordfile flag is required for autokey cipher")
+			}
 
-		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+			// Read words from the CSV file
+			wordlist, csvErr := ReadWordsFromCSVColumn(*wordFile, columnIndex)
+			if csvErr != nil {
+				return
+			}
+
+			latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
+			if csvErr != nil {
+				return
+			}
+
+			decodedText, decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, latinList, *text, *maxDepth, file)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Autokey cipher: %v", decodeErr)
+			}
+		}
+	} else {
+		switch strings.ToLower(*ciphertype) {
+		case "caesar":
+			decodedText, decodeErr = cipher.BulkDecodeCaesarString(alphabetSet, strings.Split(*text, ""), decodeToLatin)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		case "affine":
+			decodedText, decodeErr = cipher.BulkDecodeAffineCipher(alphabetSet, *text, decodeToLatin)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		case "atbash":
+			decodedText, decodeErr = cipher.BulkDecodeAtbashString(alphabetSet, *text, decodeToLatin)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		case "trithemius":
+			decodedText, decodeErr = cipher.BulkDecodeTrithemiusString(alphabetSet, *text, decodeToLatin)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
+			}
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		case "vigenere":
+			if *wordFile == "" {
+				log.Fatal("The -wordfile flag is required for Vigenere cipher")
+			}
+
+			// Read words from the CSV file
+			wordlist, csvErr := ReadWordsFromCSVColumn(*wordFile, columnIndex)
+			if csvErr != nil {
+				return
+			}
+
+			latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
+			if csvErr != nil {
+				return
+			}
+
+			decodedText, decodeErr = cipher.BulkDecodeVigenereCipher(alphabetSet, wordlist, latinList, *text, *maxDepth)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+			}
+
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		case "autokey":
+			if *wordFile == "" {
+				log.Fatal("The -wordfile flag is required for Vigenere cipher")
+			}
+
+			// Read words from the CSV file
+			wordlist, csvErr := ReadWordsFromCSVColumn(*wordFile, columnIndex)
+			if csvErr != nil {
+				return
+			}
+
+			latinList, csvErr := ReadWordsFromCSVColumn(*wordFile, 0)
+			if csvErr != nil {
+				return
+			}
+
+			decodedText, decodeErr = cipher.BulkDecryptAutokeyCipher(alphabetSet, wordlist, latinList, *text, *maxDepth)
+			if decodeErr != nil {
+				fmt.Printf("Failed to decode using Autokey cipher: %v", decodeErr)
+			}
+
+			// Write the decoded text to the output file
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+		}
 	}
-
 }
 
 // ReadWordsFromCSVColumn reads all the words from a specific column in a CSV file.

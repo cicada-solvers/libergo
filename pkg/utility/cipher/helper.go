@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"math/big"
 	"sort"
 	"strings"
 )
@@ -18,6 +19,11 @@ type DecipheredText struct {
 	Key   string
 }
 
+var processedCounter = big.NewInt(0)
+var rateCounter = big.NewInt(0)
+var latinWordList []string
+var topResults []DecipheredText
+
 // indexOf returns the index of the target string in the slice, or -1 if not found.
 func indexOf(slice []string, target string) int {
 	for i, v := range slice {
@@ -28,13 +34,21 @@ func indexOf(slice []string, target string) int {
 	return -1
 }
 
-// isLetter checks if a rune is a letter.
-func isLetter(c rune) bool {
+// isLetter checks if a string contains a single letter.
+func isLetter(s string) bool {
+	if len(s) != 1 {
+		return false
+	}
+	c := rune(s[0])
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-// isUpper checks if a rune is an uppercase letter.
-func isUpper(c rune) bool {
+// isUpper checks if a string contains a single uppercase letter.
+func isUpper(s string) bool {
+	if len(s) != 1 {
+		return false
+	}
+	c := rune(s[0])
 	return c >= 'A' && c <= 'Z'
 }
 

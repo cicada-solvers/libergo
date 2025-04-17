@@ -49,7 +49,7 @@ func main() {
 		word = strings.ToUpper(word)
 		runeglish := runer.PrepLatinToRune(word)
 		runeText := runer.TransposeLatinToRune(runeglish)
-		runeTextNoDoublet := lgstructs.RemoveDoublets(runeText)
+		runeTextNoDoublet := lgstructs.RemoveDoublets(strings.Split(runeText, ""))
 		gemSum := runer.CalculateGemSum(runeText, runer.Runes)
 		gemProd := runer.CalculateGemProduct(runeText, runer.Runes)
 
@@ -68,6 +68,7 @@ func main() {
 			RuneWordLength:              utf8.RuneCountInString(runeText),
 			RunePattern:                 lgstructs.GetRunePattern(word),
 			RunePatternNoDoubletPattern: lgstructs.GetRunePattern(runeTextNoDoublet),
+			RuneDistancePattern:         lgstructs.GetRuneDistancePattern(strings.Split(runeText, "")),
 			Language:                    "English",
 		}
 
@@ -110,7 +111,7 @@ func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
 		"gem_sum", "gem_sum_prime", "gem_product", "gem_product_prime",
 		"dict_word_length", "dict_runeglish_length", "dict_rune_length",
 		"rune_pattern", "rune_pattern_no_doublet", "dict_rune_no_doublet_length",
-		"language",
+		"rune_distance_pattern", "language",
 	}
 	if err := writer.Write(header); err != nil {
 		fmt.Printf("Failed to write header to output file: %v\n", err)
@@ -144,6 +145,7 @@ func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
 			dictWord.RunePattern,
 			dictWord.RunePatternNoDoubletPattern,
 			strconv.Itoa(dictWord.DictRuneNoDoubletLength),
+			dictWord.RuneDistancePattern,
 			dictWord.Language,
 		}
 		if err := writer.Write(record); err != nil {
