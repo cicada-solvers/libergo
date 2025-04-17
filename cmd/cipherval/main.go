@@ -51,7 +51,7 @@ func main() {
 	fmt.Printf("Word File: %s\n", *wordFile)
 	fmt.Printf("Cipher: %s\n", *ciphertype)
 	fmt.Printf("Max Depth: %d\n", *maxDepth)
-	fmt.Printf("IsRaw: %t\n", *isRaw == "n")
+	fmt.Printf("IsRaw: %t\n", *isRaw == "y")
 
 	// Add your decoding logic here
 	// Determine the alphabet to use
