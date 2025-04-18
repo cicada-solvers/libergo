@@ -286,3 +286,17 @@ func (repo *CharacterRepo) GetRuneFromValue(value int) string {
 	}
 	return ""
 }
+
+// GetDoubletCount returns the count of doublets (two consecutive identical characters) in a string.
+func (repo *CharacterRepo) GetDoubletCount(input string, alphabet []string) int {
+	count := 0
+
+	for _, character := range alphabet {
+		doubletChar := character + character
+
+		// Now we are going to count the times the doublet appears in the input string
+		count += strings.Count(input, doubletChar)
+	}
+
+	return count
+}

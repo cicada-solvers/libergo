@@ -40,4 +40,5 @@ use (
 	cmd/runedonkey
 	cmd/cipherval
 	cmd/mob
+	cmd/calrunestats
 )

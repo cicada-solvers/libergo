@@ -9,7 +9,7 @@ echo "2: Affine"
 echo "3: Atbash"
 echo "4: Trithemius"
 echo "5: Vigenère"
-echo "6: autokey"
+echo "6: Autokey"
 read -p "Enter the cipher type (1-6): " cipherChoice
 
 # Map the cipher type to the corresponding name
