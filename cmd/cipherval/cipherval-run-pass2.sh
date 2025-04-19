@@ -27,4 +27,7 @@ do
       done
     done
   done < "$file"
+
+  # Delete the file after processing
+  rm "$file"
 done
