@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"github.com/jdkato/prose/v2"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"runer"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 type LineStatistics struct {
@@ -36,10 +38,22 @@ type LineTextWithFile struct {
 	FileName string
 }
 
+var processedCounter = big.NewInt(0)
+var rateCounter = big.NewInt(0)
+
 func main() {
 	// Initialize the repositories
 	charRepo := runelib.NewCharacterRepo()
 	gemRunes := charRepo.GetGematriaRunes()
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
+			rateCounter.SetInt64(int64(0))
+		}
+	}()
 
 	// Define the flag for the directory path
 	dirPath := flag.String("dir", "./your-directory-path", "Path to the directory containing text files")
@@ -66,6 +80,9 @@ func main() {
 	// Start a single writer goroutine
 	go func() {
 		for result := range resultsChan {
+			processedCounter.Add(processedCounter, big.NewInt(1))
+			rateCounter.Add(rateCounter, big.NewInt(1))
+
 			if result.SentenceProbability >= 50.0 {
 				fmt.Printf("Writing results for file: %s\n", result.FileName)
 				writeErr := writeResultsToFile(len(gemRunes), result, result.FileName+".csv")
@@ -93,7 +110,10 @@ func main() {
 		if openErr != nil {
 			fmt.Printf("Failed to open file %s: %v\n", path, openErr)
 			return nil
+		} else {
+			fmt.Printf("Opened file %s successfully.\n", path)
 		}
+
 		defer func(f *os.File) {
 			closeError := f.Close()
 			if closeError != nil {
