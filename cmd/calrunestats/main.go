@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// LineStatistics is a struct that holds the statistics of a line.
 type LineStatistics struct {
 	FileName            string
 	KeyWord             string
@@ -28,19 +29,25 @@ type LineStatistics struct {
 	Statistics          []RuneStatistic
 }
 
+// RuneStatistic is a struct that holds the rune and its percentage.
 type RuneStatistic struct {
 	Rune       string
 	Percentage float64
 }
 
+// LineTextWithFile is a struct that holds the line text and the file name.
 type LineTextWithFile struct {
 	LineText string
 	FileName string
 }
 
+// processedCounter is used to track the number of processed items.
 var processedCounter = big.NewInt(0)
+
+// rateCounter is used to track the rate of processed items.
 var rateCounter = big.NewInt(0)
 
+// main function initializes the program, processes files, and writes results to CSV.
 func main() {
 	// Initialize the repositories
 	charRepo := runelib.NewCharacterRepo()
@@ -158,6 +165,7 @@ func main() {
 	close(resultsChan)
 }
 
+// processLine processes a line of text and returns the statistics.
 func processLine(line LineTextWithFile, gemRunes []string, charRepo *runelib.CharacterRepo) LineStatistics {
 	var lineStatistics []RuneStatistic
 	lineStatisticsAll := LineStatistics{}
@@ -196,6 +204,7 @@ func processLine(line LineTextWithFile, gemRunes []string, charRepo *runelib.Cha
 	return lineStatisticsAll
 }
 
+// getTotalRunes counts the total number of runes in the line.
 func getTotalRunes(line []string) int {
 	charRepo := runelib.NewCharacterRepo()
 	total := 0
@@ -207,6 +216,7 @@ func getTotalRunes(line []string) int {
 	return total
 }
 
+// getCountOfParticularRune counts the occurrences of a specific rune in the line.
 func getCountOfParticularRune(line []string, rune string) int {
 	charRepo := runelib.NewCharacterRepo()
 	count := 0
@@ -218,6 +228,7 @@ func getCountOfParticularRune(line []string, rune string) int {
 	return count
 }
 
+// writeResultsToFile writes the results to a CSV file.
 func writeResultsToFile(alphabetCount int, results LineStatistics, outputPath string) error {
 	// Open or create the result CSV file
 	resultFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
