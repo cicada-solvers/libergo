@@ -17,9 +17,10 @@ func main() {
 	alphabet := flag.String("alphabet", "rune", "The alphabet to use (rune or english)")
 	outputFile := flag.String("output", "", "The output file to write the results")
 	wordFile := flag.String("wordfile", "", "The CSV file of words to try for brute force decoding")
-	ciphertype := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
+	cipherType := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
 	maxDepth := flag.Int("maxdepth", 1, "The maximum depth for brute force decoding (default is 10)")
-	isRaw := flag.String("raw", "n", "If true, the text is not decoded and is written as is to the output file")
+	isRaw := flag.String("raw", "n", "If y, the text is not decoded and is written as is to the output file")
+	isPassTwo := flag.String("passtwo", "n", "If y, the text is decoded using the second pass of the cipher")
 
 	// Parse the flags
 	flag.Parse()
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	// Open the output file
-	file, err := os.Create(*outputFile)
+	file, err := os.OpenFile(*outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalf("Failed to create output file: %v", err)
 	}
@@ -49,9 +50,10 @@ func main() {
 	fmt.Printf("Alphabet: %s\n", *alphabet)
 	fmt.Printf("Output File: %s\n", *outputFile)
 	fmt.Printf("Word File: %s\n", *wordFile)
-	fmt.Printf("Cipher: %s\n", *ciphertype)
+	fmt.Printf("Cipher: %s\n", *cipherType)
 	fmt.Printf("Max Depth: %d\n", *maxDepth)
 	fmt.Printf("IsRaw: %t\n", *isRaw == "y")
+	fmt.Printf("IsPassTwo: %t\n", *isPassTwo == "y")
 
 	// Add your decoding logic here
 	// Determine the alphabet to use
@@ -75,8 +77,8 @@ func main() {
 	var decodedText string
 	var decodeErr error
 
-	if *isRaw == "y" {
-		switch strings.ToLower(*ciphertype) {
+	if *isRaw == "y" || *isPassTwo == "n" {
+		switch strings.ToLower(*cipherType) {
 		case "caesar":
 			decodedText, decodeErr = cipher.BulkDecodeCaesarStringRaw(alphabetSet, strings.Split(*text, ""))
 			if decodeErr != nil {
@@ -147,30 +149,43 @@ func main() {
 			}
 		}
 	} else {
-		switch strings.ToLower(*ciphertype) {
+		textToDecode := *text
+
+		_, err = file.WriteString(fmt.Sprintf("\n\n\nText Value: \n%s\n", *text))
+
+		if *isPassTwo == "y" {
+			parts := strings.Split(textToDecode, " : ")
+			if len(parts) > 1 {
+				textToDecode = parts[1]
+			}
+
+			_, err = file.WriteString(fmt.Sprintf("First Pass Keyword: \n%s\n", parts[0]))
+		}
+
+		switch strings.ToLower(*cipherType) {
 		case "caesar":
-			decodedText, decodeErr = cipher.BulkDecodeCaesarString(alphabetSet, strings.Split(*text, ""), decodeToLatin)
+			decodedText, decodeErr = cipher.BulkDecodeCaesarString(alphabetSet, strings.Split(textToDecode, ""), decodeToLatin)
 			if decodeErr != nil {
 				fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
 			}
 			// Write the decoded text to the output file
 			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 		case "affine":
-			decodedText, decodeErr = cipher.BulkDecodeAffineCipher(alphabetSet, *text, decodeToLatin)
+			decodedText, decodeErr = cipher.BulkDecodeAffineCipher(alphabetSet, textToDecode, decodeToLatin)
 			if decodeErr != nil {
 				fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
 			}
 			// Write the decoded text to the output file
 			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 		case "atbash":
-			decodedText, decodeErr = cipher.BulkDecodeAtbashString(alphabetSet, *text, decodeToLatin)
+			decodedText, decodeErr = cipher.BulkDecodeAtbashString(alphabetSet, textToDecode, decodeToLatin)
 			if decodeErr != nil {
 				fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
 			}
 			// Write the decoded text to the output file
 			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
 		case "trithemius":
-			decodedText, decodeErr = cipher.BulkDecodeTrithemiusString(alphabetSet, *text, decodeToLatin)
+			decodedText, decodeErr = cipher.BulkDecodeTrithemiusString(alphabetSet, textToDecode, decodeToLatin)
 			if decodeErr != nil {
 				fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
 			}
@@ -221,7 +236,7 @@ func main() {
 			}
 
 			// Write the decoded text to the output file
-			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n", decodedText))
+			_, err = file.WriteString(fmt.Sprintf("Decoded Text: \n%s\n\n\n", decodedText))
 		}
 	}
 }
