@@ -248,7 +248,12 @@ func ReadWordsFromCSVColumn(filePath string, columnIndex int) ([]string, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		closeErr := file.Close()
+		if closeErr != nil {
+			fmt.Printf("Failed to close file: %v", err)
+		}
+	}(file)
 
 	// Create a CSV reader
 	reader := csv.NewReader(file)
