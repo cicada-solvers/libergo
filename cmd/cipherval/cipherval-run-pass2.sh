@@ -1,6 +1,7 @@
 #!/bin/bash
 
-declare -a arr=("dwyl" "tfcom" "pgb")
+#declare -a arr=("dwyl" "tfcom" "pgb")
+declare -a arr=("dwyl")
 declare -a ciphers=("affine" "atbash" "caesar" "trithemius" "autokey" "vigenere")
 
 # Prompt the user for the depth
