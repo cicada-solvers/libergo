@@ -81,7 +81,7 @@ func countWords(text string) int64 {
 	var count int64
 	for _, word := range latinWordList {
 		if strings.Contains(text, word) {
-			count = count + int64(len(word))
+			count = count + (int64(len(word)) * 2)
 		}
 	}
 	return count
@@ -98,8 +98,8 @@ func sortTopResults(results []DecipheredText) []DecipheredText {
 		return sortedList[i].Count > sortedList[j].Count
 	})
 
-	if len(sortedList) > 500 {
-		sortedList = sortedList[:500]
+	if len(sortedList) > 200 {
+		sortedList = sortedList[:200]
 	}
 
 	return sortedList

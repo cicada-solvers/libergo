@@ -1,14 +1,12 @@
 #!/bin/bash
 
 declare -a arr=("dwyl" "tfcom" "pgb")
-declare -a ciphers=("caesar" "affine" "atbash" "trithemius" "autokey" "vigenere")
+declare -a ciphers=("affine" "atbash" "caesar" "trithemius" "autokey" "vigenere")
 
 # Prompt the user for the depth
 read -p "Enter the depth: " depth
 read -p "Enter the input dir: " inputdir
 read -p "Enter the output dir: " outputdir
-
-
 
 for file in "$inputdir"/*
 do
