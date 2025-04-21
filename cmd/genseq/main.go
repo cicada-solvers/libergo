@@ -39,6 +39,7 @@ func main() {
 		fmt.Println(" - fibonacci")
 		fmt.Println(" - zekendorf")
 		fmt.Println(" - lucas")
+		fmt.Println(" - collatz")
 		fmt.Println("\nFlags:")
 		fmt.Println(" -max: The maximum number (default: 100)")
 		fmt.Println(" -type: The type of sequence (default: default)")
@@ -90,6 +91,8 @@ func main() {
 		sequence, err = sequences.GetZekendorfRepresentationSequence(big.NewInt(int64(*maxNumber)), *positional)
 	case "lucas":
 		sequence, err = sequences.GenerateLucas(big.NewInt(int64(*maxNumber)), *positional)
+	case "collatz":
+		sequence, err = sequences.GetCollatzSequence(int64(*maxNumber), *positional)
 	default:
 		fmt.Printf("Unknown sequence type: %s\n", *sequenceType)
 		os.Exit(1)
@@ -106,6 +109,7 @@ func main() {
 	}
 
 	// Print the sequence to the console
+	fmt.Printf("Sequence Count: %d - IsPrime: %v\n", len(sequence.Sequence), sequences.IsPrime(new(big.Int).SetInt64(int64(len(sequence.Sequence)))))
 	fmt.Printf("Sequence: %s\n", strings.Join(sequenceStrings, ","))
 
 	// If output flag is set, write the sequence to the specified file
