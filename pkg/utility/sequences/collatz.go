@@ -25,6 +25,9 @@ func GetCollatzSequence(n int64, isPosition bool) (*NumericSequence, error) {
 				return sequence, nil
 			}
 		}
+
+		fmt.Printf("Length not found for %d\n", n)
+		return sequence, nil
 	} else {
 		sequence.Sequence = append(sequence.Sequence, big.NewInt(n))
 		sequence, _ = getCollatzSequenceInternal(n, sequence)
