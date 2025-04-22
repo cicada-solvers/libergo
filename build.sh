@@ -29,6 +29,8 @@ build_binaries() {
       BINARY_NAME=$(basename "$dir")
       echo "Building $BINARY_NAME in $dir..."
       cd "$dir"
+      $GOCMD mod tidy
+      $GOCMD mod download
       $GOCMD build .
       if [ $? -ne 0 ]; then
         echo "Failed to build $BINARY_NAME"
@@ -69,6 +71,8 @@ dist_binaries() {
       echo "Building $BINARY_NAME for Linux..."
       pushd "$dir" > /dev/null
       BINARY_DIR="$DIST_DIR/linux"
+      $GOCMD mod tidy
+      $GOCMD mod download
       GOOS=linux GOARCH=amd64 $GOCMD build -o "../../$BINARY_DIR/$BINARY_NAME"
       if [ $? -ne 0 ]; then
         echo "Failed to build $BINARY_NAME for Linux"
