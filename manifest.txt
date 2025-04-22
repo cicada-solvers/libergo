@@ -1,8 +1,9 @@
-
 base60
 binfile
 binstring
 binvert
+calrunestats
+cipherval
 coller
 corpuslist
 decode64
@@ -16,6 +17,7 @@ genseq
 intgen
 isprime
 libergo
+mob
 numfile
 numstring
 processhashes

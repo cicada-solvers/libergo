@@ -89,7 +89,7 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 			valuesToGetFromDB = append(valuesToGetFromDB, pattern)
 			break
 		case RunePatternNoDoublet:
-			word = lgstructs.RemoveDoublets(word)
+			word = lgstructs.RemoveDoublets(strings.Split(word, ""))
 			pattern := lgstructs.GetRunePattern(word)
 			valuesToGetFromDB = append(valuesToGetFromDB, pattern)
 			break
