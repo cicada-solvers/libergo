@@ -76,6 +76,29 @@ func RemoveDoublets(word []string) string {
 	return result.String()
 }
 
+func CalculateWordDistances(word1, word2, runeList []string) string {
+	var result strings.Builder
+	var isFirstTime = true
+
+	for i := 0; i < len(word1); i++ {
+		pos1 := getRuneIndex(word1[i], runeList)
+		pos2 := getRuneIndex(word2[i], runeList)
+
+		currentDistance := pos1 - pos2
+		distance := int(math.Abs(float64(currentDistance)))
+
+		if isFirstTime {
+			result.WriteString(fmt.Sprintf("%s", strconv.Itoa(distance)))
+		} else {
+			result.WriteString(fmt.Sprintf(", %s", strconv.Itoa(distance)))
+		}
+
+		isFirstTime = false
+	}
+
+	return result.String()
+}
+
 func GetRuneDistancePattern(word []string) string {
 	charRepo := runelib.NewCharacterRepo()
 	gemRunes := charRepo.GetGematriaRunes()

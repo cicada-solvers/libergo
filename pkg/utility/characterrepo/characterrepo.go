@@ -249,6 +249,13 @@ var dunkusSet = map[string]struct{}{
 	"•": {}, "⊹": {},
 }
 
+func (repo *CharacterRepo) IsDinkus(value string) bool {
+	if _, exists := dunkusSet[value]; exists {
+		return true
+	}
+	return false
+}
+
 func (repo *CharacterRepo) IsRune(value string, includeDunkus bool) bool {
 	if includeDunkus {
 		if _, exists := dunkusSet[value]; exists {
