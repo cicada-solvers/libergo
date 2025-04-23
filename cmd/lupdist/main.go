@@ -70,6 +70,8 @@ func main() {
 
 	words := breakTextApart(strings.Split(*text, ""))
 
+	completeWords, _ := ReadWordsFromCSVColumn(*wordFile, 2)
+
 	for wordPos, word := range words {
 		wordDistance := LiberWordDistance{
 			LiberWordGuid:     uuid.NewString(),
@@ -81,7 +83,7 @@ func main() {
 		}
 
 		wordLength := len(strings.Split(word, ""))
-		listWords, _ := ReadWordsFromCSVColumn(*wordFile, 2, wordLength)
+		listWords := getWordsFromListByLength(completeWords, wordLength)
 		for _, listWord := range listWords {
 			distancePattern := lgstructs.CalculateWordDistances(strings.Split(word, ""), strings.Split(listWord, ""), runes)
 			pattern := WordDistancePattern{
@@ -219,8 +221,18 @@ func breakTextApart(text []string) []string {
 	return words
 }
 
+func getWordsFromListByLength(words []string, length int) []string {
+	var filteredWords []string
+	for _, word := range words {
+		if len(strings.Split(word, "")) == length {
+			filteredWords = append(filteredWords, word)
+		}
+	}
+	return filteredWords
+}
+
 // ReadWordsFromCSVColumn reads all the words from a specific column in a CSV file.
-func ReadWordsFromCSVColumn(filePath string, columnIndex int, length int) ([]string, error) {
+func ReadWordsFromCSVColumn(filePath string, columnIndex int) ([]string, error) {
 	// Open the CSV file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -247,10 +259,7 @@ func ReadWordsFromCSVColumn(filePath string, columnIndex int, length int) ([]str
 	for _, row := range rows {
 		// Ensure the row has enough columns
 		if columnIndex < len(row) {
-			wordLength := len(strings.Split(row[columnIndex], ""))
-			if wordLength == length {
-				words = append(words, row[columnIndex])
-			}
+			words = append(words, row[columnIndex])
 		}
 	}
 
