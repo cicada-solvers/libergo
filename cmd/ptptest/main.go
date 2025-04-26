@@ -23,7 +23,7 @@ func main() {
 
 	nonPrimeCount := big.NewInt(int64(0))
 
-	for i := big.NewInt(1); i.Cmp(big.NewInt(math.MaxInt64)) <= 0; i.Add(i, big.NewInt(1)) {
+	for i := big.NewInt(2); i.Cmp(big.NewInt(math.MaxInt64)) <= 0; i.Add(i, big.NewInt(1)) {
 		if sequences.IsPrime(i) {
 			fmt.Printf("%s is prime\n", i.String())
 
@@ -48,7 +48,7 @@ func main() {
 
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.String(),
-				NumberCountBeforePrime: nonPrimeCount.String(),
+				NumberCountBeforePrime: "0",
 				NumberIsPrime:          false,
 				NumberFactorSize:       factorsize,
 			}
@@ -135,7 +135,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) int64 {
 	}
 
 	if areAllPrime {
-		return counter.Int64()
+		return counter.Int64() - 1
 	} else {
 		return factorize(db, mainId, number, lastSeq)
 	}
