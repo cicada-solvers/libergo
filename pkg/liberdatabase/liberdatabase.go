@@ -214,6 +214,11 @@ func InitMySqlTables() error {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
+	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
 	closeError := CloseConnection(conn)
 	if closeError != nil {
 		return closeError

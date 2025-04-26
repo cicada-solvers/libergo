@@ -42,4 +42,5 @@ use (
 	cmd/mob
 	cmd/calrunestats
 	cmd/lupdist
+	cmd/ptptest
 )
