@@ -31,7 +31,7 @@ func main() {
 				Number:                 i.String(),
 				NumberCountBeforePrime: nonPrimeCount.String(),
 				NumberIsPrime:          true,
-				NumberFactorSize:       int64(2),
+				NumberFactorSize:       0,
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
@@ -44,13 +44,13 @@ func main() {
 		} else {
 			fmt.Printf("%s is not prime\n", i.String())
 			n := new(big.Int).Set(i)
-			factorsize := factorize(liteConn, uuid.New().String(), n, 0)
+			//factorsize := factorize(liteConn, uuid.New().String(), n, 0)
 
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.String(),
 				NumberCountBeforePrime: "0",
 				NumberIsPrime:          false,
-				NumberFactorSize:       factorsize,
+				NumberFactorSize:       0,
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
