@@ -88,6 +88,11 @@ func main() {
 
 		// Print the column information
 		fmt.Printf("%v\n", colInfo)
+		n := big.NewInt(1)
+		for i := 0; i < len(colInfo); i++ {
+			n.Mul(n, big.NewInt(int64(colInfo[i].RowCounts)))
+		}
+		fmt.Printf("Total combinations: %s\n", n.String())
 
 		// Initialize a strings.Builder
 		var builder strings.Builder
