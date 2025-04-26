@@ -208,7 +208,7 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation, buil
 			close(sentenceChan)
 		}()
 
-		numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
+		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
 			go insertSentenceToDB(sentenceChan, &wg)

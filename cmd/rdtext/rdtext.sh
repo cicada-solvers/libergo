@@ -30,6 +30,6 @@ for FILE in "$INPUT_DIRECTORY"/*; do
 
     # Call the rdtext binary with the file name
     ./rdtext -create="true" -input="$FILE"
-    sleep 60
+    sleep 300
   fi
 done
