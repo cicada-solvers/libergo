@@ -19,7 +19,7 @@ func main() {
 
 	// Initialize the database connection
 	conn, err := liberdatabase.InitMySQLConnection()
-	liteConn, err := liberdatabase.InitSQLiteConnection()
+	//liteConn, err := liberdatabase.InitSQLiteConnection()
 
 	nonPrimeCount := big.NewInt(int64(0))
 
@@ -42,22 +42,22 @@ func main() {
 
 			nonPrimeCount.SetInt64(int64(0))
 		} else {
-			fmt.Printf("%s is not prime\n", i.String())
-			n := new(big.Int).Set(i)
+			//fmt.Printf("%s is not prime\n", i.String())
+			//n := new(big.Int).Set(i)
 			//factorsize := factorize(liteConn, uuid.New().String(), n, 0)
 
-			record := liberdatabase.PrimeNumRecord{
-				Number:                 i.String(),
-				NumberCountBeforePrime: "0",
-				NumberIsPrime:          false,
-				NumberFactorSize:       0,
-			}
+			//record := liberdatabase.PrimeNumRecord{
+			//	Number:                 i.String(),
+			//	NumberCountBeforePrime: "0",
+			//	NumberIsPrime:          false,
+			//	NumberFactorSize:       0,
+			//}
 
-			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
-			if addErr != nil {
-				// Handle the error
-				fmt.Printf("Error adding prime number: %v\n", addErr)
-			}
+			//addErr := liberdatabase.AddPrimeNumRecord(conn, record)
+			//if addErr != nil {
+			// Handle the error
+			//	fmt.Printf("Error adding prime number: %v\n", addErr)
+			//}
 
 			nonPrimeCount.Add(nonPrimeCount, big.NewInt(1))
 		}
