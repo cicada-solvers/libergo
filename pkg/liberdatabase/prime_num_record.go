@@ -7,10 +7,8 @@ import (
 
 type PrimeNumRecord struct {
 	gorm.Model
-	Number                 string `gorm:"column:num"`
-	NumberCountBeforePrime string `gorm:"column:number_count_before_prime"`
-	NumberIsPrime          bool   `gorm:"column:is_prime"`
-	NumberFactorSize       int64  `gorm:"column:factorsize"`
+	Number                 int64 `gorm:"column:num"`
+	NumberCountBeforePrime int   `gorm:"column:number_count_before_prime"`
 }
 
 func AddPrimeNumRecord(db *gorm.DB, record PrimeNumRecord) error {
