@@ -43,59 +43,6 @@ func main() {
 	processedTicker := time.NewTicker(time.Minute)
 	defer processedTicker.Stop()
 
-	// Define command-line flags
-	inputFile := flag.String("input", "", "Path to the input Excel file")
-	outputFile := flag.String("output", "", "Path to the output file")
-
-	// Parse the flags
-	flag.Parse()
-
-	// Check if the input file is provided
-	if *inputFile == "" {
-		log.Fatalf("Input file is required")
-	}
-
-	// Check if the output file is provided
-	if *outputFile == "" {
-		log.Fatalf("Output file is required")
-	}
-
-	// Check if the output file already exists
-	if _, err := os.Stat(*outputFile); err == nil {
-		log.Fatalf("Output file already exists")
-	}
-
-	// Process the input file
-	createErr := liberdatabase.InitMySqlTables()
-	if createErr != nil {
-		return
-	}
-
-	infoFile, _ := os.Stat(*inputFile)
-	fmt.Printf("Processing file: %s\n", infoFile.Name())
-
-	// Write the content to the output file
-	outputBytes := []byte(fmt.Sprintf("%s\n\n", infoFile.Name()))
-	WriteContentsToOutputFile(*outputFile, outputBytes)
-
-	// Open the Excel file
-	f, fileErr := excelize.OpenFile(*inputFile)
-	if fileErr != nil {
-		log.Fatalf("Failed to open the Excel file: %v", fileErr)
-	}
-
-	colInfo, excelErr := getColInformation(f, sheetName)
-	if excelErr != nil {
-		fmt.Printf("Failed to get column info: %v", excelErr)
-		return
-	}
-
-	// Print the column information
-	fmt.Printf("%v\n", colInfo)
-
-	// Initialize a strings.Builder
-	var builder strings.Builder
-
 	go func() {
 		for range processedTicker.C {
 			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
@@ -103,67 +50,116 @@ func main() {
 		}
 	}()
 
-	// Call permuteCols with the provided output file name
-	permuteErr := permuteCols(f, *outputFile, sheetName, colInfo, builder, 0, filepath.Base(*inputFile))
-	if permuteErr != nil {
-		fmt.Printf("Failed to permute cols: %v", permuteErr)
+	// Define command-line flags
+	inputFile := flag.String("input", "", "Path to the input Excel file")
+	outputFile := flag.String("output", "", "Path to the output file")
+	isCreating := flag.Bool("create", false, "Create a new database")
+
+	// Parse the flags
+	flag.Parse()
+
+	// Making sure the tables are created.
+	createErr := liberdatabase.InitMySqlTables()
+	if createErr != nil {
+		return
 	}
 
-	closeErr := f.Close()
-	if closeErr != nil {
-		log.Fatalf("Failed to close the Excel file: %v", closeErr)
-	}
-
-	// Reset counters
-	processedCounter.SetInt64(int64(0))
-	rateCounter.SetInt64(int64(0))
-
-	// Now we are going to remove the million records from the database.
-	conn, connErr := liberdatabase.InitMySQLConnection()
-	if connErr != nil {
-		fmt.Printf("error initializing MySQL connection: %v", connErr)
-	}
-
-	// Get the top million sentence records
-	records, getErr := liberdatabase.GetTopMillionSentenceRecords(conn, filepath.Base(*inputFile))
-	if getErr != nil {
-		fmt.Printf("error getting top million sentence records: %v", getErr)
-	}
-
-	var wg sync.WaitGroup
-	sentenceChan := make(chan Sentence, 16384) // Increased buffer size
-
-	go func() {
-		for _, record := range records {
-			// Create a new Sentence instance
-			sentence := Sentence{
-				FileName:    record.FileName,
-				Content:     record.DictSentence,
-				Output:      *outputFile,
-				ColumnIndex: 0, // Set the column index as needed
-			}
-			sentenceChan <- sentence
+	if *isCreating {
+		// Check if the input file is provided
+		if *inputFile == "" {
+			log.Fatalf("Input file is required")
 		}
-		close(sentenceChan)
-	}()
 
-	numWorkers := runtime.NumCPU() / 2 // Adjusted number of workers
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
-	}
+		// Process the input file
+		infoFile, _ := os.Stat(*inputFile)
+		fmt.Printf("Processing file: %s\n", infoFile.Name())
 
-	wg.Wait()
+		// Open the Excel file
+		f, fileErr := excelize.OpenFile(*inputFile)
+		if fileErr != nil {
+			log.Fatalf("Failed to open the Excel file: %v", fileErr)
+		}
 
-	// Remove the million records from the database
-	removeErr := liberdatabase.RemoveMillionSentenceRecords(conn, records)
-	if removeErr != nil {
-		fmt.Printf("error removing million sentence records: %v", removeErr)
+		colInfo, excelErr := getColInformation(f, sheetName)
+		if excelErr != nil {
+			fmt.Printf("Failed to get column info: %v", excelErr)
+			return
+		}
+
+		// Print the column information
+		fmt.Printf("%v\n", colInfo)
+
+		// Initialize a strings.Builder
+		var builder strings.Builder
+
+		// Call permuteCols with the provided output file name
+		permuteErr := permuteCols(f, sheetName, colInfo, builder, 0, filepath.Base(*inputFile))
+		if permuteErr != nil {
+			fmt.Printf("Failed to permute cols: %v", permuteErr)
+		}
+
+		closeErr := f.Close()
+		if closeErr != nil {
+			log.Fatalf("Failed to close the Excel file: %v", closeErr)
+		}
+	} else {
+		// Check if the output file already exists
+		if _, err := os.Stat(*outputFile); err == nil {
+			log.Fatalf("Output file already exists")
+		}
+
+		// Check if the output file is provided
+		if *outputFile == "" {
+			log.Fatalf("Output file is required")
+		}
+
+		// Now we are going to remove the million records from the database.
+		conn, connErr := liberdatabase.InitMySQLConnection()
+		if connErr != nil {
+			fmt.Printf("error initializing MySQL connection: %v", connErr)
+		}
+
+		// Get the top million sentence records
+		records, getErr := liberdatabase.GetTopMillionSentenceRecords(conn, filepath.Base(*inputFile))
+		if getErr != nil {
+			fmt.Printf("error getting top million sentence records: %v", getErr)
+		}
+
+		var wg sync.WaitGroup
+		sentenceChan := make(chan Sentence, 16384) // Increased buffer size
+
+		go func() {
+			for _, record := range records {
+				// Create a new Sentence instance
+				sentence := Sentence{
+					FileName:    record.FileName,
+					Content:     record.DictSentence,
+					Output:      *outputFile,
+					ColumnIndex: 0, // Set the column index as needed
+				}
+				sentenceChan <- sentence
+			}
+			close(sentenceChan)
+		}()
+
+		numWorkers := runtime.NumCPU() // Adjusted number of workers
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+		}
+
+		wg.Wait()
+
+		// Remove the million records from the database
+		removeErr := liberdatabase.RemoveMillionSentenceRecords(conn, records)
+		if removeErr != nil {
+			fmt.Printf("error removing million sentence records: %v", removeErr)
+		}
 	}
 }
 
 // permuteCols permutes the columns in the Excel file and writes the sentences to the output file.
-func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int, filename string) (err error) {
+func permuteCols(f *excelize.File, sheetName string, cols []ColInformation, builder strings.Builder, currentColIdx int, filename string) (err error) {
 	localBuilder := cloneStringBuilder(&builder)
 
 	if currentColIdx < (len(cols) - 1) {
@@ -181,7 +177,7 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 
 			localBuilder.WriteString(spacer + cellValue)
 
-			permuteErr := permuteCols(f, outputName, sheetName, cols, *localBuilder, currentColIdx+1, filename)
+			permuteErr := permuteCols(f, sheetName, cols, *localBuilder, currentColIdx+1, filename)
 			if permuteErr != nil {
 				return fmt.Errorf("Failed to permute columns: %v\n", permuteErr)
 			}
@@ -204,7 +200,6 @@ func permuteCols(f *excelize.File, outputName, sheetName string, cols []ColInfor
 				sentence := Sentence{
 					FileName:    filename,
 					Content:     localBuilder.String(),
-					Output:      outputName,
 					ColumnIndex: currentColIdx,
 				}
 

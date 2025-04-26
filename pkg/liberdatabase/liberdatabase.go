@@ -203,10 +203,10 @@ func InitMySqlTables() error {
 	}
 
 	// Remove the old table if it exists
-	dropError := conn.Migrator().DropTable(&SentenceRecord{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
+	//dropError := conn.Migrator().DropTable(&SentenceRecord{})
+	//if dropError != nil {
+	//fmt.Printf("Error dropping table: %v\n", dropError)
+	//}
 
 	// Migrate the schemas
 	dbCreateError := conn.AutoMigrate(&SentenceRecord{})

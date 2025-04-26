@@ -26,15 +26,10 @@ fi
 # Iterate over each file in the input directory
 for FILE in "$INPUT_DIRECTORY"/*; do
   if [ -f "$FILE" ]; then
-    # Create the OUT_FILE variable
-    BASE_NAME=$(basename "$FILE")
-    OUT_FILE="$OUTPUT_DIRECTORY/${BASE_NAME}.txt"
-
     echo "Processing $FILE..."
-    echo "Output will be saved to $OUT_FILE"
 
     # Call the rdtext binary with the file name
-    ./rdtext -input="$FILE" -output="$OUT_FILE"
+    ./rdtext -create="true" -input="$FILE"
     sleep 60
   fi
 done
