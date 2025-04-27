@@ -31,7 +31,7 @@ func main() {
 				IsPrime:                true,
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(2),
-				PrimeFactors:           fmt.Sprintf("1, %s", i.String()),
+				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
