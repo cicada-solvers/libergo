@@ -26,13 +26,15 @@ func main() {
 
 	for i := big.NewInt(1); i.Cmp(big.NewInt(math.MaxInt32)) <= 0; i.Add(i, big.NewInt(1)) {
 		if sequences.IsPrime(i) {
+			modValue := new(big.Int).Set(i)
+
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.Int64(),
 				IsPrime:                true,
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(2),
 				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
-				ModTwoTen:              i.Mod(i, big.NewInt(10)).Int64(),
+				ModTwoTen:              modValue.Mod(modValue, big.NewInt(10)).Int64(),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
@@ -44,6 +46,8 @@ func main() {
 			nonPrimeCount.SetInt64(int64(0))
 		} else {
 			n := new(big.Int).Set(i)
+			modValue := new(big.Int).Set(i)
+
 			factors := factorize(liteConn, uuid.New().String(), n, 0)
 
 			var factorStrings []string
@@ -57,7 +61,7 @@ func main() {
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(len(factors)),
 				PrimeFactors:           strings.Join(factorStrings, ","),
-				ModTwoTen:              i.Mod(i, big.NewInt(10)).Int64(),
+				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
