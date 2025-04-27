@@ -34,7 +34,7 @@ func main() {
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(2),
 				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
-				ModTwoTen:              modValue.Mod(modValue, big.NewInt(10)).Int64(),
+				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
