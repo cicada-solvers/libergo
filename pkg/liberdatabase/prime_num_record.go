@@ -12,6 +12,7 @@ type PrimeNumRecord struct {
 	NumberCountBeforePrime int64  `gorm:"column:number_count_before_prime"`
 	PrimeFactorCount       int64  `gorm:"column:prime_factor_count"`
 	PrimeFactors           string `gorm:"column:prime_factors"`
+	ModTwoTen              int64  `gorm:"column:mod_two_ten"`
 }
 
 func AddPrimeNumRecord(db *gorm.DB, record PrimeNumRecord) error {

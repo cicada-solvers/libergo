@@ -32,6 +32,7 @@ func main() {
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(2),
 				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
+				ModTwoTen:              i.Mod(i, big.NewInt(10)).Int64(),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
@@ -56,6 +57,7 @@ func main() {
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(len(factors)),
 				PrimeFactors:           strings.Join(factorStrings, ","),
+				ModTwoTen:              i.Mod(i, big.NewInt(10)).Int64(),
 			}
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
