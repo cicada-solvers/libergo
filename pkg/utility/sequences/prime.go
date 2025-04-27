@@ -9,6 +9,14 @@ import (
 
 // IsPrime checks if a number is prime.
 func IsPrime(number *big.Int) bool {
+	// if the number ends with 0, 2, 4, 5, 6, or 8, it is not prime
+	if number.Cmp(big.NewInt(10)) >= 0 {
+		lastChar := number.String()[len(number.String())-1]
+		if lastChar == '0' || lastChar == '2' || lastChar == '4' || lastChar == '5' || lastChar == '6' || lastChar == '8' {
+			return false
+		}
+	}
+
 	if number.Cmp(big.NewInt(2)) < 0 {
 		return false
 	}

@@ -20,10 +20,8 @@ func main() {
 
 	nonPrimeCount := big.NewInt(int64(0))
 
-	for i := big.NewInt(2); i.Cmp(big.NewInt(math.MaxInt64)) <= 0; i.Add(i, big.NewInt(1)) {
+	for i := big.NewInt(2); i.Cmp(big.NewInt(math.MaxInt32)) <= 0; i.Add(i, big.NewInt(1)) {
 		if sequences.IsPrime(i) {
-			fmt.Printf("%s is prime\n", i.String())
-
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.Int64(),
 				NumberCountBeforePrime: int(nonPrimeCount.Int64()),
