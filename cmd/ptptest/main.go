@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// This program initializes a MySQL database connection, creates necessary tables, and populates them with prime number records.
 func main() {
 	err := liberdatabase.InitMySqlTables()
 	if err != nil {
@@ -27,6 +28,8 @@ func main() {
 	for i := big.NewInt(1); i.Cmp(big.NewInt(math.MaxInt32)) <= 0; i.Add(i, big.NewInt(1)) {
 		if sequences.IsPrime(i) {
 			modValue := new(big.Int).Set(i)
+			modValue48 := new(big.Int).Set(i)
+			modTen, _ := new(big.Int).SetString(i.String(), 10)
 
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.Int64(),
@@ -35,7 +38,19 @@ func main() {
 				PrimeFactorCount:       int64(2),
 				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
 				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
+				ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
+				ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
 			}
+
+			record.ModTwoTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTwoTen))
+			record.ModFortyEightIsPrime = sequences.IsPrime(big.NewInt(record.ModFortyEight))
+			record.ModTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTen))
+			factors := factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTwoTen), 0)
+			record.ModTwoTenFactors = joinFactors(factors)
+			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModFortyEight), 0)
+			record.ModFortyEightFactors = joinFactors(factors)
+			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTen), 0)
+			record.ModTenFactors = joinFactors(factors)
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
 			if addErr != nil {
@@ -46,23 +61,32 @@ func main() {
 			nonPrimeCount.SetInt64(int64(0))
 		} else {
 			n := new(big.Int).Set(i)
-			modValue := new(big.Int).Set(i)
+			modValue, _ := new(big.Int).SetString(i.String(), 10)
+			modValue48, _ := new(big.Int).SetString(i.String(), 10)
+			modTen, _ := new(big.Int).SetString(i.String(), 10)
 
 			factors := factorize(liteConn, uuid.New().String(), n, 0)
-
-			var factorStrings []string
-			for _, factor := range factors {
-				factorStrings = append(factorStrings, factor.String())
-			}
 
 			record := liberdatabase.PrimeNumRecord{
 				Number:                 i.Int64(),
 				IsPrime:                false,
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(len(factors)),
-				PrimeFactors:           strings.Join(factorStrings, ","),
+				PrimeFactors:           joinFactors(factors),
 				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
+				ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
+				ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
 			}
+
+			record.ModTwoTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTwoTen))
+			record.ModFortyEightIsPrime = sequences.IsPrime(big.NewInt(record.ModFortyEight))
+			record.ModTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTen))
+			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTwoTen), 0)
+			record.ModTwoTenFactors = joinFactors(factors)
+			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModFortyEight), 0)
+			record.ModFortyEightFactors = joinFactors(factors)
+			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTen), 0)
+			record.ModTenFactors = joinFactors(factors)
 
 			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
 			if addErr != nil {
@@ -75,6 +99,15 @@ func main() {
 	}
 }
 
+// joinFactors joins the factors into a string.
+func joinFactors(factors []big.Int) string {
+	var factorStrings []string
+	for _, factor := range factors {
+		factorStrings = append(factorStrings, factor.String())
+	}
+	return strings.Join(factorStrings, ",")
+}
+
 // factorize returns the prime factors of a given big integer.
 func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) []big.Int {
 	counter := big.NewInt(2)
@@ -84,10 +117,6 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) []big.Int 
 	if lastSeq > 0 {
 		lastRecord := liberdatabase.GetMaxSeqNumberByMainID(db, mainId)
 		liberdatabase.RemoveFactorByID(db, lastRecord.ID)
-	}
-
-	if number.ProbablyPrime(20) {
-		fmt.Printf("-%s is prime\n", number.String())
 	}
 
 	// Check if n is divisible by x
