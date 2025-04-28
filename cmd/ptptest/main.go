@@ -36,7 +36,7 @@ func main() {
 				IsPrime:                true,
 				NumberCountBeforePrime: nonPrimeCount.Int64(),
 				PrimeFactorCount:       int64(2),
-				PrimeFactors:           fmt.Sprintf("1,%s", i.String()),
+				PrimeFactors:           fmt.Sprintf(i.String()),
 				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
 				ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
 				ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
