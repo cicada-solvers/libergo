@@ -9,7 +9,6 @@ import (
 
 // IsPrime checks if a number is prime.
 func IsPrime(number *big.Int) bool {
-	// if the number ends with 0, 2, 4, 5, 6, or 8, it is not prime
 	if number.Cmp(big.NewInt(10)) >= 0 {
 		lastChar := number.String()[len(number.String())-1]
 		if lastChar == '0' || lastChar == '2' || lastChar == '4' || lastChar == '5' || lastChar == '6' || lastChar == '8' {
@@ -20,18 +19,23 @@ func IsPrime(number *big.Int) bool {
 	if number.Cmp(big.NewInt(2)) < 0 {
 		return false
 	}
-	if number.Cmp(big.NewInt(2)) == 0 {
+	if number.Cmp(big.NewInt(2)) == 0 || number.Cmp(big.NewInt(3)) == 0 {
 		return true
 	}
-	if new(big.Int).Mod(number, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
+	if new(big.Int).Mod(number, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 ||
+		new(big.Int).Mod(number, big.NewInt(3)).Cmp(big.NewInt(0)) == 0 {
 		return false
 	}
 
+	// Start checking with 6k ± 1
 	sqrt := new(big.Int).Sqrt(number)
-	for i := big.NewInt(3); i.Cmp(sqrt) <= 0; i.Add(i, big.NewInt(2)) {
-		if new(big.Int).Mod(number, i).Cmp(big.NewInt(0)) == 0 {
+	k := big.NewInt(5)
+	for k.Cmp(sqrt) <= 0 {
+		if new(big.Int).Mod(number, k).Cmp(big.NewInt(0)) == 0 ||
+			new(big.Int).Mod(number, new(big.Int).Add(k, big.NewInt(2))).Cmp(big.NewInt(0)) == 0 {
 			return false
 		}
+		k.Add(k, big.NewInt(6))
 	}
 
 	return true
