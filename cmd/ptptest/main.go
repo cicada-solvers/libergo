@@ -60,41 +60,84 @@ func main() {
 
 			nonPrimeCount.SetInt64(int64(0))
 		} else {
-			n := new(big.Int).Set(i)
-			modValue, _ := new(big.Int).SetString(i.String(), 10)
-			modValue48, _ := new(big.Int).SetString(i.String(), 10)
-			modTen, _ := new(big.Int).SetString(i.String(), 10)
+			if i.Cmp(big.NewInt(10)) >= 0 {
+				lastChar := i.String()[len(i.String())-1]
+				if lastChar == '0' || lastChar == '2' || lastChar == '4' || lastChar == '5' || lastChar == '6' || lastChar == '8' {
+					nonPrimeCount.Add(nonPrimeCount, big.NewInt(1))
+				} else {
+					n := new(big.Int).Set(i)
+					modValue, _ := new(big.Int).SetString(i.String(), 10)
+					modValue48, _ := new(big.Int).SetString(i.String(), 10)
+					modTen, _ := new(big.Int).SetString(i.String(), 10)
 
-			factors := factorize(liteConn, uuid.New().String(), n, 0)
+					factors := factorize(liteConn, uuid.New().String(), n, 0)
 
-			record := liberdatabase.PrimeNumRecord{
-				Number:                 i.Int64(),
-				IsPrime:                false,
-				NumberCountBeforePrime: nonPrimeCount.Int64(),
-				PrimeFactorCount:       int64(len(factors)),
-				PrimeFactors:           joinFactors(factors),
-				ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
-				ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
-				ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
+					record := liberdatabase.PrimeNumRecord{
+						Number:                 i.Int64(),
+						IsPrime:                false,
+						NumberCountBeforePrime: nonPrimeCount.Int64(),
+						PrimeFactorCount:       int64(len(factors)),
+						PrimeFactors:           joinFactors(factors),
+						ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
+						ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
+						ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
+					}
+
+					record.ModTwoTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTwoTen))
+					record.ModFortyEightIsPrime = sequences.IsPrime(big.NewInt(record.ModFortyEight))
+					record.ModTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTen))
+					factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTwoTen), 0)
+					record.ModTwoTenFactors = joinFactors(factors)
+					factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModFortyEight), 0)
+					record.ModFortyEightFactors = joinFactors(factors)
+					factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTen), 0)
+					record.ModTenFactors = joinFactors(factors)
+
+					addErr := liberdatabase.AddPrimeNumRecord(conn, record)
+					if addErr != nil {
+						// Handle the error
+						fmt.Printf("Error adding prime number: %v\n", addErr)
+					}
+
+					nonPrimeCount.Add(nonPrimeCount, big.NewInt(1))
+				}
+			} else {
+				n := new(big.Int).Set(i)
+				modValue, _ := new(big.Int).SetString(i.String(), 10)
+				modValue48, _ := new(big.Int).SetString(i.String(), 10)
+				modTen, _ := new(big.Int).SetString(i.String(), 10)
+
+				factors := factorize(liteConn, uuid.New().String(), n, 0)
+
+				record := liberdatabase.PrimeNumRecord{
+					Number:                 i.Int64(),
+					IsPrime:                false,
+					NumberCountBeforePrime: nonPrimeCount.Int64(),
+					PrimeFactorCount:       int64(len(factors)),
+					PrimeFactors:           joinFactors(factors),
+					ModTwoTen:              modValue.Mod(modValue, big.NewInt(210)).Int64(),
+					ModFortyEight:          modValue48.Mod(modValue48, big.NewInt(48)).Int64(),
+					ModTen:                 modTen.Mod(modTen, big.NewInt(10)).Int64(),
+				}
+
+				record.ModTwoTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTwoTen))
+				record.ModFortyEightIsPrime = sequences.IsPrime(big.NewInt(record.ModFortyEight))
+				record.ModTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTen))
+				factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTwoTen), 0)
+				record.ModTwoTenFactors = joinFactors(factors)
+				factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModFortyEight), 0)
+				record.ModFortyEightFactors = joinFactors(factors)
+				factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTen), 0)
+				record.ModTenFactors = joinFactors(factors)
+
+				addErr := liberdatabase.AddPrimeNumRecord(conn, record)
+				if addErr != nil {
+					// Handle the error
+					fmt.Printf("Error adding prime number: %v\n", addErr)
+				}
+
+				nonPrimeCount.Add(nonPrimeCount, big.NewInt(1))
 			}
-
-			record.ModTwoTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTwoTen))
-			record.ModFortyEightIsPrime = sequences.IsPrime(big.NewInt(record.ModFortyEight))
-			record.ModTenIsPrime = sequences.IsPrime(big.NewInt(record.ModTen))
-			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTwoTen), 0)
-			record.ModTwoTenFactors = joinFactors(factors)
-			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModFortyEight), 0)
-			record.ModFortyEightFactors = joinFactors(factors)
-			factors = factorize(liteConn, uuid.New().String(), big.NewInt(record.ModTen), 0)
-			record.ModTenFactors = joinFactors(factors)
-
-			addErr := liberdatabase.AddPrimeNumRecord(conn, record)
-			if addErr != nil {
-				// Handle the error
-				fmt.Printf("Error adding prime number: %v\n", addErr)
-			}
-
-			nonPrimeCount.Add(nonPrimeCount, big.NewInt(1))
 		}
 	}
 }
