@@ -2,9 +2,11 @@ package main
 
 import (
 	"config"
+	"encoding/csv"
 	"fmt"
 	"liberdatabase"
 	"math/big"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -12,11 +14,17 @@ import (
 
 // calculatePermutationRanges calculates the permutation ranges for the specified length
 func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutationsPerSegment int64, packageFileNumber *big.Int, config *config.AppConfig) {
-	db, err := liberdatabase.InitConnection()
-	if err != nil {
-		fmt.Printf("Error initializing database connection: %v\n", err)
-		return
-	}
+	permutationChan := make(chan liberdatabase.Permutation, 2048) // Increased buffer size
+
+	// Loop through the permutationChan in a single thread
+	go func() {
+		for perm := range permutationChan {
+			filePath := fmt.Sprintf("permutations_%d_%d.csv", length, packageFileNumber.Int64())
+			if err := writePermutationToCSV(filePath, perm); err != nil {
+				fmt.Printf("Error writing permutation to CSV: %v\n", err)
+			}
+		}
+	}()
 
 	totalPermutations := big.NewInt(1)
 	for i := 0; i < length; i++ {
@@ -38,7 +46,6 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 		if start.Cmp(totalPermutations) >= 0 {
 			break
 		}
-		fmt.Printf("Processing file index: %d\n", i.Int64())
 
 		for j := int64(0); j < maxPermutationsPerSegment; j++ {
 			lineStart := new(big.Int).Add(start, big.NewInt(j*maxPermutationsPerLine))
@@ -62,13 +69,58 @@ func calculatePermutationRanges(length int, maxPermutationsPerLine, maxPermutati
 				NumberOfPermutations: config.MaxPermutationsPerLine,
 			}
 
-			liberdatabase.InsertRecord(db, perm)
+			permutationChan <- perm
 
 			if lineEnd.Cmp(totalPermutations) == 0 {
 				break
 			}
 		}
 	}
+	close(permutationChan) // Close the channel after all permutations are sent
+}
+
+// writePermutationToCSV writes a liberdatabase.Permutation to a CSV file
+func writePermutationToCSV(filePath string, perm liberdatabase.Permutation) error {
+	// Open the file for appending or create it if it doesn't exist
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	// Create a CSV writer
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write the header if the file is empty
+	fileInfo, _ := file.Stat()
+	if fileInfo.Size() == 0 {
+		header := []string{
+			"ID", "StartArray", "EndArray", "PackageName", "PermName",
+			"ReportedToAPI", "Processed", "ArrayLength", "NumberOfPermutations",
+		}
+		if err := writer.Write(header); err != nil {
+			return fmt.Errorf("error writing header: %v", err)
+		}
+	}
+
+	// Write the permutation data
+	record := []string{
+		perm.ID,
+		perm.StartArray,
+		perm.EndArray,
+		perm.PackageName,
+		perm.PermName,
+		fmt.Sprintf("%t", perm.ReportedToAPI),
+		fmt.Sprintf("%t", perm.Processed),
+		fmt.Sprintf("%d", perm.ArrayLength),
+		fmt.Sprintf("%d", perm.NumberOfPermutations),
+	}
+	if err := writer.Write(record); err != nil {
+		return fmt.Errorf("error writing record: %v", err)
+	}
+
+	return nil
 }
 
 // indexToArray converts an index to a byte array
