@@ -1,3 +1,4 @@
+
 base60
 binfile
 binstring
@@ -17,10 +18,12 @@ genseq
 intgen
 isprime
 libergo
+lupdist
 mob
 numfile
 numstring
 processhashes
+ptptest
 rdtext
 rencode
 runecalc

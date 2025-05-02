@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/xuri/excelize/v2 v2.9.0
 	gorm.io/driver/mysql v1.5.7
-	gorm.io/gorm v1.25.12
+	gorm.io/gorm v1.26.0
 )
 
 require (
