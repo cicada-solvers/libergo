@@ -4,8 +4,8 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"liberdatabase"
 	"math/big"
+	"os"
 	"sync"
 	"time"
 
@@ -63,9 +63,21 @@ func processTasks(tasks chan []byte, wg *sync.WaitGroup, existingHash string, do
 
 					output := fmt.Sprintf("Match found: %s, Hash Name: %s, Byte Array: %s\n", taskStr, hashName, hex.EncodeToString(task))
 					fmt.Print(output)
-					err := liberdatabase.InsertFoundHash(taskStr, hashName)
+
+					// Write the found hash to a file
+					fileName := "found_hash.txt"
+					file, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 					if err != nil {
-						fmt.Printf("Error inserting found hash: %v\n", err)
+						fmt.Printf("Error opening file: %v\n", err)
+					} else {
+						if _, err := file.WriteString(output); err != nil {
+							fmt.Printf("Error writing to file: %v\n", err)
+						}
+
+						closeErr := file.Close()
+						if closeErr != nil {
+							fmt.Printf("Error closing file: %v\n", closeErr)
+						}
 					}
 
 					once.Do(func() { close(done) })

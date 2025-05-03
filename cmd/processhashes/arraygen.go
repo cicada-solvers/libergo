@@ -1,27 +1,27 @@
 package main
 
-// Program represents the program
-type Program struct {
-	tasks chan []byte
+// ArrayGen represents the class that generates all possible byte arrays
+type ArrayGen struct {
+	segments chan []byte
 }
 
-// NewProgram creates a new Program
-func NewProgram() *Program {
-	return &Program{
-		tasks: make(chan []byte, 10000),
+// NewArrayGen creates a new ArrayGen
+func NewArrayGen() *ArrayGen {
+	return &ArrayGen{
+		segments: make(chan []byte, 10000),
 	}
 }
 
 // generateAllByteArrays generates all possible byte arrays of a given length
-func (p *Program) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
+func (p *ArrayGen) generateAllByteArrays(maxArrayLength int, startArray, stopArray []byte) {
 	currentArray := make([]byte, len(startArray))
 	copy(currentArray, startArray)
 	p.generateByteArrays(maxArrayLength, 1, currentArray, stopArray)
-	close(p.tasks)
+	close(p.segments)
 }
 
 // generateByteArrays generates all possible byte arrays of a given length
-func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
+func (p *ArrayGen) generateByteArrays(maxArrayLength, currentArrayLevel int, passedArray, stopArray []byte) bool {
 	startForValue := int(passedArray[currentArrayLevel-1])
 
 	if currentArrayLevel == maxArrayLength {
@@ -32,7 +32,7 @@ func (p *Program) generateByteArrays(maxArrayLength, currentArrayLevel int, pass
 
 		for i := startForValue; i < 256; i++ {
 			currentArray[currentArrayLevel-1] = byte(i)
-			p.tasks <- append([]byte(nil), currentArray...)
+			p.segments <- append([]byte(nil), currentArray...)
 			if compareArrays(currentArray, stopArray) == 0 {
 				return false
 			}
