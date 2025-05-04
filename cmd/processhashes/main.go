@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"runtime"
 	"sync"
 )
 
@@ -23,8 +24,10 @@ func main() {
 		return
 	}
 
+	// Get the number of processors
+	processorNumber := runtime.NumCPU()
 	// Prompt for number of processors
-	fmt.Print("Enter the number of processors you want to use: ")
+	fmt.Printf("Enter the number of processors you want to use (max %d): ", processorNumber)
 	_, err = fmt.Scan(&numWorkersEntry)
 	if err != nil {
 		fmt.Printf("Error reading number of processors: %v\n", err)
