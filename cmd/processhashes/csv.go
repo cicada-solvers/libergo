@@ -159,6 +159,7 @@ func downloadAndExtractPack(packNumber int) (string, error) {
 	return outputDir, nil
 }
 
+// downloadLargeFile downloads a file from the given URL and supports resuming downloads
 func downloadLargeFile(url, fileName string) error {
 	// Create HTTP client with timeout
 	client := &http.Client{
