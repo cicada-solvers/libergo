@@ -43,4 +43,5 @@ use (
 	cmd/calrunestats
 	cmd/lupdist
 	cmd/ptptest
+	cmd/checkhashes
 )
