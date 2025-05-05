@@ -4,6 +4,7 @@ binfile
 binstring
 binvert
 calrunestats
+checkhashes
 cipherval
 coller
 corpuslist

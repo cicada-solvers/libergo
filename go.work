@@ -12,13 +12,9 @@ use (
 	pkg/utility/titler
 	pkg/utility/cipher
 	pkg/lgstructs
-	cmd/processhashes
 	cmd/genseq
 	cmd/isprime
 	cmd/rencode
-	cmd/generatebytearrays
-	cmd/generateprimearrays
-	cmd/stripperhashes
 	cmd/libergo
 	cmd/factorize
 	cmd/intgen
@@ -44,4 +40,5 @@ use (
 	cmd/lupdist
 	cmd/ptptest
 	cmd/checkhashes
+	cmd/ipaddressgen
 )
