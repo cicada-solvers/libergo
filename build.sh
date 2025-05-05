@@ -78,6 +78,9 @@ dist_binaries() {
         echo "Failed to build $BINARY_NAME for Linux"
         exit 1
       fi
+      echo "Copying additional files for $BINARY_NAME..."
+      cp -f *.sh "../../$BINARY_DIR"
+      cp -f *.sql "../../$BINARY_DIR"
 
       if [ "$BINARY_NAME" != "runecalc" ] && [ "$BINARY_NAME" != "runecalc2" ]; then
         echo "Building $BINARY_NAME for Mac (amd64)..."
@@ -87,6 +90,9 @@ dist_binaries() {
           echo "Failed to build $BINARY_NAME for Mac (amd64)"
           exit 1
         fi
+        echo "Copying additional files for $BINARY_NAME..."
+        cp -f *.sh "../../$BINARY_DIR"
+        cp -f *.sql "../../$BINARY_DIR"
 
         echo "Building $BINARY_NAME for Mac (arm64)..."
         BINARY_DIR="$DIST_DIR/mac_arm64"
@@ -95,6 +101,9 @@ dist_binaries() {
           echo "Failed to build $BINARY_NAME for Mac (arm64)"
           exit 1
         fi
+        echo "Copying additional files for $BINARY_NAME..."
+        cp -f *.sh "../../$BINARY_DIR"
+        cp -f *.sql "../../$BINARY_DIR"
 
         echo "Building $BINARY_NAME for Windows..."
         BINARY_DIR="$DIST_DIR/windows"
@@ -103,6 +112,10 @@ dist_binaries() {
           echo "Failed to build $BINARY_NAME for Windows"
           exit 1
         fi
+        echo "Copying additional files for $BINARY_NAME..."
+        cp -f *.sh "../../$BINARY_DIR"
+        cp -f *.sql "../../$BINARY_DIR"
+
       else
         echo "Skipping $BINARY_NAME for Mac and Windows..."
         rm -fv runecalc.tar.xz
@@ -111,6 +124,7 @@ dist_binaries() {
         cp -f runecalc.tar.xz "../../$BINARY_DIR/runecalc.tar.xz"
         cp -f runecalc2.tar.xz "../../$BINARY_DIR/runecalc2.tar.xz"
       fi
+
       popd > /dev/null
     fi
   done

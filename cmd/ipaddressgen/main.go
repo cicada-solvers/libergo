@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	// Define IPv4 ranges for classes A, B, C, and D
+	// Define IPv4 ranges for classes A, B, C, D, and E
 	ranges := map[string][2]string{
-		"A": {"1.0.0.0", "126.255.255.255"},
+		"A": {"1.0.0.0", "127.0.0.0"},
 		"B": {"128.0.0.0", "191.255.255.255"},
 		"C": {"192.0.0.0", "223.255.255.255"},
 		"D": {"224.0.0.0", "239.255.255.255"},
