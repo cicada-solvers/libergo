@@ -68,13 +68,19 @@ func main() {
 }
 
 func writeIPsToFile(class, portion string, start, end int64, includePorts, includeSchemes bool, index int) {
+	totalIPs := end - start + 1
 	fileIndex := 1
 	file, size, failed := createFile(class, portion, index, fileIndex)
 	if failed {
 		return
 	}
 
+	threadID := index // Use the index to identify the thread
 	for ip := start; ip <= end; ip++ {
+		// Calculate and display progress
+		progress := float64(ip-start+1) / float64(totalIPs) * 100
+		fmt.Printf("\rThread %d - Processing %s (%s): %.2f%% complete", threadID, class, portion, progress)
+
 		if includePorts {
 			for port := 1; port <= 65535; port++ {
 				line := fmt.Sprintf("%s:%d\n", intToIP(ip).String(), port)
@@ -132,6 +138,7 @@ func writeIPsToFile(class, portion string, start, end int64, includePorts, inclu
 		}
 	}
 	closeFile(file)
+	fmt.Printf("Thread %d - Processing %s (%s): 100.00%% complete\n", threadID, class, portion) // Ensure 100% is printed at the end
 }
 
 func writeLineToFile(file *os.File, line string, size int64) int64 {
