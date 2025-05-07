@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-const maxFileSize = 1 << 30 // 1GB in bytes
+const maxFileSize = 5 << 30 // 1GB in bytes
 
 func main() {
 	ranges := map[string][2]string{
@@ -35,44 +35,35 @@ func main() {
 	startIP := net.ParseIP(ranges[class][0]).To4()
 	endIP := net.ParseIP(ranges[class][1]).To4()
 
-	totalIPs := ipToInt(endIP) - ipToInt(startIP) + 1
-	ipsPerFile := totalIPs / 8
+	start := ipToInt(startIP)
+	end := ipToInt(endIP)
 
-	for i := 0; i < 8; i++ {
-		start := ipToInt(startIP) + int64(i)*ipsPerFile
-		end := start + ipsPerFile - 1
-		if i == 7 {
-			end = ipToInt(endIP)
-		}
+	var wg sync.WaitGroup
 
-		var wg sync.WaitGroup
+	wg.Add(4) // Add the number of goroutines to the WaitGroup
 
-		wg.Add(4) // Add the number of goroutines to the WaitGroup
+	go func() {
+		defer wg.Done()
+		writeIPsToFile(class, "ips", start, end, false, false, 0)
+	}()
 
-		go func() {
-			defer wg.Done()
-			writeIPsToFile(class, "ips", start, end, false, false, i)
-		}()
+	go func() {
+		defer wg.Done()
+		writeIPsToFile(class, "ipswport", start, end, true, false, 0)
+	}()
 
-		go func() {
-			defer wg.Done()
-			writeIPsToFile(class, "ipswport", start, end, true, false, i)
-		}()
+	go func() {
+		defer wg.Done()
+		writeIPsToFile(class, "ipswscheme", start, end, false, true, 0)
+	}()
 
-		go func() {
-			defer wg.Done()
-			writeIPsToFile(class, "ipswscheme", start, end, false, true, i)
-		}()
+	go func() {
+		defer wg.Done()
+		writeIPsToFile(class, "ipswportwscheme", start, end, true, true, 0)
+	}()
 
-		go func() {
-			defer wg.Done()
-			writeIPsToFile(class, "ipswportwscheme", start, end, true, true, i)
-		}()
+	wg.Wait() // Wait for all goroutines to finish
 
-		wg.Wait() // Wait for all goroutines to finish
-
-		fmt.Println("Files written successfully.")
-	}
 	fmt.Println("Files written successfully.")
 }
 
