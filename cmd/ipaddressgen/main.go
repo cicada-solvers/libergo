@@ -42,10 +42,8 @@ func main() {
 
 	// Split the range and write to 8 files
 	for i := 0; i < 8; i++ {
-		fileName := fmt.Sprintf("range_part_%d.txt", i+1)
-		file, createError := os.Create(fileName)
-		if createError != nil {
-			fmt.Println("Error creating file:", createError)
+		file, failed := createFile(class, "ips", i)
+		if failed {
 			return
 		}
 
@@ -55,6 +53,8 @@ func main() {
 		if i == 7 { // Ensure the last file includes any remaining IPs
 			end = ipToInt(endIP)
 		}
+
+		// Just IPs in the range
 		for ip := start; ip <= end; ip++ {
 			_, err := file.WriteString(intToIP(ip).String() + "\n")
 			if err != nil {
@@ -63,25 +63,95 @@ func main() {
 			}
 		}
 
-		closeError := file.Close()
-		if closeError != nil {
-			fmt.Println("Error closing file:", closeError)
+		closeFile(file)
+		file, failed = createFile(class, "ipswport", i)
+		if failed {
+			return
 		}
 
-		fmt.Printf("File %s written successfully.\n", fileName)
+		// IPs with port numbers
+		for ip := start; ip <= end; ip++ {
+			for port := 1; port <= 65535; port++ {
+				ipWithPort := fmt.Sprintf("%s:%d\n", intToIP(ip).String(), port)
+				_, err := file.WriteString(ipWithPort)
+				if err != nil {
+					fmt.Println("Error writing to file:", err)
+					return
+				}
+			}
+		}
+
+		closeFile(file)
+		file, failed = createFile(class, "ipswscheme", i)
+		if failed {
+			return
+		}
+
+		// Just IPs in the range with schemes
+		for ip := start; ip <= end; ip++ {
+			for _, scheme := range getSchemes() {
+				ipWithScheme := fmt.Sprintf("%s://%s\n", scheme, intToIP(ip).String())
+				_, err := file.WriteString(ipWithScheme)
+				if err != nil {
+					fmt.Println("Error writing to file:", err)
+					return
+				}
+
+				ipWithSchemeEnd := fmt.Sprintf("%s://%s/\n", scheme, intToIP(ip).String())
+				_, err = file.WriteString(ipWithSchemeEnd)
+				if err != nil {
+					fmt.Println("Error writing to file:", err)
+					return
+				}
+			}
+		}
+
+		closeFile(file)
+		file, failed = createFile(class, "ipswportwscheme", i)
+		if failed {
+			return
+		}
+
+		// IPs with port numbers with schemes
+		for ip := start; ip <= end; ip++ {
+			for _, scheme := range getSchemes() {
+				for port := 1; port <= 65535; port++ {
+					ipWithPortWithScheme := fmt.Sprintf("%s://%s:%d\n", scheme, intToIP(ip).String(), port)
+					_, err := file.WriteString(ipWithPortWithScheme)
+					if err != nil {
+						fmt.Println("Error writing to file:", err)
+						return
+					}
+
+					ipWithPortWithSchemeEnd := fmt.Sprintf("%s://%s:%d/\n", scheme, intToIP(ip).String(), port)
+					_, err = file.WriteString(ipWithPortWithSchemeEnd)
+					if err != nil {
+						fmt.Println("Error writing to file:", err)
+						return
+					}
+				}
+			}
+		}
+
+		closeFile(file)
+
+		fmt.Print("Files written successfully.\n")
 	}
 }
 
-// Convert an IP address to an integer
-func ipToInt(ip net.IP) int64 {
-	var result int64
-	for _, b := range ip {
-		result = result<<8 + int64(b)
+func closeFile(file *os.File) {
+	closeError := file.Close()
+	if closeError != nil {
+		fmt.Println("Error closing file:", closeError)
 	}
-	return result
 }
 
-// Convert an integer to an IP address
-func intToIP(ipInt int64) net.IP {
-	return net.IPv4(byte(ipInt>>24), byte(ipInt>>16), byte(ipInt>>8), byte(ipInt))
+func createFile(class, portion string, i int) (*os.File, bool) {
+	fileName := fmt.Sprintf("%s_%s_range_part_%d.txt", class, portion, i+1)
+	file, createError := os.Create(fileName)
+	if createError != nil {
+		fmt.Println("Error creating file:", createError)
+		return nil, true
+	}
+	return file, false
 }
