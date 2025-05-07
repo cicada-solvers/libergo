@@ -41,4 +41,5 @@ use (
 	cmd/ptptest
 	cmd/checkhashes
 	cmd/ipaddressgen
+	cmd/checkmultihash
 )
