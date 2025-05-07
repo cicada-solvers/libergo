@@ -72,7 +72,6 @@ func main() {
 
 	// Wait for all workers to finish
 	wg.Wait()
-	fmt.Println("All lines processed.")
 }
 
 func processLine(inputString, existingHash string) {
