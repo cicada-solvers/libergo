@@ -38,7 +38,6 @@ use (
 	cmd/mob
 	cmd/calrunestats
 	cmd/lupdist
-	cmd/ptptest
 	cmd/checkhashes
 	cmd/ipaddressgen
 	cmd/checkmultihash
