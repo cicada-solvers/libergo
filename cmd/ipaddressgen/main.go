@@ -84,7 +84,10 @@ func checkIPs(class, portion string, start, end int64, includePorts, includeSche
 				line := fmt.Sprintf("%s:%d\n", intToIP(ip).String(), port)
 				if includeSchemes {
 					for _, scheme := range getSchemes() {
-						line = fmt.Sprintf("%s://%s:%d\n", scheme, intToIP(ip).String(), port)
+						line = fmt.Sprintf("%s://%s:%d", scheme, intToIP(ip).String(), port)
+						checkLine(line)
+
+						line = fmt.Sprintf("%s://%s:%d/", scheme, intToIP(ip).String(), port)
 						checkLine(line)
 					}
 				} else {
@@ -95,7 +98,10 @@ func checkIPs(class, portion string, start, end int64, includePorts, includeSche
 			line := intToIP(ip).String() + "\n"
 			if includeSchemes {
 				for _, scheme := range getSchemes() {
-					line = fmt.Sprintf("%s://%s\n", scheme, intToIP(ip).String())
+					line = fmt.Sprintf("%s://%s", scheme, intToIP(ip).String())
+					checkLine(line)
+
+					line = fmt.Sprintf("%s://%s/", scheme, intToIP(ip).String())
 					checkLine(line)
 				}
 			} else {
