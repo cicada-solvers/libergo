@@ -81,7 +81,7 @@ func checkIPs(class, portion string, start, end int64, includePorts, includeSche
 
 		if includePorts {
 			for port := 1; port <= 65535; port++ {
-				line := fmt.Sprintf("%s:%d\n", intToIP(ip).String(), port)
+				line := fmt.Sprintf("%s:%d", intToIP(ip).String(), port)
 				if includeSchemes {
 					for _, scheme := range getSchemes() {
 						line = fmt.Sprintf("%s://%s:%d", scheme, intToIP(ip).String(), port)
@@ -95,7 +95,7 @@ func checkIPs(class, portion string, start, end int64, includePorts, includeSche
 				}
 			}
 		} else {
-			line := intToIP(ip).String() + "\n"
+			line := intToIP(ip).String()
 			if includeSchemes {
 				for _, scheme := range getSchemes() {
 					line = fmt.Sprintf("%s://%s", scheme, intToIP(ip).String())
