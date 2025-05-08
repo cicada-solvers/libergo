@@ -44,22 +44,22 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ips", start, end, false, false, 0)
+		writeIPsToFile(class, "ips", start, end, false, false, 1)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswport", start, end, true, false, 0)
+		writeIPsToFile(class, "ipswport", start, end, true, false, 2)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswscheme", start, end, false, true, 0)
+		writeIPsToFile(class, "ipswscheme", start, end, false, true, 3)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswportwscheme", start, end, true, true, 0)
+		writeIPsToFile(class, "ipswportwscheme", start, end, true, true, 4)
 	}()
 
 	wg.Wait() // Wait for all goroutines to finish
