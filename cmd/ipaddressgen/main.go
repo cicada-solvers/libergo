@@ -1,14 +1,17 @@
 package main
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
+	"github.com/jzelinskie/whirlpool"
+	"golang.org/x/crypto/blake2b"
+	"hashinglib"
 	"net"
 	"os"
 	"strings"
 	"sync"
 )
-
-const maxFileSize = 5 << 30 // 1GB in bytes
 
 func main() {
 	ranges := map[string][2]string{
@@ -44,22 +47,22 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ips", start, end, false, false, 1)
+		checkIPs(class, "ips", start, end, false, false, 1)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswport", start, end, true, false, 2)
+		checkIPs(class, "ipswport", start, end, true, false, 2)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswscheme", start, end, false, true, 3)
+		checkIPs(class, "ipswscheme", start, end, false, true, 3)
 	}()
 
 	go func() {
 		defer wg.Done()
-		writeIPsToFile(class, "ipswportwscheme", start, end, true, true, 4)
+		checkIPs(class, "ipswportwscheme", start, end, true, true, 4)
 	}()
 
 	wg.Wait() // Wait for all goroutines to finish
@@ -67,13 +70,8 @@ func main() {
 	fmt.Println("Files written successfully.")
 }
 
-func writeIPsToFile(class, portion string, start, end int64, includePorts, includeSchemes bool, index int) {
+func checkIPs(class, portion string, start, end int64, includePorts, includeSchemes bool, index int) {
 	totalIPs := end - start + 1
-	fileIndex := 1
-	file, size, failed := createFile(class, portion, index, fileIndex)
-	if failed {
-		return
-	}
 
 	threadID := index // Use the index to identify the thread
 	for ip := start; ip <= end; ip++ {
@@ -87,26 +85,10 @@ func writeIPsToFile(class, portion string, start, end int64, includePorts, inclu
 				if includeSchemes {
 					for _, scheme := range getSchemes() {
 						line = fmt.Sprintf("%s://%s:%d\n", scheme, intToIP(ip).String(), port)
-						size = writeLineToFile(file, line, size)
-						if size > maxFileSize {
-							closeFile(file)
-							fileIndex++
-							file, size, failed = createFile(class, portion, index, fileIndex)
-							if failed {
-								return
-							}
-						}
+						checkLine(line)
 					}
 				} else {
-					size = writeLineToFile(file, line, size)
-					if size > maxFileSize {
-						closeFile(file)
-						fileIndex++
-						file, size, failed = createFile(class, portion, index, fileIndex)
-						if failed {
-							return
-						}
-					}
+					checkLine(line)
 				}
 			}
 		} else {
@@ -114,56 +96,62 @@ func writeIPsToFile(class, portion string, start, end int64, includePorts, inclu
 			if includeSchemes {
 				for _, scheme := range getSchemes() {
 					line = fmt.Sprintf("%s://%s\n", scheme, intToIP(ip).String())
-					size = writeLineToFile(file, line, size)
-					if size > maxFileSize {
-						closeFile(file)
-						fileIndex++
-						file, size, failed = createFile(class, portion, index, fileIndex)
-						if failed {
-							return
-						}
-					}
+					checkLine(line)
 				}
 			} else {
-				size = writeLineToFile(file, line, size)
-				if size > maxFileSize {
-					closeFile(file)
-					fileIndex++
-					file, size, failed = createFile(class, portion, index, fileIndex)
-					if failed {
-						return
-					}
-				}
+				checkLine(line)
 			}
 		}
 	}
-	closeFile(file)
 	fmt.Printf("Thread %d - Processing %s (%s): 100.00%% complete\n", threadID, class, portion) // Ensure 100% is printed at the end
 }
 
-func writeLineToFile(file *os.File, line string, size int64) int64 {
-	lineSize := int64(len(line))
-	_, err := file.WriteString(line)
-	if err != nil {
-		fmt.Println("Error writing to file:", err)
-		return size
+func checkLine(line string) {
+	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
+
+	// Convert the string to a byte array
+	byteArray := []byte(line)
+
+	hashes := generateHashes(byteArray)
+
+	for hashName, hash := range hashes {
+		if hash == existingHash {
+			output := fmt.Sprintf("Found matching hash:%s - %s:%s\n", line, hashName, hash)
+			fmt.Printf(output)
+			writeToOutputFile("output.txt", []byte(output))
+		}
 	}
-	return size + lineSize
 }
 
-func createFile(class, portion string, index, fileIndex int) (*os.File, int64, bool) {
-	fileName := fmt.Sprintf("%s_%s_part_%d_%d.txt", class, portion, index, fileIndex)
-	file, err := os.Create(fileName)
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return nil, 0, true
-	}
-	return file, 0, false
+func generateHashes(data []byte) map[string]string {
+	hashes := make(map[string]string)
+
+	sha512Hash := sha512.Sum512(data)
+	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
+
+	whirlpoolHash := whirlpool.New()
+	whirlpoolHash.Write(data)
+	whirlHash := whirlpoolHash.Sum(nil)
+	hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
+
+	blake2bHash := blake2b.Sum512(data)
+	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
+
+	blake512Hash := hashinglib.Blake512Hash(data)
+	hashes["Blake-512"] = hex.EncodeToString(blake512Hash)
+
+	return hashes
 }
 
-func closeFile(file *os.File) {
-	err := file.Close()
+func writeToOutputFile(filename string, data []byte) {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error closing file:", err)
+		fmt.Printf("Error opening file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	if _, err := file.Write(data); err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
 	}
 }
