@@ -7,10 +7,13 @@ import (
 	"github.com/jzelinskie/whirlpool"
 	"golang.org/x/crypto/blake2b"
 	"hashinglib"
+	"math/big"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -41,75 +44,91 @@ func main() {
 	start := ipToInt(startIP)
 	end := ipToInt(endIP)
 
-	var wg sync.WaitGroup
-
-	wg.Add(4) // Add the number of goroutines to the WaitGroup
-
-	go func() {
-		defer wg.Done()
-		checkIPs(class, "ips", start, end, false, false, 1)
-	}()
-
-	go func() {
-		defer wg.Done()
-		checkIPs(class, "ipswport", start, end, true, false, 2)
-	}()
-
-	go func() {
-		defer wg.Done()
-		checkIPs(class, "ipswscheme", start, end, false, true, 3)
-	}()
-
-	go func() {
-		defer wg.Done()
-		checkIPs(class, "ipswportwscheme", start, end, true, true, 4)
-	}()
-
-	wg.Wait() // Wait for all goroutines to finish
-
+	checkIPs(start, end)
 	fmt.Println("Files written successfully.")
 }
 
-func checkIPs(class, portion string, start, end int64, includePorts, includeSchemes bool, index int) {
-	totalIPs := end - start + 1
+func checkIPs(start, end int64) {
+	var processedCounter = big.NewInt(0)
+	var rateCounter = big.NewInt(0)
+	one := big.NewInt(1)
 
-	threadID := index // Use the index to identify the thread
-	for ip := start; ip <= end; ip++ {
-		// Calculate and display progress
-		progress := float64(ip-start+1) / float64(totalIPs) * 100
-		fmt.Printf("\rThread %d - Processing %s (%s): %.2f%% complete", threadID, class, portion, progress)
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
 
-		if includePorts {
-			for port := 1; port <= 65535; port++ {
-				line := fmt.Sprintf("%s:%d", intToIP(ip).String(), port)
-				if includeSchemes {
-					for _, scheme := range getSchemes() {
-						line = fmt.Sprintf("%s://%s:%d", scheme, intToIP(ip).String(), port)
-						checkLine(line)
-
-						line = fmt.Sprintf("%s://%s:%d/", scheme, intToIP(ip).String(), port)
-						checkLine(line)
-					}
-				} else {
-					checkLine(line)
-				}
-			}
-		} else {
-			line := intToIP(ip).String()
-			if includeSchemes {
-				for _, scheme := range getSchemes() {
-					line = fmt.Sprintf("%s://%s", scheme, intToIP(ip).String())
-					checkLine(line)
-
-					line = fmt.Sprintf("%s://%s/", scheme, intToIP(ip).String())
-					checkLine(line)
-				}
-			} else {
-				checkLine(line)
-			}
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("\rRate: %s/min - Processed %s items                                                    ",
+				rateCounter.String(), processedCounter.String())
+			rateCounter.SetInt64(int64(0))
 		}
+	}()
+
+	schemes := getSchemes()
+
+	// Create a channel to send lines
+	linesChan := make(chan string, 1024)
+	addressChan := make(chan string, 1024)
+
+	go func() {
+		for line := range linesChan {
+			rateCounter.Add(rateCounter, one)
+			checkLine(line)
+		}
+	}()
+
+	go func() {
+		for ip := start; ip <= end; ip++ {
+			ipString := intToIP(ip).String()
+			addressChan <- ipString
+		}
+	}()
+
+	// Use a WaitGroup to wait for all goroutines to finish
+	var wg sync.WaitGroup
+
+	// Get the number of processors
+	numProcessors := runtime.NumCPU() // Use double the number of processors for more concurrency
+
+	// Start worker goroutines
+	for i := 0; i < numProcessors; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for address := range addressChan {
+				processedCounter.Add(processedCounter, one)
+				line := fmt.Sprintf("%s", address)
+				linesChan <- line
+
+				for _, scheme := range schemes {
+					line = fmt.Sprintf("%s://%s", scheme, address)
+					linesChan <- line
+
+					line = fmt.Sprintf("%s://%s/", scheme, address)
+					linesChan <- line
+				}
+
+				for port := 1; port <= 65535; port++ {
+					line = fmt.Sprintf("%s:%d", address, port)
+					linesChan <- line
+
+					for _, scheme := range schemes {
+						line = fmt.Sprintf("%s://%s:%d", scheme, address, port)
+						linesChan <- line
+
+						line = fmt.Sprintf("%s://%s:%d/", scheme, address, port)
+						linesChan <- line
+					}
+				}
+			}
+		}()
 	}
-	fmt.Printf("Thread %d - Processing %s (%s): 100.00%% complete\n", threadID, class, portion) // Ensure 100% is printed at the end
+
+	// Wait for all workers to finish
+	wg.Wait()
+
+	fmt.Printf("Processing: 100.00%% complete\n") // Ensure 100% is printed at the end
 }
 
 func checkLine(line string) {
@@ -155,9 +174,14 @@ func writeToOutputFile(filename string, data []byte) {
 		fmt.Printf("Error opening file: %v\n", err)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		closeErr := file.Close()
+		if closeErr != nil {
+			fmt.Printf("Error closing file: %v\n", closeErr)
+		}
+	}(file)
 
-	if _, err := file.Write(data); err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
+	if _, writeErr := file.Write(data); writeErr != nil {
+		fmt.Printf("Error writing to file: %v\n", writeErr)
 	}
 }
