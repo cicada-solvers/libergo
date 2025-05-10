@@ -52,6 +52,8 @@ func checkIPs(start, end int64) {
 	var processedCounter = big.NewInt(0)
 	var rateCounter = big.NewInt(0)
 	one := big.NewInt(1)
+	totalIps := end - start + 1
+	fmt.Printf("Processing %d IPs...\n", totalIps)
 
 	// We are going to put timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
