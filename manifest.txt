@@ -5,6 +5,7 @@ binstring
 binvert
 calrunestats
 checkhashes
+checkmultihash
 cipherval
 coller
 corpuslist
@@ -22,7 +23,6 @@ lupdist
 mob
 numfile
 numstring
-ptptest
 rdtext
 rencode
 runecalc
