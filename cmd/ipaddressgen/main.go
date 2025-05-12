@@ -16,6 +16,9 @@ import (
 	"time"
 )
 
+var processedCounter = big.NewInt(0)
+var rateCounter = big.NewInt(0)
+
 func main() {
 	ranges := map[string][2]string{
 		"A": {"1.0.0.0", "127.0.0.0"},
@@ -38,23 +41,6 @@ func main() {
 		return
 	}
 
-	startIP := net.ParseIP(ranges[class][0]).To4()
-	endIP := net.ParseIP(ranges[class][1]).To4()
-
-	start := ipToInt(startIP)
-	end := ipToInt(endIP)
-
-	checkIPs(start, end)
-	fmt.Println("Files written successfully.")
-}
-
-func checkIPs(start, end int64) {
-	var processedCounter = big.NewInt(0)
-	var rateCounter = big.NewInt(0)
-	one := big.NewInt(1)
-	totalIps := end - start + 1
-	fmt.Printf("Processing %d IPs...\n", totalIps)
-
 	// We are going to put timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
 	defer processedTicker.Stop()
@@ -67,18 +53,25 @@ func checkIPs(start, end int64) {
 		}
 	}()
 
+	startIP := net.ParseIP(ranges[class][0]).To4()
+	endIP := net.ParseIP(ranges[class][1]).To4()
+
+	start := ipToInt(startIP)
+	end := ipToInt(endIP)
+
+	checkIPs(start, end)
+	fmt.Println("Files written successfully.")
+}
+
+func checkIPs(start, end int64) {
+	one := big.NewInt(1)
+	totalIps := end - start + 1
+	fmt.Printf("Processing %d IPs...\n", totalIps)
+
 	schemes := getSchemes()
 
 	// Create a channel to send lines
-	linesChan := make(chan string, 1024)
 	addressChan := make(chan string, 1024)
-
-	go func() {
-		for line := range linesChan {
-			rateCounter.Add(rateCounter, one)
-			checkLine(line)
-		}
-	}()
 
 	go func() {
 		for ip := start; ip <= end; ip++ {
@@ -91,7 +84,7 @@ func checkIPs(start, end int64) {
 	var wg sync.WaitGroup
 
 	// Get the number of processors
-	numProcessors := runtime.NumCPU() // Use double the number of processors for more concurrency
+	numProcessors := runtime.NumCPU() * 2 // Use double the number of processors for more concurrency
 
 	// Start worker goroutines
 	for i := 0; i < numProcessors; i++ {
@@ -101,26 +94,26 @@ func checkIPs(start, end int64) {
 			for address := range addressChan {
 				processedCounter.Add(processedCounter, one)
 				line := fmt.Sprintf("%s", address)
-				linesChan <- line
+				checkLine(line)
 
 				for _, scheme := range schemes {
 					line = fmt.Sprintf("%s://%s", scheme, address)
-					linesChan <- line
+					checkLine(line)
 
 					line = fmt.Sprintf("%s://%s/", scheme, address)
-					linesChan <- line
+					checkLine(line)
 				}
 
 				for port := 1; port <= 65535; port++ {
 					line = fmt.Sprintf("%s:%d", address, port)
-					linesChan <- line
+					checkLine(line)
 
 					for _, scheme := range schemes {
 						line = fmt.Sprintf("%s://%s:%d", scheme, address, port)
-						linesChan <- line
+						checkLine(line)
 
 						line = fmt.Sprintf("%s://%s:%d/", scheme, address, port)
-						linesChan <- line
+						checkLine(line)
 					}
 				}
 			}
@@ -135,6 +128,7 @@ func checkIPs(start, end int64) {
 
 func checkLine(line string) {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
+	one := big.NewInt(1)
 
 	// Convert the string to a byte array
 	byteArray := []byte(line)
@@ -147,6 +141,8 @@ func checkLine(line string) {
 			fmt.Printf(output)
 			writeToOutputFile("output.txt", []byte(output))
 		}
+
+		rateCounter.Add(rateCounter, one)
 	}
 }
 
