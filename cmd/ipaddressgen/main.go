@@ -41,30 +41,60 @@ func main() {
 		return
 	}
 
-	// We are going to put timer to see how many we have processed.
-	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
-
-	go func() {
-		for range processedTicker.C {
-			fmt.Printf("\rRate: %s/min - Processed %s items                                                    ",
-				rateCounter.String(), processedCounter.String())
-			rateCounter.SetInt64(int64(0))
-		}
-	}()
-
 	startIP := net.ParseIP(ranges[class][0]).To4()
 	endIP := net.ParseIP(ranges[class][1]).To4()
 
 	start := ipToInt(startIP)
 	end := ipToInt(endIP)
 
-	checkIPs(start, end)
-	fmt.Println("Files written successfully.")
+	// Define our processed file name
+	processedFileName := "processed.txt"
+
+	// Try to read the last processed IP from file
+	lastProcessedIP, err := readProcessedIPFromFile(processedFileName)
+	if err == nil {
+		// If we have a valid IP and it's in range, start from the next IP
+		if lastProcessedIP >= start && lastProcessedIP < end {
+			fmt.Printf("Resuming from IP: %s\n", intToIP(lastProcessedIP).String())
+			start = lastProcessedIP + 1
+		} else {
+			fmt.Println("Saved IP is outside the selected range, starting from the beginning")
+		}
+	} else {
+		fmt.Println("Starting from the beginning of the range")
+	}
+
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
+	// Create a variable to track the current IP position
+	currentIP := start
+
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("\rRate: %s/min - Processed %s items                                                    ",
+				rateCounter.String(), processedCounter.String())
+
+			// Write counter and current IP position to file
+			if err := writeCounterToFile(processedCounter, currentIP, processedFileName); err != nil {
+				fmt.Printf("\nError writing to file: %v\n", err)
+			}
+
+			rateCounter.SetInt64(int64(0))
+		}
+	}()
+
+	checkIPs(start, end, &currentIP)
+
+	removeErr := os.Remove(processedFileName)
+	if removeErr != nil {
+		fmt.Printf("Error removing processed file: %v\n", removeErr)
+	}
+	fmt.Println("Processed range successfully.")
 }
 
-func checkIPs(start, end int64) {
-	one := big.NewInt(1)
+func checkIPs(start, end int64, currentIP *int64) {
 	totalIps := end - start + 1
 	fmt.Printf("Processing %d IPs...\n", totalIps)
 
@@ -75,6 +105,8 @@ func checkIPs(start, end int64) {
 
 	go func() {
 		for ip := start; ip <= end; ip++ {
+			processedCounter.Add(processedCounter, big.NewInt(1))
+			*currentIP = ip
 			ipString := intToIP(ip).String()
 			addressChan <- ipString
 		}
@@ -92,7 +124,6 @@ func checkIPs(start, end int64) {
 		go func() {
 			defer wg.Done()
 			for address := range addressChan {
-				processedCounter.Add(processedCounter, one)
 				line := fmt.Sprintf("%s", address)
 				checkLine(line)
 
@@ -104,18 +135,18 @@ func checkIPs(start, end int64) {
 					checkLine(line)
 				}
 
-				for port := 1; port <= 65535; port++ {
-					line = fmt.Sprintf("%s:%d", address, port)
-					checkLine(line)
+				//for port := 1; port <= 65535; port++ {
+				//	line = fmt.Sprintf("%s:%d", address, port)
+				//	checkLine(line)
 
-					for _, scheme := range schemes {
-						line = fmt.Sprintf("%s://%s:%d", scheme, address, port)
-						checkLine(line)
-
-						line = fmt.Sprintf("%s://%s:%d/", scheme, address, port)
-						checkLine(line)
-					}
-				}
+				//for _, scheme := range schemes {
+				//	line = fmt.Sprintf("%s://%s:%d", scheme, address, port)
+				//	checkLine(line)
+				//
+				//	line = fmt.Sprintf("%s://%s:%d/", scheme, address, port)
+				//	checkLine(line)
+				//}
+				//}
 			}
 		}()
 	}
@@ -182,4 +213,54 @@ func writeToOutputFile(filename string, data []byte) {
 	if _, writeErr := file.Write(data); writeErr != nil {
 		fmt.Printf("Error writing to file: %v\n", writeErr)
 	}
+}
+
+func readProcessedIPFromFile(filename string) (int64, error) {
+	// Check if file exists
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return 0, fmt.Errorf("file does not exist")
+	}
+
+	// Read file contents
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return 0, fmt.Errorf("error reading file: %v", err)
+	}
+
+	// Parse the line containing the processed count
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "Last processed IP: ") {
+			ipStr := strings.TrimPrefix(line, "Last processed IP: ")
+			ipStr = strings.TrimSpace(ipStr)
+
+			// Convert IP string to int64
+			ip := net.ParseIP(ipStr).To4()
+			if ip == nil {
+				return 0, fmt.Errorf("invalid IP format in file: %s", ipStr)
+			}
+
+			return ipToInt(ip), nil
+		}
+	}
+
+	return 0, fmt.Errorf("no valid IP found in file")
+}
+
+func writeCounterToFile(counter *big.Int, lastIP int64, filename string) error {
+	ipStr := intToIP(lastIP).String()
+	data := []byte(fmt.Sprintf("Processed count: %s\nLast processed IP: %s\nTimestamp: %s\n",
+		counter.String(), ipStr, time.Now().Format(time.RFC3339)))
+
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening counter file: %v", err)
+	}
+	defer file.Close()
+
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("error writing to counter file: %v", err)
+	}
+
+	return nil
 }
