@@ -66,7 +66,6 @@ func main() {
 
 	// We are going to put timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
 
 	// Create a variable to track the current IP position
 	currentIP := start
@@ -88,6 +87,7 @@ func main() {
 	checkIPs(start, end, &currentIP)
 
 	removeErr := os.Remove(processedFileName)
+	processedTicker.Stop()
 	if removeErr != nil {
 		fmt.Printf("Error removing processed file: %v\n", removeErr)
 	}
