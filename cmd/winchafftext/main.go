@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Process the text
-	result := processText(*textPtr, *keepThrowPtr, *startAtOnePtr, *pullFromSequence, sequence)
+	result, filteredResult := processText(*textPtr, *keepThrowPtr, *startAtOnePtr, *pullFromSequence, sequence)
 
 	// Output result
 	if *outputFilePtr == "" {
@@ -68,7 +68,7 @@ func main() {
 		fmt.Println(result)
 	} else {
 		// Write to the file
-		if len([]byte(result)) > 0 {
+		if len([]byte(filteredResult)) > 0 {
 			err := os.WriteFile(*outputFilePtr, []byte(result), 0644)
 			if err != nil {
 				_, writeErr := fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
@@ -77,6 +77,16 @@ func main() {
 				}
 				os.Exit(1)
 			}
+
+			err = os.WriteFile(fmt.Sprintf("%s.filtered.txt", *outputFilePtr), []byte(filteredResult), 0644)
+			if err != nil {
+				_, writeErr := fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+				if writeErr != nil {
+					return
+				}
+				os.Exit(1)
+			}
+
 			fmt.Printf("Output written to %s\n", *outputFilePtr)
 		}
 	}
@@ -90,8 +100,9 @@ func main() {
 // 1. The first character is kept
 // 2. The second character is thrown away
 // 3. The third character is kept
-func processText(text, filterType string, startAtOne, pullFromSequence bool, sequence *sequences.NumericSequence) string {
+func processText(text, filterType string, startAtOne, pullFromSequence bool, sequence *sequences.NumericSequence) (string, string) {
 	var result strings.Builder
+	var filteredResult strings.Builder
 
 	result.WriteString(fmt.Sprintf("Original Text: %s\n\n", text))
 	result.WriteString("Sequence:")
@@ -114,11 +125,13 @@ func processText(text, filterType string, startAtOne, pullFromSequence bool, seq
 				}
 				stringVal := stringArray[value.Int64()-1]
 				result.WriteString(stringVal)
+				filteredResult.WriteString(stringVal)
 			}
 		} else {
 			for counter, char := range text {
 				if isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
 					result.WriteString(string(char))
+					filteredResult.WriteString(string(char))
 				}
 			}
 		}
@@ -126,11 +139,12 @@ func processText(text, filterType string, startAtOne, pullFromSequence bool, seq
 		for counter, char := range text {
 			if !isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
 				result.WriteString(string(char))
+				filteredResult.WriteString(string(char))
 			}
 		}
 	}
 
-	return result.String()
+	return result.String(), filteredResult.String()
 }
 
 // getCheckNumber gets the value based off whether to start at one
