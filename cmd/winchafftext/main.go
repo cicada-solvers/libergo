@@ -16,6 +16,9 @@ func main() {
 	keepThrowPtr := flag.String("filter", "keep", "Whether to 'keep' or 'throw' characters specified in the sequence")
 	sequencePtr := flag.String("sequence", "", "The sequence of characters to keep or throw")
 	outputFilePtr := flag.String("output", "", "Output file path (if not specified, prints to stdout)")
+	customSequencePtr := flag.String("customSequence", "", "Custom sequence of characters to keep or throw")
+	startAtOnePtr := flag.Bool("startAtOne", false, "Whether to start the sequence at 1 or 0")
+	pullFromSequence := flag.Bool("pullFromSequence", false, "Whether to pull the sequence from the sequence file")
 
 	// Parse the flags
 	flag.Parse()
@@ -40,10 +43,24 @@ func main() {
 	}
 
 	// Getting the sequence
-	sequence := getSequence(*sequencePtr, int64(len(*textPtr)))
+	var sequence *sequences.NumericSequence
+	if *customSequencePtr != "" {
+		sequence = &sequences.NumericSequence{}
+		sequencesArray := strings.Split(*customSequencePtr, ",")
+		for _, s := range sequencesArray {
+			// Convert the string to a big.Int
+			newNum, _ := big.NewInt(0).SetString(strings.TrimSpace(s), 10)
+			// Add the number to the sequence
+			sequence.Sequence = append(sequence.Sequence, newNum)
+		}
+		printSequence(sequence)
+	} else {
+		sequence = getSequence(*sequencePtr, int64(len(*textPtr)))
+		printSequence(sequence)
+	}
 
 	// Process the text
-	result := processText(*textPtr, *keepThrowPtr, sequence)
+	result := processText(*textPtr, *keepThrowPtr, *startAtOnePtr, *pullFromSequence, sequence)
 
 	// Output result
 	if *outputFilePtr == "" {
@@ -73,24 +90,55 @@ func main() {
 // 1. The first character is kept
 // 2. The second character is thrown away
 // 3. The third character is kept
-func processText(text, filterType string, sequence *sequences.NumericSequence) string {
+func processText(text, filterType string, startAtOne, pullFromSequence bool, sequence *sequences.NumericSequence) string {
 	var result strings.Builder
 
+	result.WriteString(fmt.Sprintf("Original Text: %s\n\n", text))
+	result.WriteString("Sequence:")
+	for _, n := range sequence.Sequence {
+		result.WriteString(fmt.Sprintf(" %d", n.Int64()))
+	}
+	result.WriteString("\n\n")
+
+	result.WriteString(fmt.Sprintf("Filtered Type: %s\n\n", filterType))
+
+	result.WriteString(fmt.Sprintf("Start At One: %t\n\n", startAtOne))
+
+	result.WriteString("Filtered Text:\n")
 	if filterType == "keep" {
-		for counter, char := range text {
-			if isNumberInSequence(int64(counter), sequence) {
-				result.WriteString(string(char))
+		if pullFromSequence {
+			stringArray := strings.Split(text, "")
+			for _, value := range sequence.Sequence {
+				if value.Int64() > int64(len(stringArray)) {
+					continue
+				}
+				stringVal := stringArray[value.Int64()-1]
+				result.WriteString(stringVal)
+			}
+		} else {
+			for counter, char := range text {
+				if isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
+					result.WriteString(string(char))
+				}
 			}
 		}
 	} else {
 		for counter, char := range text {
-			if !isNumberInSequence(int64(counter), sequence) {
+			if !isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
 				result.WriteString(string(char))
 			}
 		}
 	}
 
 	return result.String()
+}
+
+// getCheckNumber gets the value based off whether to start at one
+func getCheckNumber(num int, startAtOne bool) int64 {
+	if startAtOne {
+		return int64(num + 1)
+	}
+	return int64(num)
 }
 
 // getSequence returns a sequence based on the sequence type
@@ -140,4 +188,12 @@ func isNumberInSequence(num int64, sequence *sequences.NumericSequence) bool {
 		}
 	}
 	return false
+}
+
+// printSequence is a method that prints the sequence for logging
+func printSequence(sequence *sequences.NumericSequence) {
+	for _, n := range sequence.Sequence {
+		fmt.Printf("%d ", n.Int64())
+	}
+	fmt.Println()
 }
