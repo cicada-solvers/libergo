@@ -51,15 +51,17 @@ func main() {
 		fmt.Println(result)
 	} else {
 		// Write to file
-		err := os.WriteFile(*outputFilePtr, []byte(result), 0644)
-		if err != nil {
-			_, writeErr := fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
-			if writeErr != nil {
-				return
+		if len([]byte(result)) > 0 {
+			err := os.WriteFile(*outputFilePtr, []byte(result), 0644)
+			if err != nil {
+				_, writeErr := fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+				if writeErr != nil {
+					return
+				}
+				os.Exit(1)
 			}
-			os.Exit(1)
+			fmt.Printf("Output written to %s\n", *outputFilePtr)
 		}
-		fmt.Printf("Output written to %s\n", *outputFilePtr)
 	}
 }
 
