@@ -50,7 +50,7 @@ func main() {
 		// Print to stdout
 		fmt.Println(result)
 	} else {
-		// Write to file
+		// Write to the file
 		if len([]byte(result)) > 0 {
 			err := os.WriteFile(*outputFilePtr, []byte(result), 0644)
 			if err != nil {
@@ -67,8 +67,8 @@ func main() {
 
 // processText processes the text based on the filter type and sequence
 // If the filter type is "keep", it keeps only the characters in the sequence
-// If the filter type is "throw", it throws away the characters in the sequence
-// The sequence is a sequence of numbers, where each number represents a character in the text
+// If the filter type is "throw", it throws away the characters in the sequence.
+// The sequence is a sequence of numbers, where each number represents a character in the text.
 // For example, if the sequence is [1, 3, 5], then the text is processed as follows:
 // 1. The first character is kept
 // 2. The second character is thrown away
