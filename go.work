@@ -42,4 +42,6 @@ use (
 	cmd/ipaddressgen
 	cmd/checkmultihash
 	cmd/winchafftext
+	pkg/utility/ioc
+	cmd/calcioc
 )
