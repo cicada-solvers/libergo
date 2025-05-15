@@ -3,6 +3,7 @@ base60
 binfile
 binstring
 binvert
+calcioc
 calrunestats
 checkhashes
 checkmultihash
@@ -28,3 +29,4 @@ rencode
 runecalc
 runecalc2
 runedonkey
+winchafftext
