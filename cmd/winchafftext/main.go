@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"ioc"
 	"math/big"
 	"os"
+	"runer"
 	"sequences"
 	"strings"
 )
@@ -103,46 +105,65 @@ func main() {
 func processText(text, filterType string, startAtOne, pullFromSequence bool, sequence *sequences.NumericSequence) (string, string) {
 	var result strings.Builder
 	var filteredResult strings.Builder
+	stringArray := strings.Split(text, "")
 
-	result.WriteString(fmt.Sprintf("Original Text: %s\n\n", text))
-	result.WriteString("Sequence:")
-	for _, n := range sequence.Sequence {
-		result.WriteString(fmt.Sprintf(" %d", n.Int64()))
-	}
-	result.WriteString("\n\n")
+	result.WriteString(fmt.Sprintf("Original Text:\n %s\n\n", text))
+
+	result.WriteString("Sequence:\n")
+	result.WriteString(fmt.Sprintf(" %v\n\n", sequence.Sequence))
 
 	result.WriteString(fmt.Sprintf("Filtered Type: %s\n\n", filterType))
 
 	result.WriteString(fmt.Sprintf("Start At One: %t\n\n", startAtOne))
 
+	result.WriteString(fmt.Sprintf("Pull From Sequence: %t\n\n", pullFromSequence))
+
 	result.WriteString("Filtered Text:\n")
+
 	if filterType == "keep" {
 		if pullFromSequence {
-			stringArray := strings.Split(text, "")
 			for _, value := range sequence.Sequence {
 				if value.Int64() > int64(len(stringArray)) {
 					continue
 				}
-				stringVal := stringArray[value.Int64()-1]
-				result.WriteString(stringVal)
-				filteredResult.WriteString(stringVal)
+
+				if startAtOne {
+					stringVal := stringArray[value.Int64()-1]
+					result.WriteString(stringVal)
+					filteredResult.WriteString(stringVal)
+				} else {
+					stringVal := stringArray[value.Int64()]
+					result.WriteString(stringVal)
+					filteredResult.WriteString(stringVal)
+				}
 			}
 		} else {
-			for counter, char := range text {
+			for counter, char := range stringArray {
 				if isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
-					result.WriteString(string(char))
-					filteredResult.WriteString(string(char))
+					result.WriteString(char)
+					filteredResult.WriteString(char)
 				}
 			}
 		}
 	} else {
-		for counter, char := range text {
+		for counter, char := range stringArray {
 			if !isNumberInSequence(getCheckNumber(counter, startAtOne), sequence) {
-				result.WriteString(string(char))
-				filteredResult.WriteString(string(char))
+				result.WriteString(char)
+				filteredResult.WriteString(char)
 			}
 		}
 	}
+
+	// Get the IOC of the filteredResult
+	iocValue := ioc.CalcIOC(filteredResult.String(), ioc.Rune)
+	result.WriteString(fmt.Sprintf("\n\nIOC: %f\n", iocValue))
+
+	clearText := runer.TransposeRuneToLatin(filteredResult.String())
+	result.WriteString(fmt.Sprintf("\nClear Text:\n%s\n", clearText))
+
+	// Get the IOC of the clearText
+	iocValue = ioc.CalcIOC(clearText, ioc.Runeglish)
+	result.WriteString(fmt.Sprintf("\nIOC: %f\n", iocValue))
 
 	return result.String(), filteredResult.String()
 }
@@ -150,7 +171,7 @@ func processText(text, filterType string, startAtOne, pullFromSequence bool, seq
 // getCheckNumber gets the value based off whether to start at one
 func getCheckNumber(num int, startAtOne bool) int64 {
 	if startAtOne {
-		return int64(num + 1)
+		return int64(num - 1)
 	}
 	return int64(num)
 }
