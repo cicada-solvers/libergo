@@ -22,6 +22,7 @@ func BulkDecodeCaesarStringRaw(alphabet, text []string) (string, error) {
 // BulkDecodeCaesarString decodes the given text using the Caesar cipher with the provided alphabet and key.
 func BulkDecodeCaesarString(alphabet []string, text []string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
+	fmt.Printf("Alphabet: %s\n", strings.Join(alphabet, ""))
 
 	for i := 0; i < len(alphabet); i++ {
 		fmt.Printf("Trying %d:\n", i)
