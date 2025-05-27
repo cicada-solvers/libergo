@@ -256,6 +256,25 @@ func (repo *CharacterRepo) IsDinkus(value string) bool {
 	return false
 }
 
+var seperatorSet = map[string]struct{}{
+	" ": {},
+	".": {},
+	",": {},
+	"!": {},
+	"?": {},
+	":": {},
+	";": {},
+	"(": {},
+	")": {},
+}
+
+func (repo *CharacterRepo) IsSeperator(value string) bool {
+	if _, exists := seperatorSet[value]; exists {
+		return true
+	}
+	return false
+}
+
 func (repo *CharacterRepo) IsRune(value string, includeDunkus bool) bool {
 	if includeDunkus {
 		if _, exists := dunkusSet[value]; exists {
@@ -306,4 +325,9 @@ func (repo *CharacterRepo) GetDoubletCount(input string, alphabet []string) int 
 	}
 
 	return count
+}
+
+// GetRunglishAlphabet returns the runglish alphabet.
+func (repo *CharacterRepo) GetRunglishAlphabet() []string {
+	return []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "O", "P", "R", "S", "T", "U", "W", "X", "Y"}
 }

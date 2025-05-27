@@ -45,4 +45,5 @@ use (
 	pkg/utility/ioc
 	cmd/calcioc
 	cmd/primeaddressgen
+	cmd/detangle
 )
