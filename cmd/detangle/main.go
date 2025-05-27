@@ -140,6 +140,8 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 			if removedCount == len(strings.Split(word.Word, "")) {
 				ProcessText(countPatterns, newArrayWithRemoved, position+1, sentence)
 				sentence += word.Word + "•"
+			} else {
+				fmt.Printf("[%s] Word (%s) skipped, not enough of the right letters.\n", levelPrefix, word.Word)
 			}
 
 			myCharacters = CloneArray(textCharacters)
