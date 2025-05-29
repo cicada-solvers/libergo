@@ -16,19 +16,20 @@ import (
 )
 
 type WordStruct struct {
-	ID     string `gorm:"column:id"`
-	Word   string `gorm:"column:word"`
-	WordId string `gorm:"column:wordid"`
+	ProcessId string `gorm:"index:idx_first_word"`
+	Word      string
+	Sequence  int64 `gorm:"index:idx_first_word"`
+	Level     int   `gorm:"index:idx_first_word"`
 }
 
 type WordEntry struct {
 	gorm.Model
-	Word                string `gorm:"column:word"`
-	WordLength          int    `gorm:"column:word_length"`
-	RuneglishWord       string `gorm:"column:runeglish_word"`
-	RuneglishWordLength int    `gorm:"column:runeglish_word_length"`
-	RuneWord            string `gorm:"column:rune_word"`
-	RuneWordLength      int    `gorm:"column:rune_word_length"`
+	Word                string
+	WordLength          int `gorm:"index:idx_word_length"`
+	RuneglishWord       string
+	RuneglishWordLength int `gorm:"index:idx_runeglish_length"`
+	RuneWord            string
+	RuneWordLength      int `gorm:"index:idx_rune_length"`
 }
 
 var repo = runelib.NewCharacterRepo()
@@ -36,8 +37,10 @@ var alphabetArray []string
 var output string
 var csvFiles []string
 var dbConn *gorm.DB
+var processId string
 
 func main() {
+	processId = uuid.New().String()
 	text := flag.String("text", "", "The text to decode")
 	alphabet := flag.String("alphabet", "rune", "The alphabet to use (rune or english)")
 	outputFile := flag.String("output", "", "The output file to write the results")
@@ -98,6 +101,16 @@ func main() {
 	// Process the text
 	sentence := ""
 	clonedText := CloneArray(textCharacters)
+
+	for position, pattern := range countPatterns {
+		fmt.Printf("[%d/%d] loading words from table\n", position, len(countPatterns))
+		readCount, loadErr := LoadWordsFromTable(pattern, position)
+		if loadErr != nil {
+			fmt.Printf("[%d/%d] Error loading words from table: %v\n", position, len(countPatterns), loadErr)
+		}
+		fmt.Printf("[%d/%d] Loaded %d words from table\n", position, len(countPatterns), readCount)
+	}
+
 	ProcessText(countPatterns, clonedText, 0, sentence)
 }
 
@@ -105,22 +118,14 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 	levelPrefix := fmt.Sprintf("Processing level: %d/%d", position+1, len(countPatterns))
 	fmt.Printf("%s\n", levelPrefix)
 	myCharacters := CloneArray(textCharacters)
-	uuidString := uuid.New().String()
+	sequence := int64(1)
 
 	if (position) < len(countPatterns)-1 {
-		// First, we need to get the length of the current pattern
-		patternLength := countPatterns[position]
-
 		// Get the words from the CSV file
-		readCount, loadErr := LoadWordsFromTable(uuidString, patternLength)
-		if loadErr != nil {
-			fmt.Printf("[%s] Error loading words from table: %v\n", levelPrefix, loadErr)
-		}
-		fmt.Printf("[%s] Loaded %d words from table\n", levelPrefix, readCount)
-
 		isComplete := false
 		for isComplete == false {
-			word, getErr := GetFirstWordFromDatabase(uuidString)
+			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
+			word, getErr := GetFirstWordFromDatabase(sequence, position)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
 				isComplete = true
@@ -145,21 +150,13 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 			}
 
 			myCharacters = CloneArray(textCharacters)
-			DeleteWordFromDatabase(word.ID)
+			sequence++
 		}
 	} else {
-		// First, we need to get the length of the current pattern
-		patternLength := countPatterns[position]
-
-		readCount, loadErr := LoadWordsFromTable(uuidString, patternLength)
-		if loadErr != nil {
-			fmt.Printf("[%s] Error loading words from CSV: %v\n", levelPrefix, loadErr)
-		}
-		fmt.Printf("[%s] Loaded %d words from table\n", levelPrefix, readCount)
-
 		isComplete := false
 		for isComplete == false {
-			word, getErr := GetFirstWordFromDatabase(uuidString)
+			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
+			word, getErr := GetFirstWordFromDatabase(sequence, position)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
 				isComplete = true
@@ -179,7 +176,7 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 			}
 
 			myCharacters = CloneArray(textCharacters)
-			DeleteWordFromDatabase(uuidString)
+			sequence++
 		}
 	}
 }
@@ -291,9 +288,10 @@ func GetCSVFiles() []string {
 }
 
 // LoadWordsFromTable reads all the words from a specific column in a CSV file.
-func LoadWordsFromTable(guid string, length int) (int64, error) {
+func LoadWordsFromTable(length, level int) (int64, error) {
 	fmt.Printf("Loading words from with a length of %d\n", length)
 	readCount := int64(0)
+	sequence := int64(1)
 
 	rows, _ := GetWordsFromDatabaseByLength(length)
 	var words []WordStruct
@@ -301,9 +299,10 @@ func LoadWordsFromTable(guid string, length int) (int64, error) {
 	// Extract words from the specified column
 	for _, row := range rows {
 		instance := WordStruct{
-			ID:     uuid.New().String(),
-			Word:   row.RuneWord,
-			WordId: guid,
+			ProcessId: processId,
+			Word:      row.RuneWord,
+			Sequence:  sequence,
+			Level:     level,
 		}
 
 		words = append(words, instance)
@@ -314,6 +313,7 @@ func LoadWordsFromTable(guid string, length int) (int64, error) {
 		}
 
 		readCount++
+		sequence++
 	}
 
 	AddWordToDatabase(words)
@@ -414,9 +414,9 @@ func AddWordToDatabase(words []WordStruct) {
 	}
 }
 
-func GetFirstWordFromDatabase(uuid string) (WordStruct, error) {
+func GetFirstWordFromDatabase(sequence int64, level int) (WordStruct, error) {
 	var word WordStruct
-	result := dbConn.Where("wordid = ?", uuid).First(&word)
+	result := dbConn.Where("process_id = ? and sequence = ? and level = ?", processId, sequence, level).First(&word)
 	if result.Error != nil {
 		fmt.Printf("error querying words: %v\n", result.Error)
 		return word, result.Error
@@ -433,11 +433,4 @@ func GetWordsFromDatabaseByLength(length int) ([]WordEntry, error) {
 		return words, result.Error
 	}
 	return words, nil
-}
-
-func DeleteWordFromDatabase(uuid string) {
-	result := dbConn.Exec(fmt.Sprintf("DELETE FROM `word_structs` WHERE id = '%s'", uuid))
-	if result.Error != nil {
-		fmt.Printf("error deleting word: %v\n", result.Error)
-	}
 }
