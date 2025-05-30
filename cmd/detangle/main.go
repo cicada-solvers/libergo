@@ -12,7 +12,9 @@ import (
 	"os"
 	"path/filepath"
 	"runer"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 type WordStruct struct {
@@ -32,12 +34,18 @@ type WordEntry struct {
 	RuneWordLength      int `gorm:"index:idx_rune_length"`
 }
 
+type PatternPosition struct {
+	Pattern  int
+	Position int
+}
+
 var repo = runelib.NewCharacterRepo()
 var alphabetArray []string
 var output string
 var csvFiles []string
 var dbConn *gorm.DB
 var processId string
+var dbMutex sync.Mutex
 
 func main() {
 	processId = uuid.New().String()
@@ -87,55 +95,73 @@ func main() {
 			return
 		}
 
+		// Load the CSV files to the database
+		var lwg sync.WaitGroup
 		for _, file := range csvFiles {
-			fmt.Printf("Loading file: %s\n", file)
-			loadErr := LoadFilesToDb(file)
-			if loadErr != nil {
-				fmt.Printf("Error loading CSV file: %v\n", loadErr)
-			}
+			lwg.Add(1)
+			go func() {
+				defer lwg.Done()
+				fmt.Printf("Loading file: %s\n", file)
+				loadErr := LoadFilesToDb(file)
+				if loadErr != nil {
+					fmt.Printf("Error loading CSV file: %v\n", loadErr)
+				}
+			}()
 		}
+		lwg.Wait()
+		fmt.Printf("Finished loading files\n")
 	} else {
 		InitSQLiteConnection()
+		VaccuumDb()
 	}
+
+	// Load the words from the database
+	positionChan := make(chan PatternPosition)
+	var pwg sync.WaitGroup
+	for i := 0; i < runtime.NumCPU(); i++ {
+		pwg.Add(1)
+		go func() {
+			defer pwg.Done()
+			for positionPattern := range positionChan {
+				fmt.Printf("[%d/%d] loading words from table\n", positionPattern.Position, len(countPatterns))
+				readCount, loadErr := LoadWordsFromTable(positionPattern.Pattern, positionPattern.Position)
+				if loadErr != nil {
+					fmt.Printf("[%d/%d] Error loading words from table: %v\n", positionPattern.Position, len(countPatterns), loadErr)
+				}
+				fmt.Printf("[%d/%d] Loaded %d words from table\n", positionPattern.Position, len(countPatterns), readCount)
+			}
+		}()
+	}
+
+	for position, pattern := range countPatterns {
+		positionChan <- PatternPosition{
+			Pattern:  pattern,
+			Position: position,
+		}
+	}
+	close(positionChan)
+	pwg.Wait()
 
 	// Process the text
 	sentence := ""
 	clonedText := CloneArray(textCharacters)
-
-	for position, pattern := range countPatterns {
-		fmt.Printf("[%d/%d] loading words from table\n", position, len(countPatterns))
-		readCount, loadErr := LoadWordsFromTable(pattern, position)
-		if loadErr != nil {
-			fmt.Printf("[%d/%d] Error loading words from table: %v\n", position, len(countPatterns), loadErr)
-		}
-		fmt.Printf("[%d/%d] Loaded %d words from table\n", position, len(countPatterns), readCount)
-	}
-
 	ProcessText(countPatterns, clonedText, 0, sentence)
 }
 
 func ProcessText(countPatterns []int, textCharacters []string, position int, sentence string) {
-	levelPrefix := fmt.Sprintf("Processing level: %d/%d", position+1, len(countPatterns))
+	sequence, _ := GetMaxSequenceFromDatabaseByLevel(position)
+	levelPrefix := fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 	fmt.Printf("%s\n", levelPrefix)
 	myCharacters := CloneArray(textCharacters)
-	sequence := int64(1)
 
 	if (position) < len(countPatterns)-1 {
 		// Get the words from the CSV file
-		isComplete := false
-		for isComplete == false {
+		for sequence >= 1 {
+			levelPrefix = fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
 			word, getErr := GetFirstWordFromDatabase(sequence, position)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
-				isComplete = true
-			}
-			if word.Word == "" {
-				isComplete = true
-			}
-
-			if isComplete {
-				break
 			}
 
 			fmt.Printf("[%s] Processing word: %s\n", levelPrefix, word.Word)
@@ -150,23 +176,15 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 			}
 
 			myCharacters = CloneArray(textCharacters)
-			sequence++
+			sequence--
 		}
 	} else {
-		isComplete := false
-		for isComplete == false {
+		for sequence >= 1 {
+			levelPrefix = fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
 			word, getErr := GetFirstWordFromDatabase(sequence, position)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
-				isComplete = true
-			}
-			if word.Word == "" {
-				isComplete = true
-			}
-
-			if isComplete {
-				break
 			}
 
 			_, removedCount := RemoveLettersFromArray(myCharacters, strings.Split(word.Word, ""))
@@ -176,7 +194,7 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, sen
 			}
 
 			myCharacters = CloneArray(textCharacters)
-			sequence++
+			sequence--
 		}
 	}
 }
@@ -201,6 +219,7 @@ func RemoveLettersFromArray(array []string, letters []string) ([]string, int) {
 }
 
 func WriteToFile(text string) {
+	dbMutex.Lock()
 	file, err := os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -222,6 +241,7 @@ func WriteToFile(text string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("Wrote to file: %s\n", output)
+	dbMutex.Unlock()
 }
 
 func CloneArray(array []string) []string {
@@ -401,36 +421,73 @@ func InitSQLiteTables() error {
 }
 
 func AddWordEntryToDatabase(words []WordEntry) {
+	dbMutex.Lock()
 	result := dbConn.CreateInBatches(&words, len(words))
 	if result.Error != nil {
 		fmt.Printf("error inserting word: %v\n", result.Error)
 	}
+	dbMutex.Unlock()
 }
 
 func AddWordToDatabase(words []WordStruct) {
+	dbMutex.Lock()
 	result := dbConn.CreateInBatches(&words, len(words))
 	if result.Error != nil {
 		fmt.Printf("error inserting word: %v\n", result.Error)
 	}
+	dbMutex.Unlock()
 }
 
 func GetFirstWordFromDatabase(sequence int64, level int) (WordStruct, error) {
+	dbMutex.Lock()
 	var word WordStruct
 	result := dbConn.Where("process_id = ? and sequence = ? and level = ?", processId, sequence, level).First(&word)
 	if result.Error != nil {
 		fmt.Printf("error querying words: %v\n", result.Error)
 		return word, result.Error
 	}
+	dbMutex.Unlock()
 
 	return word, nil
 }
 
 func GetWordsFromDatabaseByLength(length int) ([]WordEntry, error) {
+	dbMutex.Lock()
 	var words []WordEntry
 	result := dbConn.Where("rune_word_length = ?", length).Find(&words)
 	if result.Error != nil {
 		fmt.Printf("error querying words: %v\n", result.Error)
 		return words, result.Error
 	}
+	dbMutex.Unlock()
 	return words, nil
+}
+
+func GetMaxSequenceFromDatabaseByLevel(level int) (int64, error) {
+	dbMutex.Lock()
+	var maxSequence int64
+	sql := fmt.Sprintf("SELECT MAX(sequence) FROM `word_structs` WHERE process_id = \"%s\" and level = %d", processId, level)
+	dbConn.Raw(sql).Scan(&maxSequence)
+	dbMutex.Unlock()
+	return maxSequence, nil
+}
+
+func VaccuumDb() {
+	dbMutex.Lock()
+	result := dbConn.Exec("DELETE FROM word_structs")
+	if result.Error != nil {
+		fmt.Printf("error truncating: %v\n", result.Error)
+	}
+
+	result = dbConn.Exec("VACUUM main")
+	if result.Error != nil {
+		fmt.Printf("error vacuuming: %v\n", result.Error)
+	}
+
+	result = dbConn.Exec("REINDEX 'word_structs'")
+	if result.Error != nil {
+		fmt.Printf("error reindexing: %v\n", result.Error)
+	}
+	dbMutex.Unlock()
+	return
 }
