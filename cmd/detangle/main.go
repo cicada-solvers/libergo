@@ -3,6 +3,7 @@ package main
 import (
 	runelib "characterrepo"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"runer"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -112,7 +114,7 @@ func main() {
 		fmt.Printf("Finished loading files\n")
 	} else {
 		InitSQLiteConnection()
-		VaccuumDb()
+		VacuumDb()
 	}
 
 	// Load the words from the database
@@ -148,52 +150,51 @@ func main() {
 	ProcessText(countPatterns, clonedText, 0, sentence)
 }
 
-func ProcessText(countPatterns []int, textCharacters []string, position int, sentence string) {
+func ProcessText(countPatterns []int, textCharacters []string, position int, passedSentence string) {
 	sequence, _ := GetMaxSequenceFromDatabaseByLevel(position)
 	levelPrefix := fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 	fmt.Printf("%s\n", levelPrefix)
-	myCharacters := CloneArray(textCharacters)
+	myCharactersLeft := CloneArray(textCharacters)
+	sentence := CloneSentence(passedSentence)
 
 	if (position) < len(countPatterns)-1 {
 		// Get the words from the CSV file
 		for sequence >= 1 {
 			levelPrefix = fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
-			word, getErr := GetFirstWordFromDatabase(sequence, position)
+			word, getErr := GetFirstWordFromDatabase(&sequence, position, myCharactersLeft)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
+				continue
 			}
 
 			fmt.Printf("[%s] Processing word: %s\n", levelPrefix, word.Word)
-			newArrayWithRemoved, removedCount := RemoveLettersFromArray(myCharacters, strings.Split(word.Word, ""))
+			newArrayWithRemoved, removedCount := RemoveLettersFromArray(myCharactersLeft, strings.Split(word.Word, ""))
 			fmt.Printf("[%s] Removed count: %d\n", levelPrefix, removedCount)
 			fmt.Printf("[%s] New array size: %d\n", levelPrefix, len(newArrayWithRemoved))
-			if removedCount == len(strings.Split(word.Word, "")) {
-				ProcessText(countPatterns, newArrayWithRemoved, position+1, sentence)
-				sentence += word.Word + "•"
-			} else {
-				fmt.Printf("[%s] Word (%s) skipped, not enough of the right letters.\n", levelPrefix, word.Word)
-			}
+			sentence += word.Word + "•"
+			ProcessText(countPatterns, newArrayWithRemoved, position+1, sentence)
 
-			myCharacters = CloneArray(textCharacters)
+			myCharactersLeft = CloneArray(textCharacters)
+			sentence = CloneSentence(passedSentence)
 			sequence--
 		}
 	} else {
 		for sequence >= 1 {
 			levelPrefix = fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
 			fmt.Printf("[%s] Sequence %d\n", levelPrefix, sequence)
-			word, getErr := GetFirstWordFromDatabase(sequence, position)
+			word, getErr := GetFirstWordFromDatabase(&sequence, position, myCharactersLeft)
 			if getErr != nil {
 				fmt.Printf("[%s] Error getting word from database: %v\n", levelPrefix, getErr)
+				continue
 			}
 
-			_, removedCount := RemoveLettersFromArray(myCharacters, strings.Split(word.Word, ""))
-			if removedCount == len(strings.Split(word.Word, "")) {
-				sentence += word.Word + "•"
-				WriteToFile(sentence)
-			}
+			RemoveLettersFromArray(myCharactersLeft, strings.Split(word.Word, ""))
+			sentence += word.Word + "•"
+			WriteToFile(sentence)
 
-			myCharacters = CloneArray(textCharacters)
+			myCharactersLeft = CloneArray(textCharacters)
+			sentence = CloneSentence(passedSentence)
 			sequence--
 		}
 	}
@@ -250,6 +251,16 @@ func CloneArray(array []string) []string {
 		retval = append(retval, value)
 	}
 	return retval
+}
+
+func CloneSentence(sentence string) string {
+	var tmpval []string
+
+	for _, value := range strings.Split(sentence, "") {
+		tmpval = append(tmpval, value)
+	}
+
+	return strings.Join(tmpval, "")
 }
 
 func GetCountPatterns(text string) []int {
@@ -438,28 +449,51 @@ func AddWordToDatabase(words []WordStruct) {
 	dbMutex.Unlock()
 }
 
-func GetFirstWordFromDatabase(sequence int64, level int) (WordStruct, error) {
+func GetFirstWordFromDatabase(sequence *int64, level int, charactersLeft []string) (WordStruct, error) {
 	dbMutex.Lock()
+	defer dbMutex.Unlock()
 	var word WordStruct
-	result := dbConn.Where("process_id = ? and sequence = ? and level = ?", processId, sequence, level).First(&word)
-	if result.Error != nil {
-		fmt.Printf("error querying words: %v\n", result.Error)
-		return word, result.Error
-	}
-	dbMutex.Unlock()
 
-	return word, nil
+	for *sequence >= 1 {
+		result := dbConn.Where("process_id = ? and sequence = ? and level = ?", processId, *sequence, level).First(&word)
+		if result.Error != nil {
+			fmt.Printf("error querying words: %v\n", result.Error)
+			return word, result.Error
+		}
+
+		if !AreAllLettersInRemaining(word, charactersLeft) {
+			*sequence--
+		} else {
+			// Return nil word and no error
+			return word, nil
+		}
+	}
+
+	// Return nil word and new error
+	return word, errors.New("no words left in database")
+}
+
+func AreAllLettersInRemaining(word WordStruct, charactersLeft []string) bool {
+	lettersInWord := strings.Split(word.Word, "")
+	for _, letter := range lettersInWord {
+		if !slices.Contains(charactersLeft, letter) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func GetWordsFromDatabaseByLength(length int) ([]WordEntry, error) {
 	dbMutex.Lock()
+	defer dbMutex.Unlock()
 	var words []WordEntry
 	result := dbConn.Where("rune_word_length = ?", length).Find(&words)
 	if result.Error != nil {
 		fmt.Printf("error querying words: %v\n", result.Error)
 		return words, result.Error
 	}
-	dbMutex.Unlock()
+
 	return words, nil
 }
 
@@ -472,7 +506,7 @@ func GetMaxSequenceFromDatabaseByLevel(level int) (int64, error) {
 	return maxSequence, nil
 }
 
-func VaccuumDb() {
+func VacuumDb() {
 	dbMutex.Lock()
 	result := dbConn.Exec("DELETE FROM word_structs")
 	if result.Error != nil {
