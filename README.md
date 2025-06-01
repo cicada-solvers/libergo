@@ -29,29 +29,6 @@ libergo -init
 **Note: If you are on Windows, you will need to copy in the text files into the .libergo directory in your user directory.**
 
 I don't use Windows so if anyone wants to help, it would be much appreciated.
- 
-## Programs
-- base60 - Converts to and from base10 and base60.
-- binfile - Reads a binary file and outputs the binary strings.
-- binstring - Converts a binary file to the binary string.
-- binvert - Inverts the binary values of a file.
-- coller - Used for adjusting columns of text.
-- decode64 - Decodes base64 encoded text.
-- dpattern - Gets the pattern of letters in a string.
-- factorize - Factorizes a number
-- gemproduct - Gets the gematria product of a string.
-- gemsum - Gets the gematria sum of a string.
-- getwords - Gets the words of a value.
-- genseq - Generates a sequence of numbers.
-- identifybin - Identifies the type of binary file.
-- indexdirectory - Indexes a directory of files for statistical analysis.
-- intgen - Generates an integer that is the product of two primes.
-- isprime - Determines if a number is prime.
-- libergo - The libergo configuration tool.
-- numfile - Writes (0-255) as bytes to a file.
-- numstring - Converts a file to a string of numbers.
-- rencode - Used for converting from and to runes.
-- runecalc - Calculates the value of a rune (web ui at https://cmbsolver.com). NOT PACKAGED FOR WINDOWS OR MAC!
 
 ## Database Required!!!
 Some tools require a Postgres database to be present.
@@ -82,9 +59,6 @@ libergo -initTables
 
 If you use your own server, you will need to set the variables in the appsettings.json file in the .libergo directory in you user directory.
 
-## Deep Web Hash Processing
-[For more information on how to process the deep web hash files](documentation/DWH.md)
-
 ## Upcoming Tools available in libergo
 - circular shift
 - least significant bits in message.
@@ -94,10 +68,4 @@ If you use your own server, you will need to set the variables in the appsetting
 - clock angle claculator
 - letter frequency analysis stuff
 - Scytale
-- Caesar cipher
-- Atbash cipher
-- Affine cipher (w/shift)
-- V cipher
 - Text spiraler
-- IOC and word score calculator for text and file.
-- Switching from database to a web service.
