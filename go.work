@@ -46,4 +46,5 @@ use (
 	cmd/calcioc
 	cmd/primeaddressgen
 	cmd/detangle
+	cmd/ziggy
 )

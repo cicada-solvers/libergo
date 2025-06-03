@@ -331,3 +331,14 @@ func (repo *CharacterRepo) GetDoubletCount(input string, alphabet []string) int 
 func (repo *CharacterRepo) GetRunglishAlphabet() []string {
 	return []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "O", "P", "R", "S", "T", "U", "W", "X", "Y"}
 }
+
+// IsLetterInAlphabet returns true if the given letter is in the runglish alphabet.
+func (repo *CharacterRepo) IsLetterInAlphabet(letter string) bool {
+	alphabet := repo.GetRunglishAlphabet()
+	for _, char := range alphabet {
+		if char == letter {
+			return true
+		}
+	}
+	return false
+}
