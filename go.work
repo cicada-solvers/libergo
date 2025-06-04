@@ -47,4 +47,5 @@ use (
 	cmd/primeaddressgen
 	cmd/detangle
 	cmd/ziggy
+	cmd/railit
 )
