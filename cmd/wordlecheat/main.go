@@ -263,13 +263,18 @@ func ParseWords(text, contains, exclude []string, words []WordEntry) ([]WordEntr
 	}
 
 	for _, word := range preFilteredWords {
+		include := true
 		wordArray := strings.Split(word.Word, "")
 		for position, letter := range text {
 			if letter != "%" {
-				if letter == wordArray[position] {
-					filteredWords = append(filteredWords, word)
+				if letter != wordArray[position] {
+					include = false
 				}
 			}
+		}
+
+		if include {
+			filteredWords = append(filteredWords, word)
 		}
 	}
 
