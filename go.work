@@ -48,4 +48,5 @@ use (
 	cmd/detangle
 	cmd/ziggy
 	cmd/railit
+	cmd/wordlecheat
 )
