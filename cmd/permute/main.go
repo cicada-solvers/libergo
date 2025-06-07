@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	// remove output files
+	removeOutputFileIfExists()
+
 	// Create a scanner to read user input
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -73,6 +76,13 @@ func generatePermutations(input []string) [][]string {
 	// Start the recursive permutation generation
 	generate(input, len(input))
 	return result
+}
+
+// removeOutputFileIfExists checks if "output.txt" exists and removes it if it does.
+func removeOutputFileIfExists() {
+	if _, err := os.Stat("output.txt"); !os.IsNotExist(err) {
+		_ = os.Remove("output.txt")
+	}
 }
 
 // writePermutationsToFile writes all permutations to the specified output file
