@@ -50,4 +50,5 @@ use (
 	cmd/railit
 	cmd/wordlecheat
 	cmd/hex2bytearray
+	cmd/permute
 )
