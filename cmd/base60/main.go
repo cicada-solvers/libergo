@@ -58,7 +58,7 @@ func replaceInvalidChars(baseString string) string {
 }
 
 func main() {
-	fileFlag := flag.String("file", "", "Filename to read base60 or base10 numbers from")
+	fileFlag := flag.String("file", "infile.txt", "Filename to read base60 or base10 numbers from")
 	base60ToBase10 := flag.String("base60ToBase10", "", "Convert base60 to base10")
 	base10ToBase60 := flag.String("base10ToBase60", "", "Convert base10 to base60")
 	flag.Parse()
