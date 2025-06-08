@@ -18,6 +18,7 @@ gemproduct
 gemsum
 genseq
 hex2bytearray
+hex2int
 intgen
 ipaddressgen
 isprime

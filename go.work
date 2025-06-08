@@ -51,4 +51,5 @@ use (
 	cmd/wordlecheat
 	cmd/hex2bytearray
 	cmd/permute
+	cmd/hex2int
 )

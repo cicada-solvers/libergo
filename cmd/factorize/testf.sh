@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# Compile the factorize program
-go build
-
 # Define the input file
-input_file="../intgen/intgen_output.txt"
+input_file="./input.txt"
 
 # Define the output file
 output_file="factorize_output.txt"
@@ -22,5 +19,6 @@ fi
 
 # Read each line from the input file and factorize the number
 while IFS= read -r number; do
+  echo "$number"
   ./factorize "$number" >> "$output_file"
 done < "$input_file"
