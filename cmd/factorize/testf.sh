@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the input file
-input_file="./input.txt"
+input_file="input.txt"
 
 # Define the output file
 output_file="factorize_output.txt"
@@ -20,5 +20,5 @@ fi
 # Read each line from the input file and factorize the number
 while IFS= read -r number; do
   echo "$number"
-  ./factorize "$number" >> "$output_file"
+  ./factorize "$number"
 done < "$input_file"
