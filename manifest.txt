@@ -3,6 +3,7 @@ base60
 binfile
 binstring
 binvert
+byte2int
 calcioc
 calrunestats
 checkhashes

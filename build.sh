@@ -82,6 +82,7 @@ dist_binaries() {
       cp -f *.sh "../../$BINARY_DIR"
       cp -f *.sql "../../$BINARY_DIR"
       cp -f dwyl.csv "../../$BINARY_DIR"
+      cp -f input.txt "../../$BINARY_DIR"
 
       if [ "$BINARY_NAME" != "runecalc" ] && [ "$BINARY_NAME" != "runecalc2" ]; then
         echo "Building $BINARY_NAME for Mac (amd64)..."
@@ -95,6 +96,7 @@ dist_binaries() {
         cp -f *.sh "../../$BINARY_DIR"
         cp -f *.sql "../../$BINARY_DIR"
         cp -f dwyl.csv "../../$BINARY_DIR"
+        cp -f input.txt "../../$BINARY_DIR"
 
         echo "Building $BINARY_NAME for Mac (arm64)..."
         BINARY_DIR="$DIST_DIR/mac_arm64"
@@ -107,6 +109,7 @@ dist_binaries() {
         cp -f *.sh "../../$BINARY_DIR"
         cp -f *.sql "../../$BINARY_DIR"
         cp -f dwyl.csv "../../$BINARY_DIR"
+        cp -f input.txt "../../$BINARY_DIR"
 
         echo "Building $BINARY_NAME for Windows..."
         BINARY_DIR="$DIST_DIR/windows"
@@ -119,6 +122,7 @@ dist_binaries() {
         cp -f *.sh "../../$BINARY_DIR"
         cp -f *.sql "../../$BINARY_DIR"
         cp -f dwyl.csv "../../$BINARY_DIR"
+        cp -f input.txt "../../$BINARY_DIR"
 
       else
         echo "Skipping $BINARY_NAME for Mac and Windows..."
