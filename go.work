@@ -53,4 +53,5 @@ use (
 	cmd/permute
 	cmd/hex2int
 	cmd/byte2int
+	cmd/byte2bin
 )
