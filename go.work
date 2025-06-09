@@ -52,4 +52,5 @@ use (
 	cmd/hex2bytearray
 	cmd/permute
 	cmd/hex2int
+	cmd/byte2int
 )

@@ -36,10 +36,10 @@ func main() {
 	}
 
 	// Generate and print all permutations
-	fmt.Println("\nAll permutations:")
+	fmt.Println("\nAll Combinations:")
 	permutations := generatePermutations(stringsArray)
 	for i, perm := range permutations {
-		output := fmt.Sprintf("Permutation %d: %s\n\n\n", i+1, strings.Join(perm, ","))
+		output := fmt.Sprintf("Combination %d: %s\n\n\n", i+1, strings.Join(perm, ","))
 		fmt.Print(output)
 		_ = writePermutationsToFile(output, "output.txt")
 	}
