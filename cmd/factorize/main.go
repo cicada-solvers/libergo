@@ -150,7 +150,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	// Check if n is divisible by x
 	for counter.Cmp(number) <= 0 {
 		status.Reset()
-		status.WriteString(counter.String())
+		status.WriteString(fmt.Sprintf("Comparing %s : %s", number.String(), counter.String()))
 
 		if new(big.Int).Mod(number, counter).Cmp(zero) == 0 {
 			fmt.Printf("- Factor %s found\n", counter.String())
