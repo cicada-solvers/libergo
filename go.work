@@ -54,4 +54,5 @@ use (
 	cmd/hex2int
 	cmd/byte2int
 	cmd/byte2bin
+	cmd/byte2binstring
 )
