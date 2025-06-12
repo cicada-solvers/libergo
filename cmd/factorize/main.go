@@ -8,11 +8,19 @@ import (
 	"liberdatabase"
 	"math/big"
 	"os"
+	"runtime"
 	"sequences"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 	"titler"
 )
+
+type NumberToCheck struct {
+	Number  string
+	Counter string
+}
 
 var status strings.Builder
 
@@ -132,9 +140,10 @@ func main() {
 
 // factorize returns the prime factors of a given big integer.
 func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
-	counter := big.NewInt(2)
 	zero := big.NewInt(0)
 	number := new(big.Int).Set(n)
+	var modNumberArray []big.Int
+	processedCounter := big.NewInt(0)
 
 	fmt.Printf("- Step - Factoring %s (%d bits)\n", number.String(), number.BitLen())
 
@@ -147,42 +156,86 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 		fmt.Printf("-%s is prime\n", number.String())
 	}
 
-	// Check if n is divisible by x
-	for counter.Cmp(number) <= 0 {
-		status.Reset()
-		status.WriteString(fmt.Sprintf("Comparing %s : %s", number.String(), counter.String()))
-
-		if new(big.Int).Mod(number, counter).Cmp(zero) == 0 {
-			fmt.Printf("- Factor %s found\n", counter.String())
-
-			number = n.Div(number, counter)
-
-			// Insert the count factor into the database
-			lastSeq++
-			counterFactor := liberdatabase.Factor{
-				ID:        uuid.New().String(),
-				Factor:    counter.String(),
-				MainId:    mainId,
-				SeqNumber: lastSeq,
-			}
-
-			liberdatabase.InsertFactor(db, counterFactor)
-
-			// Insert the number factor into the database
-			lastSeq++
-			numberFactor := liberdatabase.Factor{
-				ID:        uuid.New().String(),
-				Factor:    number.String(),
-				MainId:    mainId,
-				SeqNumber: lastSeq,
-			}
-
-			liberdatabase.InsertFactor(db, numberFactor)
-			break
-		} else {
-			counter.Add(counter, big.NewInt(1))
-		}
+	// We're going to use threads to check this out
+	checkChannel := make(chan NumberToCheck)
+	var wg sync.WaitGroup
+	numProcessors := runtime.NumCPU()
+	waits := 0
+	if number.Cmp(big.NewInt(int64(numProcessors*4))) > 0 {
+		waits = numProcessors * 4
+	} else {
+		waits = numProcessors
 	}
+
+	// Start worker goroutines
+	for i := 0; i < numProcessors*2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for checkValue := range checkChannel {
+				myBigNumber, _ := new(big.Int).SetString(checkValue.Number, 10)
+				myBigCounter, _ := new(big.Int).SetString(checkValue.Counter, 10)
+				if new(big.Int).Mod(myBigNumber, myBigCounter).Cmp(zero) == 0 {
+					modNumberArray = append(modNumberArray, *myBigCounter)
+					break
+				}
+			}
+		}()
+	}
+
+	go func() {
+		myCounter := big.NewInt(2)
+		for myCounter.Cmp(number) <= 0 {
+			status.Reset()
+			status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
+
+			checkChannel <- NumberToCheck{
+				Number:  number.String(),
+				Counter: myCounter.String(),
+			}
+			myCounter.Add(myCounter, big.NewInt(1))
+
+			if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
+				break
+			}
+
+			processedCounter.Add(processedCounter, big.NewInt(1))
+		}
+		close(checkChannel)
+	}()
+
+	wg.Wait()
+
+	// grabbing the smallest factor
+	modNumberArray = sortBigInts(modNumberArray)
+
+	bcounter := modNumberArray[0]
+
+	fmt.Printf("- Factor %s found\n", bcounter.String())
+
+	number = n.Div(number, &bcounter)
+
+	// Insert the count factor into the database
+	lastSeq++
+	counterFactor := liberdatabase.Factor{
+		ID:        uuid.New().String(),
+		Factor:    bcounter.String(),
+		MainId:    mainId,
+		SeqNumber: lastSeq,
+	}
+
+	liberdatabase.InsertFactor(db, counterFactor)
+
+	// Insert the number factor into the database
+	lastSeq++
+	numberFactor := liberdatabase.Factor{
+		ID:        uuid.New().String(),
+		Factor:    number.String(),
+		MainId:    mainId,
+		SeqNumber: lastSeq,
+	}
+
+	liberdatabase.InsertFactor(db, numberFactor)
 
 	// Check if all factors are prime
 	areAllPrime := true
@@ -215,6 +268,13 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	} else {
 		return factorize(db, mainId, number, lastSeq)
 	}
+}
+
+func sortBigInts(bigInts []big.Int) []big.Int {
+	sort.Slice(bigInts, func(i, j int) bool {
+		return bigInts[i].Cmp(&bigInts[j]) < 0
+	})
+	return bigInts
 }
 
 func writeOutputToFile(output string) {
