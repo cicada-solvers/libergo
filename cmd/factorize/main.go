@@ -23,7 +23,7 @@ type NumberToCheck struct {
 }
 
 var statusMutex sync.Mutex
-var status strings.Builder
+var status big.Int
 
 func main() {
 	titler.PrintTitle("Factorize")
@@ -37,9 +37,7 @@ func main() {
 			select {
 			case <-ticker.C:
 				statusMutex.Lock()
-				if status.Len() > 0 {
-					fmt.Println("Status update:", status.String())
-				}
+				fmt.Println("Status update:", status.String())
 				statusMutex.Unlock()
 			case <-done:
 				ticker.Stop()
@@ -190,8 +188,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 		myCounter := big.NewInt(2)
 		for myCounter.Cmp(number) <= 0 {
 			statusMutex.Lock()
-			status.Reset()
-			status.WriteString(myCounter.String())
+			status.SetString(myCounter.String(), 10)
 			statusMutex.Unlock()
 
 			checkChannel <- NumberToCheck{
