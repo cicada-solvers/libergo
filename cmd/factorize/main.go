@@ -22,6 +22,7 @@ type NumberToCheck struct {
 	Counter string
 }
 
+var statusMutex sync.Mutex
 var status strings.Builder
 
 func main() {
@@ -35,9 +36,11 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
+				statusMutex.Lock()
 				if status.Len() > 0 {
 					fmt.Println("Status update:", status.String())
 				}
+				statusMutex.Unlock()
 			case <-done:
 				ticker.Stop()
 				return
@@ -186,8 +189,12 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	go func() {
 		myCounter := big.NewInt(2)
 		for myCounter.Cmp(number) <= 0 {
-			status.Reset()
-			status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
+			if new(big.Int).Mod(myCounter, big.NewInt(int64(1000000))) == big.NewInt(0) {
+				statusMutex.Lock()
+				status.Reset()
+				status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
+				statusMutex.Unlock()
+			}
 
 			checkChannel <- NumberToCheck{
 				Number:  number.String(),
