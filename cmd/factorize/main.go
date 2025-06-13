@@ -144,7 +144,6 @@ func main() {
 // factorize returns the prime factors of a given big integer.
 func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	zero := big.NewInt(0)
-	tenMillion := big.NewInt(10000000)
 	number := new(big.Int).Set(n)
 	var modNumberArray []big.Int
 	processedCounter := big.NewInt(0)
@@ -190,12 +189,10 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	go func() {
 		myCounter := big.NewInt(2)
 		for myCounter.Cmp(number) <= 0 {
-			if new(big.Int).Mod(myCounter, tenMillion).Cmp(zero) == 0 {
-				statusMutex.Lock()
-				status.Reset()
-				status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
-				statusMutex.Unlock()
-			}
+			statusMutex.Lock()
+			status.Reset()
+			status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
+			statusMutex.Unlock()
 
 			checkChannel <- NumberToCheck{
 				Number:  number.String(),
