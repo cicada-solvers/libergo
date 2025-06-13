@@ -191,7 +191,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 		for myCounter.Cmp(number) <= 0 {
 			statusMutex.Lock()
 			status.Reset()
-			status.WriteString(fmt.Sprintf("Comparing %s : %s", myCounter.String(), number.String()))
+			status.WriteString(myCounter.String())
 			statusMutex.Unlock()
 
 			checkChannel <- NumberToCheck{
