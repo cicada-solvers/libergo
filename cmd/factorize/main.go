@@ -22,7 +22,6 @@ type NumberToCheck struct {
 	Counter string
 }
 
-var statusMutex sync.Mutex
 var status big.Int
 
 func main() {
@@ -36,9 +35,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				statusMutex.Lock()
-				fmt.Println("Status update:", status.String())
-				statusMutex.Unlock()
+				fmt.Printf("Status update: %s (bits %d)\n", status.String(), status.BitLen())
 			case <-done:
 				ticker.Stop()
 				return
@@ -155,61 +152,90 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 
 	if number.ProbablyPrime(20) {
 		fmt.Printf("-%s is prime\n", number.String())
-	}
-
-	// We're going to use threads to check this out
-	checkChannel := make(chan NumberToCheck)
-	var wg sync.WaitGroup
-	numProcessors := runtime.NumCPU()
-	waits := 0
-	if number.Cmp(big.NewInt(int64(numProcessors*4))) > 0 {
-		waits = numProcessors * 4
+		modNumberArray = append(modNumberArray, *number)
 	} else {
-		waits = numProcessors
-	}
 
-	// Start worker goroutines
-	for i := 0; i < numProcessors*2; i++ {
-		wg.Add(1)
+		// We're going to use threads to check this out
+		checkChannel := make(chan NumberToCheck)
+		var wg sync.WaitGroup
+		numProcessors := runtime.NumCPU()
+		waits := 0
+		if number.Cmp(big.NewInt(int64(numProcessors*4))) > 0 {
+			waits = numProcessors * 4
+		} else {
+			waits = numProcessors
+		}
+
+		// Start worker goroutines
+		for i := 0; i < numProcessors*2; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for checkValue := range checkChannel {
+					myBigNumber, _ := new(big.Int).SetString(checkValue.Number, 10)
+					myBigCounter, _ := new(big.Int).SetString(checkValue.Counter, 10)
+					if new(big.Int).Mod(myBigNumber, myBigCounter).Cmp(zero) == 0 {
+						modNumberArray = append(modNumberArray, *myBigCounter)
+						break
+					}
+				}
+			}()
+		}
+
 		go func() {
-			defer wg.Done()
-			for checkValue := range checkChannel {
-				myBigNumber, _ := new(big.Int).SetString(checkValue.Number, 10)
-				myBigCounter, _ := new(big.Int).SetString(checkValue.Counter, 10)
-				if new(big.Int).Mod(myBigNumber, myBigCounter).Cmp(zero) == 0 {
-					modNumberArray = append(modNumberArray, *myBigCounter)
+			one := big.NewInt(1)
+			two := big.NewInt(2)
+			squareRoot := new(big.Int).Set(n)
+			squareRoot = squareRoot.Sqrt(squareRoot)
+
+			fmt.Printf("Square Root: %s (bits %d)\n", squareRoot.String(), squareRoot.BitLen())
+
+			myCounter := new(big.Int).Set(two)
+
+			for myCounter.Cmp(squareRoot) <= 0 {
+				status.Set(myCounter)
+
+				checkChannel <- NumberToCheck{
+					Number:  number.String(),
+					Counter: myCounter.String(),
+				}
+
+				myCounter.Add(myCounter, one)
+
+				if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
 					break
 				}
+
+				processedCounter.Add(processedCounter, one)
 			}
+
+			myCounter = new(big.Int).Set(number)
+			myCounter.Sub(myCounter, one)
+
+			for myCounter.Cmp(squareRoot) >= 0 {
+				status.Set(myCounter)
+
+				checkChannel <- NumberToCheck{
+					Number:  number.String(),
+					Counter: myCounter.String(),
+				}
+
+				myCounter.Sub(myCounter, one)
+
+				if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
+					break
+				}
+
+				processedCounter.Add(processedCounter, one)
+			}
+			close(checkChannel)
 		}()
+
+		wg.Wait()
+
+		// grabbing the smallest factor
+		modNumberArray = sortBigInts(modNumberArray)
 	}
-
-	go func() {
-		myCounter := big.NewInt(2)
-		for myCounter.Cmp(number) <= 0 {
-			statusMutex.Lock()
-			status.Set(myCounter)
-			statusMutex.Unlock()
-
-			checkChannel <- NumberToCheck{
-				Number:  number.String(),
-				Counter: myCounter.String(),
-			}
-			myCounter.Add(myCounter, big.NewInt(1))
-
-			if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
-				break
-			}
-
-			processedCounter.Add(processedCounter, big.NewInt(1))
-		}
-		close(checkChannel)
-	}()
-
-	wg.Wait()
-
-	// grabbing the smallest factor
-	modNumberArray = sortBigInts(modNumberArray)
 
 	bcounter := modNumberArray[0]
 
@@ -287,12 +313,12 @@ func writeOutputToFile(output string) {
 	}
 	defer func(file *os.File) {
 		closeError := file.Close()
-		if err != nil {
+		if closeError != nil {
 			fmt.Printf("Error closing file: %v\n", closeError)
 		}
 	}(file)
 
-	if _, err := file.WriteString(output + "\n"); err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
+	if _, writeError := file.WriteString(output + "\n"); writeError != nil {
+		fmt.Printf("Error writing to file: %v\n", writeError)
 	}
 }
