@@ -55,4 +55,5 @@ use (
 	cmd/byte2int
 	cmd/byte2bin
 	cmd/byte2binstring
+	cmd/fanalysis
 )

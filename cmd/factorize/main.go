@@ -20,6 +20,7 @@ import (
 type NumberToCheck struct {
 	Number  string
 	Counter string
+	IsBound bool
 }
 
 var status big.Int
@@ -174,8 +175,19 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 				for checkValue := range checkChannel {
 					myBigNumber, _ := new(big.Int).SetString(checkValue.Number, 10)
 					myBigCounter, _ := new(big.Int).SetString(checkValue.Counter, 10)
+
+					if myBigNumber.Cmp(myBigCounter) <= 0 {
+						fmt.Printf("Error: Number %s is less than or equal to counter %s\n", myBigNumber.String(), myBigCounter.String())
+						continue
+					}
+
 					if new(big.Int).Mod(myBigNumber, myBigCounter).Cmp(zero) == 0 {
 						modNumberArray = append(modNumberArray, *myBigCounter)
+
+						if checkValue.IsBound {
+							fmt.Printf("- %s Factor found in bound.\n", myBigCounter.String())
+						}
+
 						break
 					}
 				}
@@ -185,42 +197,99 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 		go func() {
 			one := big.NewInt(1)
 			two := big.NewInt(2)
-			squareRoot := new(big.Int).Set(n)
-			squareRoot = squareRoot.Sqrt(squareRoot)
-
-			fmt.Printf("Square Root: %s (bits %d)\n", squareRoot.String(), squareRoot.BitLen())
-
 			myCounter := new(big.Int).Set(two)
 
-			for myCounter.Cmp(squareRoot) <= 0 {
+			// If the number is greater than 1000, then we are going to check the percent
+			// bounds.  Most factors are going to be within 6% of the square root
+			// or 2% of 2.
+			if number.Cmp(big.NewInt(1000)) >= 0 {
+				twoPercentLowerBound, twoPercentUpperBound, _ := getTwoPercentFromSquareRoot(number)
+				myCounter = new(big.Int).Set(twoPercentLowerBound)
+
+				for myCounter.Cmp(twoPercentUpperBound) <= 0 {
+					counterString := strings.Split(myCounter.String(), "")
+					if len(counterString) >= 2 {
+						switch counterString[len(counterString)-1] {
+						case "0", "2", "4", "5", "6", "8":
+							myCounter.Add(myCounter, one)
+							continue
+						default:
+							// nothing
+						}
+					}
+
+					status.Set(myCounter)
+
+					checkChannel <- NumberToCheck{
+						Number:  number.String(),
+						Counter: myCounter.String(),
+						IsBound: true,
+					}
+
+					myCounter.Add(myCounter, one)
+
+					if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
+						break
+					}
+
+					processedCounter.Add(processedCounter, one)
+				}
+
+				sixPercentLowerBound, sixPercentUpperBound, _ := getSixPercentFromSquareRoot(number)
+				myCounter = new(big.Int).Set(sixPercentLowerBound)
+
+				for myCounter.Cmp(sixPercentUpperBound) <= 0 {
+					counterString := strings.Split(myCounter.String(), "")
+					if len(counterString) >= 2 {
+						switch counterString[len(counterString)-1] {
+						case "0", "2", "4", "5", "6", "8":
+							myCounter.Add(myCounter, one)
+							continue
+						default:
+							// nothing
+						}
+					}
+
+					status.Set(myCounter)
+
+					checkChannel <- NumberToCheck{
+						Number:  number.String(),
+						Counter: myCounter.String(),
+						IsBound: true,
+					}
+
+					myCounter.Add(myCounter, one)
+
+					if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
+						break
+					}
+
+					processedCounter.Add(processedCounter, one)
+				}
+			}
+
+			myCounter = new(big.Int).Set(two)
+			for myCounter.Cmp(number) <= 0 {
+				counterString := strings.Split(myCounter.String(), "")
+				if len(counterString) >= 2 {
+					switch counterString[len(counterString)-1] {
+					case "0", "2", "4", "5", "6", "8":
+						myCounter.Add(myCounter, one)
+						continue
+					default:
+						// nothing
+					}
+				}
+
 				status.Set(myCounter)
 
 				checkChannel <- NumberToCheck{
 					Number:  number.String(),
 					Counter: myCounter.String(),
+					IsBound: false,
 				}
 
 				myCounter.Add(myCounter, one)
-
-				if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
-					break
-				}
-
-				processedCounter.Add(processedCounter, one)
-			}
-
-			myCounter = new(big.Int).Set(number)
-			myCounter.Sub(myCounter, one)
-
-			for myCounter.Cmp(squareRoot) >= 0 {
-				status.Set(myCounter)
-
-				checkChannel <- NumberToCheck{
-					Number:  number.String(),
-					Counter: myCounter.String(),
-				}
-
-				myCounter.Sub(myCounter, one)
 
 				if len(modNumberArray) > 0 && processedCounter.Cmp(big.NewInt(int64(waits))) > 0 {
 					break
@@ -237,17 +306,17 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 		modNumberArray = sortBigInts(modNumberArray)
 	}
 
-	bcounter := modNumberArray[0]
+	modArrayFirst := modNumberArray[0]
 
-	fmt.Printf("- Factor %s found\n", bcounter.String())
+	fmt.Printf("- Factor %s found\n", modArrayFirst.String())
 
-	number = n.Div(number, &bcounter)
+	number = n.Div(number, &modArrayFirst)
 
 	// Insert the count factor into the database
 	lastSeq++
 	counterFactor := liberdatabase.Factor{
 		ID:        uuid.New().String(),
-		Factor:    bcounter.String(),
+		Factor:    modArrayFirst.String(),
 		MainId:    mainId,
 		SeqNumber: lastSeq,
 	}
@@ -321,4 +390,67 @@ func writeOutputToFile(output string) {
 	if _, writeError := file.WriteString(output + "\n"); writeError != nil {
 		fmt.Printf("Error writing to file: %v\n", writeError)
 	}
+}
+
+func getSixPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
+	sqrt := new(big.Int).Sqrt(number)
+
+	// Convert to big.Int
+	sixPercentInt := calculateSixPercent(sqrt)
+
+	// Calculate bounds
+	lowerBound := new(big.Int).Sub(sqrt, sixPercentInt)
+	upperBound := new(big.Int).Add(sqrt, sixPercentInt)
+
+	return lowerBound, upperBound, nil
+}
+
+func getTwoPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
+	twoPercent := calculateTwoPercent(number)
+
+	// Calculate the bounds
+	lowerBound := big.NewInt(2)
+	upperBound := new(big.Int).Add(lowerBound, twoPercent)
+
+	return lowerBound, upperBound, nil
+}
+
+func calculateTwoPercent(value *big.Int) *big.Int {
+	// Method 2: Using big.Float for more precision
+	valueFloat := new(big.Float).SetInt(value)
+	percentFloat := new(big.Float).Mul(valueFloat, big.NewFloat(0.02))
+
+	// Round to the nearest integer
+	percentFloat.Add(percentFloat, big.NewFloat(0.5))
+
+	// Convert back to big.Int
+	twoPercent := new(big.Int)
+	percentFloat.Int(twoPercent)
+
+	// Ensure the minimum value of 1 if the original value is non-zero
+	if value.Sign() > 0 && twoPercent.Sign() == 0 {
+		twoPercent.SetInt64(1)
+	}
+
+	return twoPercent
+}
+
+func calculateSixPercent(value *big.Int) *big.Int {
+	// Method 2: Using big.Float for more precision
+	valueFloat := new(big.Float).SetInt(value)
+	percentFloat := new(big.Float).Mul(valueFloat, big.NewFloat(0.06))
+
+	// Round to the nearest integer
+	percentFloat.Add(percentFloat, big.NewFloat(0.5))
+
+	// Convert back to big.Int
+	twoPercent := new(big.Int)
+	percentFloat.Int(twoPercent)
+
+	// Ensure the minimum value of 1 if the original value is non-zero
+	if value.Sign() > 0 && twoPercent.Sign() == 0 {
+		twoPercent.SetInt64(1)
+	}
+
+	return twoPercent
 }
