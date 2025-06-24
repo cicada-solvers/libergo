@@ -198,6 +198,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 			one := big.NewInt(1)
 			two := big.NewInt(2)
 			myCounter := new(big.Int).Set(two)
+			var counterString []string
 
 			// If the number is greater than 1000, then we are going to check the percent
 			// bounds.  Most factors are going to be within 6% of the square root
@@ -207,7 +208,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 				myCounter = new(big.Int).Set(twoPercentLowerBound)
 
 				for myCounter.Cmp(twoPercentUpperBound) <= 0 {
-					counterString := strings.Split(myCounter.String(), "")
+					counterString = strings.Split(myCounter.String(), "")
 					if len(counterString) >= 2 {
 						switch counterString[len(counterString)-1] {
 						case "0", "2", "4", "5", "6", "8":
@@ -239,7 +240,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 				myCounter = new(big.Int).Set(sixPercentLowerBound)
 
 				for myCounter.Cmp(sixPercentUpperBound) <= 0 {
-					counterString := strings.Split(myCounter.String(), "")
+					counterString = strings.Split(myCounter.String(), "")
 					if len(counterString) >= 2 {
 						switch counterString[len(counterString)-1] {
 						case "0", "2", "4", "5", "6", "8":
@@ -270,7 +271,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 
 			myCounter = new(big.Int).Set(two)
 			for myCounter.Cmp(number) <= 0 {
-				counterString := strings.Split(myCounter.String(), "")
+				counterString = strings.Split(myCounter.String(), "")
 				if len(counterString) >= 2 {
 					switch counterString[len(counterString)-1] {
 					case "0", "2", "4", "5", "6", "8":
