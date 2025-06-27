@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"liberdatabase"
 	"math"
 	"math/big"
@@ -15,7 +14,6 @@ func main() {
 		bigI := big.NewInt(int64(i))
 		if sequences.IsPrime(bigI) {
 			liberdatabase.AddPrimeValue(conn, i)
-			fmt.Println(i)
 		}
 	}
 

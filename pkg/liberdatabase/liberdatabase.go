@@ -90,30 +90,13 @@ func InitTables() (*gorm.DB, error) {
 	}
 
 	// Migrate the schemas
-	dropError := conn.Migrator().DropTable(&Permutation{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
 	dbCreateError := conn.AutoMigrate(&Permutation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
-	dropError = conn.Migrator().DropTable(&FoundHashes{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-	// Remove the old table if it exists
-	dropError = conn.Migrator().DropTable(&AdvancedNumberInformation{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
-	}
-	dropError = conn.Migrator().DropTable(&AdvancedNumberFactors{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberInformation{})
 	if dbCreateError != nil {
@@ -122,10 +105,6 @@ func InitTables() (*gorm.DB, error) {
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberFactors{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-	dropError = conn.Migrator().DropTable(&PrimeValue{})
-	if dropError != nil {
-		fmt.Printf("Error dropping table: %v\n", dropError)
 	}
 	dbCreateError = conn.AutoMigrate(&PrimeValue{})
 	if dbCreateError != nil {
