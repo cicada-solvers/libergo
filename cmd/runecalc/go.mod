@@ -2,7 +2,7 @@ module runecalc
 
 go 1.24
 
-require fyne.io/fyne/v2 v2.6.0
+require fyne.io/fyne/v2 v2.6.1
 
 require github.com/kr/text v0.2.0 // indirect
 
