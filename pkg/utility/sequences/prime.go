@@ -4,14 +4,16 @@ import (
 	"config"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 )
 
 // IsPrime checks if a number is prime.
 func IsPrime(number *big.Int) bool {
-	if number.Cmp(big.NewInt(10)) >= 0 {
-		lastChar := number.String()[len(number.String())-1]
-		if lastChar == '0' || lastChar == '2' || lastChar == '4' || lastChar == '5' || lastChar == '6' || lastChar == '8' {
+	numberArray := strings.Split(number.String(), "")
+	if len(numberArray) >= 2 {
+		lastChar := numberArray[len(numberArray)-1]
+		if lastChar == "0" || lastChar == "2" || lastChar == "4" || lastChar == "5" || lastChar == "6" || lastChar == "8" {
 			return false
 		}
 	}
