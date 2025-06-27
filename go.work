@@ -56,4 +56,5 @@ use (
 	cmd/byte2bin
 	cmd/byte2binstring
 	cmd/fanalysis
+	cmd/primedb
 )

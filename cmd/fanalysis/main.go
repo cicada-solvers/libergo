@@ -35,7 +35,7 @@ func main() {
 	}(file)
 
 	// Create db connection
-	CreateDatabase()
+	_, _ = liberdatabase.InitTables()
 	db, openErr := liberdatabase.InitConnection()
 	if openErr != nil {
 		fmt.Printf("Error opening database connection: %v\n", openErr)
@@ -112,14 +112,14 @@ func main() {
 		}
 
 		// Add verified numbers to the database
-		numberInformation := AddAdvancedNumberInformation(db, number.String(), sqrt.String())
+		numberInformation := liberdatabase.AddAdvancedNumberInformation(db, number.String(), sqrt.String())
 		for counter, factor := range factors {
 			percentFromSquareRoot := getDistancePercentage(number, factor, sqrt)
 			percentFromTwo := getDistancePercentage(number, factor, big.NewInt(2))
 			percentFromMiddle := getDistancePercentage(number, factor, big.NewInt(0).Set(number).Div(number, big.NewInt(2)))
 			percentFromNumber := getDistancePercentage(number, factor, big.NewInt(0).Set(number))
 
-			AddAdvancedNumberFactors(db, numberInformation.Id, factor.String(), counter, percentFromSquareRoot,
+			liberdatabase.AddAdvancedNumberFactors(db, numberInformation.Id, factor.String(), counter, percentFromSquareRoot,
 				percentFromNumber, percentFromTwo, percentFromMiddle)
 		}
 	}
