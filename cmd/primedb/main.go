@@ -10,11 +10,14 @@ import (
 func main() {
 	_, _ = liberdatabase.InitTables()
 	conn, _ := liberdatabase.InitConnection()
-	for i := int64(2); i < math.MaxInt64; i++ {
-		bigI := big.NewInt(int64(i))
-		if sequences.IsPrime(bigI) {
-			liberdatabase.AddPrimeValue(conn, i)
+	one := big.NewInt(1)
+	number := big.NewInt(2)
+	maxNumber := big.NewInt(math.MaxInt32)
+	for number.Cmp(maxNumber) <= 0 {
+		if sequences.IsPrime(number) {
+			liberdatabase.AddPrimeValue(conn, number.Int64())
 		}
+		number = number.Add(number, one)
 	}
 
 	_ = liberdatabase.CloseConnection(conn)
