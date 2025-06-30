@@ -57,4 +57,6 @@ use (
 	cmd/byte2binstring
 	cmd/fanalysis
 	cmd/primedb
+	cmd/invgoldbach
+	pkg/utility/numeric
 )
