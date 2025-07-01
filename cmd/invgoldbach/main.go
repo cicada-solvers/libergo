@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"liberdatabase"
-	"math"
 	"numeric"
 	"runtime"
 	"sync"
@@ -67,7 +66,7 @@ func main() {
 	}
 
 	go func() {
-		largestNumber := int64(math.MaxInt32)
+		largestNumber := int64(2000000)
 		for i := int64(4); i <= largestNumber; i++ {
 			if numeric.IsNumberEven(i) {
 				numberChannel <- i

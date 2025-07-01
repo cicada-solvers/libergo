@@ -8,7 +8,7 @@ import (
 type AdvancedNumberFactors struct {
 	Id                          string  `gorm:"column:id"`
 	AdvancedNumberInformationId string  `gorm:"column:advanced_number_information_id"`
-	Factor                      string  `gorm:"column:factor"`
+	Factor                      int64   `gorm:"column:factor"`
 	FactorPosition              int     `gorm:"column:factor_position"`
 	PercentFromSquareRoot       float64 `gorm:"column:percent_from_square_root"`
 	PercentFromNumber           float64 `gorm:"column:percent_from_number"`
@@ -16,7 +16,7 @@ type AdvancedNumberFactors struct {
 	PercentFromMiddle           float64 `gorm:"column:percent_from_middle"`
 }
 
-func AddAdvancedNumberFactors(db *gorm.DB, advancedNumberInformationId string, factor string, factorPosition int,
+func AddAdvancedNumberFactors(db *gorm.DB, advancedNumberInformationId string, factor int64, factorPosition int,
 	percentFromSquareRoot float64, percentFromNumber float64, percentFromTwo float64, percentFromMiddle float64) {
 	advancedNumberFactors := AdvancedNumberFactors{
 		Id:                          uuid.New().String(),

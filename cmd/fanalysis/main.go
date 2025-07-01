@@ -112,14 +112,14 @@ func main() {
 		}
 
 		// Add verified numbers to the database
-		numberInformation := liberdatabase.AddAdvancedNumberInformation(db, number.String(), sqrt.String())
+		numberInformation := liberdatabase.AddAdvancedNumberInformation(db, number.Int64(), sqrt.Int64())
 		for counter, factor := range factors {
 			percentFromSquareRoot := getDistancePercentage(number, factor, sqrt)
 			percentFromTwo := getDistancePercentage(number, factor, big.NewInt(2))
 			percentFromMiddle := getDistancePercentage(number, factor, big.NewInt(0).Set(number).Div(number, big.NewInt(2)))
 			percentFromNumber := getDistancePercentage(number, factor, big.NewInt(0).Set(number))
 
-			liberdatabase.AddAdvancedNumberFactors(db, numberInformation.Id, factor.String(), counter, percentFromSquareRoot,
+			liberdatabase.AddAdvancedNumberFactors(db, numberInformation.Id, factor.Int64(), counter, percentFromSquareRoot,
 				percentFromNumber, percentFromTwo, percentFromMiddle)
 		}
 	}

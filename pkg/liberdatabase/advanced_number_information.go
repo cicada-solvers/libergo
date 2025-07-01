@@ -7,11 +7,11 @@ import (
 
 type AdvancedNumberInformation struct {
 	Id         string `gorm:"column:id"`
-	Number     string `gorm:"column:number"`
-	SquareRoot string `gorm:"column:square_root"`
+	Number     int64  `gorm:"column:number"`
+	SquareRoot int64  `gorm:"column:square_root"`
 }
 
-func AddAdvancedNumberInformation(db *gorm.DB, number string, squareRoot string) AdvancedNumberInformation {
+func AddAdvancedNumberInformation(db *gorm.DB, number, squareRoot int64) AdvancedNumberInformation {
 	advancedNumberInformation := AdvancedNumberInformation{
 		Id:         uuid.New().String(),
 		Number:     number,
