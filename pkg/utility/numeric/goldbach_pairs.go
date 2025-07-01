@@ -17,7 +17,9 @@ type GoldbachPair struct {
 }
 
 func (g *GoldbachPairs) Add(pair GoldbachPair) {
-	g.GoldBachPairs = append(g.GoldBachPairs, pair)
+	if !g.checkIfPairExists(pair) {
+		g.GoldBachPairs = append(g.GoldBachPairs, pair)
+	}
 }
 
 func (g *GoldbachPairs) GetGoldbachPairs() []GoldbachPair {
@@ -32,10 +34,12 @@ func (g *GoldbachPairs) SolveForNumber(number int64, primeList *[]int64) error {
 	for _, prime := range *primeList {
 		numberTwo := g.getNumberTwo(number, prime, primeList)
 		if numberTwo > 0 {
+
+			one, two := g.sortNumbersInPair(numberTwo, prime)
 			g.Add(GoldbachPair{
 				Number:    number,
-				AddendOne: prime,
-				AddendTwo: numberTwo,
+				AddendOne: one,
+				AddendTwo: two,
 			})
 		}
 	}
@@ -52,4 +56,22 @@ func (g *GoldbachPairs) getNumberTwo(number, addendOne int64, primeList *[]int64
 	}
 
 	return 0
+}
+
+func (g *GoldbachPairs) sortNumbersInPair(one, two int64) (int64, int64) {
+	if one > two {
+		return two, one
+	}
+
+	return one, two
+}
+
+func (g *GoldbachPairs) checkIfPairExists(pair GoldbachPair) bool {
+	for _, existingPair := range g.GoldBachPairs {
+		if existingPair.AddendTwo == pair.AddendOne && existingPair.AddendTwo == pair.AddendTwo {
+			return true
+		}
+	}
+
+	return false
 }

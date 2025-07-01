@@ -8,14 +8,8 @@ type GoldbachAddend struct {
 	AddendTwo  int64  `gorm:"column:addend_two"`
 }
 
-func AddGoldbachAddend(db *gorm.DB, goldbachId string, addendOne int64, addendTwo int64) GoldbachAddend {
-	goldbachAddend := GoldbachAddend{
-		GoldbachId: goldbachId,
-		AddendOne:  addendOne,
-		AddendTwo:  addendTwo,
-	}
+func AddGoldbachAddends(db *gorm.DB, addends []GoldbachAddend) []GoldbachAddend {
+	db.Create(&addends)
 
-	db.Create(&goldbachAddend)
-
-	return goldbachAddend
+	return addends
 }

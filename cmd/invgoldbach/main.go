@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"liberdatabase"
+	"math"
 	"numeric"
 	"runtime"
 	"sync"
@@ -24,7 +25,7 @@ func main() {
 	numberChannel := make(chan int64)
 
 	// Determine the number of workers (CPU count × 2)
-	numWorkers := runtime.NumCPU() * 2
+	numWorkers := runtime.NumCPU()
 	fmt.Printf("Using %d worker goroutines\n", numWorkers)
 
 	// Use WaitGroup to wait for all workers to finish
@@ -48,16 +49,25 @@ func main() {
 
 					// Now we need to add them to the database
 					goldbachNumber := liberdatabase.AddGoldbachNumber(conn, num, true)
+					var addends []liberdatabase.GoldbachAddend
 					for _, pair := range gbp.GetGoldbachPairs() {
-						liberdatabase.AddGoldbachAddend(conn, goldbachNumber.Id, pair.AddendOne, pair.AddendTwo)
+						addend := liberdatabase.GoldbachAddend{
+							GoldbachId: goldbachNumber.Id,
+							AddendOne:  pair.AddendOne,
+							AddendTwo:  pair.AddendTwo,
+						}
+
+						addends = append(addends, addend)
 					}
+
+					liberdatabase.AddGoldbachAddends(conn, addends)
 				}
 			}
 		}(i)
 	}
 
 	go func() {
-		largestNumber := int64(2147483647) + int64(2147483647)
+		largestNumber := int64(math.MaxInt32)
 		for i := int64(4); i <= largestNumber; i++ {
 			if numeric.IsNumberEven(i) {
 				numberChannel <- i
