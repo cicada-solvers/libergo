@@ -24,7 +24,7 @@ func main() {
 	numberChannel := make(chan int64)
 
 	// Determine the number of workers (CPU count × 2)
-	numWorkers := runtime.NumCPU()
+	numWorkers := runtime.NumCPU() * 2
 	fmt.Printf("Using %d worker goroutines\n", numWorkers)
 
 	// Use WaitGroup to wait for all workers to finish
@@ -48,9 +48,9 @@ func main() {
 
 					// Now we need to add them to the database
 					goldbachNumber := liberdatabase.AddGoldbachNumber(conn, num, true)
-					var addends []liberdatabase.GoldbachAddend
+					var addends []liberdatabase.GoldbachAddendEven
 					for _, pair := range gbp.GetGoldbachPairs() {
-						addend := liberdatabase.GoldbachAddend{
+						addend := liberdatabase.GoldbachAddendEven{
 							GoldbachId: goldbachNumber.Id,
 							AddendOne:  pair.AddendOne,
 							AddendTwo:  pair.AddendTwo,
