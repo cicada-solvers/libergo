@@ -31,10 +31,11 @@ func (g *GoldbachPairs) SolveForNumber(number int64, primeList *[]int64) error {
 		return fmt.Errorf("number %d is not even", number)
 	}
 
+	offset := 0
+	numberTwo := int64(0)
 	for _, prime := range *primeList {
-		numberTwo := g.getNumberTwo(number, prime, primeList)
+		numberTwo, offset = g.getNumberTwo(number, prime, offset, primeList)
 		if numberTwo > 0 {
-
 			one, two := g.sortNumbersInPair(numberTwo, prime)
 			g.Add(GoldbachPair{
 				Number:    number,
@@ -47,15 +48,26 @@ func (g *GoldbachPairs) SolveForNumber(number int64, primeList *[]int64) error {
 	return nil
 }
 
-func (g *GoldbachPairs) getNumberTwo(number, addendOne int64, primeList *[]int64) int64 {
-	for _, prime := range *primeList {
+func (g *GoldbachPairs) getNumberTwo(number, addendOne int64, offset int, primeList *[]int64) (int64, int) {
+	newOffset := offset
+	endIndex := len(*primeList) - 1 - offset
+
+	if endIndex < 0 {
+		return 0, newOffset
+	}
+
+	counter := 0
+	for i := endIndex; i >= 0; i-- {
+		counter++
+		prime := (*primeList)[i]
 		numberTwo := addendOne + prime
 		if numberTwo == number {
-			return numberTwo
+			newOffset = newOffset + counter
+			return numberTwo, newOffset
 		}
 	}
 
-	return 0
+	return 0, newOffset
 }
 
 func (g *GoldbachPairs) sortNumbersInPair(one, two int64) (int64, int64) {
