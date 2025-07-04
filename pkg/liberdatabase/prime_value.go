@@ -7,13 +7,15 @@ import (
 
 type PrimeValue struct {
 	Id         string `gorm:"column:id"`
-	PrimeValue int64  `gorm:"index:idx_prime,unique"`
+	PrimeValue string `gorm:"index:idx_prime,unique"`
+	BitLength  int    `gorm:"index:idx_bit_length"`
 }
 
-func AddPrimeValue(db *gorm.DB, primeValue int64) PrimeValue {
+func AddPrimeValue(db *gorm.DB, primeValue string, bitLength int) PrimeValue {
 	pv := PrimeValue{
 		Id:         uuid.New().String(),
 		PrimeValue: primeValue,
+		BitLength:  bitLength,
 	}
 
 	db.Create(&pv)
@@ -21,13 +23,13 @@ func AddPrimeValue(db *gorm.DB, primeValue int64) PrimeValue {
 }
 
 func GetPrimeListLessThanValue(db *gorm.DB, value int64) []int64 {
-	var pvs []PrimeValue
+	//var pvs []PrimeValue
 	var retval []int64
-	db.Where("prime_value <= ?", value).Find(&pvs)
-
-	for _, pv := range pvs {
-		retval = append(retval, pv.PrimeValue)
-	}
+	//db.Where("prime_value <= ?", value).Find(&pvs)
+	//
+	//for _, pv := range pvs {
+	//	retval = append(retval, pv.PrimeValue)
+	//}
 
 	return sortValuesAscending(retval)
 }

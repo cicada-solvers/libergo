@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"liberdatabase"
-	"math"
 	"math/big"
 	"runtime"
 	"sequences"
@@ -23,7 +22,7 @@ func main() {
 	}(conn)
 
 	// Create a channel for numbers to be processed
-	numberChannel := make(chan int64)
+	numberChannel := make(chan string)
 
 	// Determine the number of workers (CPU count × 2)
 	numWorkers := runtime.NumCPU() * 2
@@ -40,9 +39,9 @@ func main() {
 			// Each worker processes numbers from the channel
 			for num := range numberChannel {
 				// Convert int64 to big.Int for compatibility with IsPrime
-				bigNum := big.NewInt(num)
+				bigNum, _ := big.NewInt(0).SetString(num, 10)
 				if sequences.IsPrime(bigNum) {
-					liberdatabase.AddPrimeValue(conn, num)
+					liberdatabase.AddPrimeValue(conn, num, bigNum.BitLen())
 				}
 			}
 			fmt.Printf("Worker %d completed\n", workerID)
@@ -52,8 +51,8 @@ func main() {
 	// Start the number generator in a separate goroutine
 	go func() {
 		// Generate numbers from 2 to MaxInt32
-		for i := int64(2); i <= int64(math.MaxInt32); i++ {
-			numberChannel <- i
+		for i := big.NewInt(2); i.BitLen() <= 2048; i.Add(i, big.NewInt(1)) {
+			numberChannel <- i.String()
 		}
 		// Close the channel when done generating
 		close(numberChannel)
