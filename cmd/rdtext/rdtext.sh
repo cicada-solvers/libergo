@@ -29,7 +29,7 @@ for FILE in "$INPUT_DIRECTORY"/*; do
     echo "Processing $FILE..."
 
     # Call the rdtext binary with the file name
-    ./rdtext -create="true" -input="$FILE"
+    ./rdtext -input="$FILE"
     sleep 300
   fi
 done
