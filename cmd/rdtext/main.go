@@ -1,15 +1,17 @@
 package main
 
 import (
+	runelib "characterrepo"
 	"flag"
 	"fmt"
-	"github.com/jdkato/prose/v2"
 	"liberdatabase"
 	"log"
 	"math/big"
 	"os"
 	"path/filepath"
+	"runer"
 	"runtime"
+	"sequences"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +22,7 @@ import (
 var fileMutex sync.Mutex
 var processedCounter = big.NewInt(0)
 var rateCounter = big.NewInt(0)
+var charRepo runelib.CharacterRepo
 
 // ColInformation represents the column information with its name and row counts.
 type ColInformation struct {
@@ -37,7 +40,8 @@ type Sentence struct {
 
 // main is the entry point of the program.
 func main() {
-	sheetName := "Sheet1"
+	charRepo = *runelib.NewCharacterRepo()
+	sheetName := "Worksheet"
 
 	// We are going to put timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
@@ -59,7 +63,7 @@ func main() {
 	flag.Parse()
 
 	// Making sure the tables are created.
-	createErr := liberdatabase.InitMySqlTables()
+	_, createErr := liberdatabase.InitTables()
 	if createErr != nil {
 		return
 	}
@@ -119,7 +123,7 @@ func main() {
 		}
 
 		// Now we are going to remove the million records from the database.
-		conn, connErr := liberdatabase.InitMySQLConnection()
+		conn, connErr := liberdatabase.InitConnection()
 		if connErr != nil {
 			fmt.Printf("error initializing MySQL connection: %v", connErr)
 		}
@@ -150,7 +154,7 @@ func main() {
 		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
-			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+			go calculateGemSumAndWriteToFile(sentenceChan, &wg)
 		}
 
 		wg.Wait()
@@ -229,7 +233,7 @@ func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
 	// Create a new SentenceRecord
 	defer wg.Done()
 
-	conn, connErr := liberdatabase.InitMySQLConnection()
+	conn, connErr := liberdatabase.InitTables()
 	if connErr != nil {
 		fmt.Printf("error initializing MySQL connection: %v", connErr)
 	}
@@ -256,18 +260,21 @@ func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
 	}
 }
 
-// calculateProbabilityAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
-func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
+// calculateGemSumAndWriteToFile calculates the probability of a sentence being a valid English sentence and writes it to the output file.
+func calculateGemSumAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
 	one := big.NewInt(1)
 
 	defer wg.Done()
 
 	for sentence := range sentChan {
-		posCounts, totalWords := analyzeText(sentence.Content)
-		probability := calculateSentenceProbability(posCounts, totalWords)
+		runeglish := runer.PrepLatinToRune(sentence.Content)
+		runes := runer.TransposeLatinToRune(runeglish)
 
-		if probability > 0 {
-			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
+		gemSum := charRepo.CalculateGemSum(runes)
+		gemSumBig := big.NewInt(int64(gemSum))
+
+		if sequences.IsPrime(gemSumBig) {
+			fmt.Printf("Prime Sentence: %s\n", sentence.Content)
 
 			// Write the content to the output file
 			outputBytes := []byte(sentence.Content + "\n\n")
@@ -310,94 +317,6 @@ func WriteContentsToOutputFile(outputfile string, outputBytes []byte) {
 		fileMutex.Unlock()
 		break
 	}
-}
-
-// analyzeText analyzes the given text and returns the part-of-speech counts and total word count.
-func analyzeText(text string) (map[string]int, int) {
-	doc, err := prose.NewDocument(text)
-	if err != nil {
-		log.Fatalf("Failed to create document: %v", err)
-	}
-
-	posCounts := map[string]int{
-		"Noun":        0,
-		"Verb":        0,
-		"Adjective":   0,
-		"Adverb":      0,
-		"Determiner":  0,
-		"Conjunction": 0,
-		"Preposition": 0,
-		"Pronoun":     0,
-		"Punctuation": 0,
-		"NamedEntity": 0,
-	}
-	totalWords := 0
-
-	for _, tok := range doc.Tokens() {
-		switch tok.Tag {
-		case "NN", "NNS", "NNP", "NNPS":
-			posCounts["Noun"]++
-		case "VB", "VBD", "VBG", "VBN", "VBP", "VBZ":
-			posCounts["Verb"]++
-		case "JJ", "JJR", "JJS":
-			posCounts["Adjective"]++
-		case "RB", "RBR", "RBS":
-			posCounts["Adverb"]++
-		case "DT":
-			posCounts["Determiner"]++
-		case "CC":
-			posCounts["Conjunction"]++
-		case "IN":
-			posCounts["Preposition"]++
-		case "PRP", "PRP$", "WP", "WP$":
-			posCounts["Pronoun"]++
-		case ".", ",", ":", ";", "!", "?":
-			posCounts["Punctuation"]++
-		}
-		totalWords++
-	}
-
-	posCounts["NamedEntity"] = len(doc.Entities())
-
-	return posCounts, totalWords
-}
-
-// calculateSentenceProbability calculates the probability of a sentence being a valid English sentence.
-func calculateSentenceProbability(posCounts map[string]int, totalWords int) float64 {
-	if totalWords == 0 {
-		return 0.0
-	}
-
-	probability := 0.0
-	if posCounts["Noun"] > 0 && posCounts["Verb"] > 0 {
-		probability = 50.0
-		if posCounts["Adjective"] > 0 {
-			probability += 10.0
-		}
-		if posCounts["Adverb"] > 0 {
-			probability += 10.0
-		}
-		if posCounts["Determiner"] > 0 {
-			probability += 5.0
-		}
-		if posCounts["Conjunction"] > 0 {
-			probability += 5.0
-		}
-		if posCounts["Preposition"] > 0 {
-			probability += 5.0
-		}
-		if posCounts["Pronoun"] > 0 {
-			probability += 5.0
-		}
-		if posCounts["Punctuation"] > 0 {
-			probability += 10.0
-		}
-		if posCounts["NamedEntity"] > 0 {
-			probability += 5.0
-		}
-	}
-
-	return probability
 }
 
 // cloneStringBuilder clones the given strings.Builder and returns a new instance with the same content.

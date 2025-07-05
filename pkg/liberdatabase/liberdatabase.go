@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -86,6 +85,14 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+	dbCreateError = conn.AutoMigrate(&SentenceRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
 
 	return conn, nil
 }
@@ -126,6 +133,14 @@ func InitTables() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+	dbCreateError = conn.AutoMigrate(&SentenceRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
 
 	return conn, nil
 }
@@ -160,15 +175,6 @@ func InitSQLiteConnection() (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("error opening SQLite database: %v", err)
-	}
-	return db, nil
-}
-
-func InitMySQLConnection() (*gorm.DB, error) {
-	dsn := fmt.Sprintf("%s%d%s", "runedonkey:dpasswd@tcp(localhost:", 3306, ")/wordsdb?charset=utf8mb4&parseTime=True&loc=Local")
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("error opening MySQL database: %v", err)
 	}
 	return db, nil
 }
@@ -222,38 +228,6 @@ func InitSQLiteTables() error {
 	dbCreateError := conn.AutoMigrate(&Factor{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	return nil
-}
-
-func InitMySqlTables() error {
-	// Now we need to put in our migrations.
-	conn, err := InitMySQLConnection()
-	if err != nil {
-		return nil
-	}
-
-	// Remove the old table if it exists
-	//dropError := conn.Migrator().DropTable(&SentenceRecord{})
-	//if dropError != nil {
-	//fmt.Printf("Error dropping table: %v\n", dropError)
-	//}
-
-	// Migrate the schemas
-	dbCreateError := conn.AutoMigrate(&SentenceRecord{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	closeError := CloseConnection(conn)
-	if closeError != nil {
-		return closeError
 	}
 
 	return nil

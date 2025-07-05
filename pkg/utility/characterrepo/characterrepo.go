@@ -342,3 +342,13 @@ func (repo *CharacterRepo) IsLetterInAlphabet(letter string) bool {
 	}
 	return false
 }
+
+// CalculateGemSum calculate the gematria sum for the rune text.
+func (repo *CharacterRepo) CalculateGemSum(input string) int {
+	sum := 0
+	characterArray := strings.Split(input, "")
+	for _, char := range characterArray {
+		sum += repo.GetValueFromRune(char)
+	}
+	return sum
+}
