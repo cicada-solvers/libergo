@@ -23,6 +23,8 @@ var fileMutex sync.Mutex
 var processedCounter = big.NewInt(0)
 var rateCounter = big.NewInt(0)
 var charRepo runelib.CharacterRepo
+var mapMutex sync.Mutex
+var sentences map[int][]liberdatabase.SentenceRecord
 
 // ColInformation represents the column information with its name and row counts.
 type ColInformation struct {
@@ -40,6 +42,7 @@ type Sentence struct {
 
 // main is the entry point of the program.
 func main() {
+	sentences = make(map[int][]liberdatabase.SentenceRecord)
 	charRepo = *runelib.NewCharacterRepo()
 	sheetName := "Worksheet"
 
@@ -220,7 +223,7 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation, buil
 		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
-			go insertSentenceToDB(sentenceChan, &wg)
+			go insertSentenceToDB(i, sentenceChan, &wg)
 		}
 
 		wg.Wait()
@@ -229,30 +232,49 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation, buil
 	return nil
 }
 
-func insertSentenceToDB(sentChan chan Sentence, wg *sync.WaitGroup) {
+func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup) {
 	// Create a new SentenceRecord
 	defer wg.Done()
 
-	conn, connErr := liberdatabase.InitTables()
+	conn, connErr := liberdatabase.InitConnection()
 	if connErr != nil {
 		fmt.Printf("error initializing MySQL connection: %v", connErr)
 	}
 
 	for sentence := range sentChan {
+		mapMutex.Lock()
 		record := liberdatabase.SentenceRecord{
 			FileName:     sentence.FileName,
 			DictSentence: sentence.Content,
 		}
 
 		// Insert the record into the database
-		err := liberdatabase.AddSentenceRecord(conn, record)
-		if err != nil {
-			fmt.Printf("error inserting sentence record: %v", err)
+		if len(sentences[workerId]) < 500 {
+			sentences[workerId] = append(sentences[workerId], record)
+		} else {
+			err := liberdatabase.AddSentenceRecord(conn, sentences[workerId])
+			if err != nil {
+				fmt.Printf("error inserting sentence record: %v", err)
+			} else {
+				sentences[workerId] = []liberdatabase.SentenceRecord{}
+			}
 		}
 
 		processedCounter.Add(processedCounter, big.NewInt(1))
 		rateCounter.Add(rateCounter, big.NewInt(1))
+		mapMutex.Unlock()
 	}
+
+	mapMutex.Lock()
+	if len(sentences[workerId]) > 0 {
+		err := liberdatabase.AddSentenceRecord(conn, sentences[workerId])
+		if err != nil {
+			fmt.Printf("error inserting sentence record: %v", err)
+		} else {
+			sentences[workerId] = []liberdatabase.SentenceRecord{}
+		}
+	}
+	mapMutex.Unlock()
 
 	closeError := liberdatabase.CloseConnection(conn)
 	if closeError != nil {

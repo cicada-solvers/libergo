@@ -11,8 +11,8 @@ type SentenceRecord struct {
 	DictSentence string `gorm:"column:dict_sentence"`
 }
 
-func AddSentenceRecord(db *gorm.DB, record SentenceRecord) error {
-	result := db.Create(&record)
+func AddSentenceRecord(db *gorm.DB, records []SentenceRecord) error {
+	result := db.Create(&records)
 	if result.Error != nil {
 		return fmt.Errorf("error inserting sentence record: %v", result.Error)
 	}
