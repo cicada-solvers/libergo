@@ -59,4 +59,5 @@ use (
 	cmd/primedb
 	cmd/invgoldbach
 	pkg/utility/numeric
+	cmd/rdcheck
 )

@@ -47,6 +47,12 @@ func main() {
 	// Read every word from the word list
 	for word := range wordList {
 		word = strings.ToUpper(word)
+		word = filterNumbersOut(word)
+
+		if len(word) <= 0 {
+			continue
+		}
+
 		runeglish := runer.PrepLatinToRune(word)
 		runeText := runer.TransposeLatinToRune(runeglish)
 		runeTextNoDoublet := lgstructs.RemoveDoublets(strings.Split(runeText, ""))
@@ -188,4 +194,15 @@ func processFile(filePath string, wordList map[string]bool) {
 			}
 		}
 	}
+}
+
+func filterNumbersOut(text string) string {
+	wordArray := strings.Split(text, "")
+	var newWordArray []string
+	for _, character := range wordArray {
+		if strings.ContainsAny(character, "ABCDEFGHIJKLMOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'-") {
+			newWordArray = append(newWordArray, character)
+		}
+	}
+	return strings.Join(newWordArray, "")
 }
