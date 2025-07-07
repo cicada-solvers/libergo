@@ -226,8 +226,8 @@ func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup
 		} else {
 			sentenceMap[workerId] = []liberdatabase.SentenceRecord{}
 		}
+		IncrementCountersByValue(len(sentenceMap[workerId]))
 	}
-	IncrementCounters()
 	mapMutex.Unlock()
 
 	closeError := liberdatabase.CloseConnection(conn)
@@ -239,6 +239,11 @@ func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup
 func IncrementCounters() {
 	processedCounter.Add(processedCounter, big.NewInt(1))
 	rateCounter.Add(rateCounter, big.NewInt(1))
+}
+
+func IncrementCountersByValue(value int) {
+	processedCounter.Add(processedCounter, big.NewInt(int64(value)))
+	rateCounter.Add(rateCounter, big.NewInt(int64(value)))
 }
 
 // cloneStringBuilder clones the given strings.Builder and returns a new instance with the same content.
