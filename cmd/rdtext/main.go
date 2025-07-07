@@ -24,6 +24,7 @@ var rateCounter = big.NewInt(0)
 var charRepo runelib.CharacterRepo
 var mapMutex sync.Mutex
 var sentenceMap map[int][]liberdatabase.SentenceRecord
+var sentenceChan chan Sentence
 
 // ColInformation represents the column information with its name and row counts.
 type ColInformation struct {
@@ -41,6 +42,7 @@ type Sentence struct {
 
 // main is the entry point of the program.
 func main() {
+	sentenceChan = make(chan Sentence, 16384) // Increased buffer size
 	sentenceMap = make(map[int][]liberdatabase.SentenceRecord)
 	charRepo = *runelib.NewCharacterRepo()
 	sheetName := "Worksheet"
@@ -101,11 +103,25 @@ func main() {
 	// Initialize a strings.Builder
 	var builder strings.Builder
 
-	// Call permuteCols with the provided output file name
-	permuteErr := permuteCols(f, sheetName, colInfo, builder, 0, filepath.Base(*inputFile))
-	if permuteErr != nil {
-		fmt.Printf("Failed to permute cols: %v", permuteErr)
+	// Threading for sentence processing.
+	var wg sync.WaitGroup
+
+	numWorkers := runtime.NumCPU() // Adjusted number of workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go insertSentenceToDB(i, &wg)
 	}
+
+	// Call permuteCols with the provided output file name
+	go func() {
+		permuteErr := permuteCols(f, sheetName, colInfo, builder, 0, filepath.Base(*inputFile))
+		if permuteErr != nil {
+			fmt.Printf("Failed to permute cols: %v", permuteErr)
+		}
+		close(sentenceChan)
+	}()
+
+	wg.Wait()
 
 	closeErr := f.Close()
 	if closeErr != nil {
@@ -139,53 +155,36 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation,
 			}
 		}
 	} else {
-		var wg sync.WaitGroup
-		sentenceChan := make(chan Sentence, 16384) // Increased buffer size
-
-		go func() {
-			for i := 3; i < cols[currentColIdx].RowCounts+3; i++ {
-				cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", cols[currentColIdx].ColName, i))
-				if cellError != nil {
-					fmt.Printf("Failed to get cell value: %v\n", cellError)
-				}
-
-				localBuilder = cloneStringBuilder(&builder)
-
-				localBuilder.WriteString(" " + cellValue)
-
-				sentence := Sentence{
-					FileName:    filename,
-					Content:     localBuilder.String(),
-					ColumnIndex: currentColIdx,
-				}
-
-				sentenceChan <- sentence
+		for i := 3; i < cols[currentColIdx].RowCounts+3; i++ {
+			cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", cols[currentColIdx].ColName, i))
+			if cellError != nil {
+				fmt.Printf("Failed to get cell value: %v\n", cellError)
 			}
-			close(sentenceChan)
-		}()
 
-		numWorkers := runtime.NumCPU() // Adjusted number of workers
-		for i := 0; i < numWorkers; i++ {
-			wg.Add(1)
-			go insertSentenceToDB(i, sentenceChan, &wg)
+			localBuilder = cloneStringBuilder(&builder)
+
+			localBuilder.WriteString(" " + cellValue)
+
+			sentence := Sentence{
+				FileName:    filename,
+				Content:     localBuilder.String(),
+				ColumnIndex: currentColIdx,
+			}
+
+			sentenceChan <- sentence
 		}
-
-		wg.Wait()
 	}
 
 	return nil
 }
 
-func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup) {
-	// Create a new SentenceRecord
-	defer wg.Done()
-
+func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
 	conn, connErr := liberdatabase.InitConnection()
 	if connErr != nil {
 		fmt.Printf("error initializing MySQL connection: %v", connErr)
 	}
 
-	for sentence := range sentChan {
+	for sentence := range sentenceChan {
 		runeglish := runer.PrepLatinToRune(sentence.Content)
 		runes := runer.TransposeLatinToRune(runeglish)
 		gemSum := charRepo.CalculateGemSum(runes)
@@ -235,6 +234,8 @@ func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup
 	if closeError != nil {
 		fmt.Printf("error closing MySQL connection: %v", closeError)
 	}
+
+	wg.Done()
 }
 
 func IncrementCounters() {
