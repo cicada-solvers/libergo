@@ -51,7 +51,7 @@ func main() {
 
 	go func() {
 		for range processedTicker.C {
-			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
+			fmt.Printf("Rate: %s/min - %s items remaining\n", rateCounter.String(), processedCounter.String())
 			rateCounter.SetInt64(int64(0))
 		}
 	}()
@@ -96,6 +96,7 @@ func main() {
 		n.Mul(n, big.NewInt(int64(colInfo[i].RowCounts)))
 	}
 	fmt.Printf("Total combinations: %s\n", n.String())
+	processedCounter.Set(n)
 
 	// Initialize a strings.Builder
 	var builder strings.Builder
@@ -237,12 +238,12 @@ func insertSentenceToDB(workerId int, sentChan chan Sentence, wg *sync.WaitGroup
 }
 
 func IncrementCounters() {
-	processedCounter.Add(processedCounter, big.NewInt(1))
+	processedCounter.Sub(processedCounter, big.NewInt(1))
 	rateCounter.Add(rateCounter, big.NewInt(1))
 }
 
 func IncrementCountersByValue(value int) {
-	processedCounter.Add(processedCounter, big.NewInt(int64(value)))
+	processedCounter.Sub(processedCounter, big.NewInt(int64(value)))
 	rateCounter.Add(rateCounter, big.NewInt(int64(value)))
 }
 
