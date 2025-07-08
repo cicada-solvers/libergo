@@ -68,12 +68,12 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 		word = strings.TrimSpace(word)
 		if textType == runer.Runeglish || textType == runer.Latin {
 			word = runer.PrepLatinToRune(word)
-			word = runer.TransposeLatinToRune(word)
+			word = runer.TransposeLatinToRune(word, false)
 		}
 
 		switch whatToDo {
 		case GemSum:
-			sum := runer.CalculateGemSum(word, textType)
+			sum := runer.CalculateGemSum(word, textType, false)
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", sum))
 			break
 		case WordLength, RuneglishLength:

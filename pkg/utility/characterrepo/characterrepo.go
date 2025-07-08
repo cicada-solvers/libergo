@@ -256,6 +256,15 @@ func (repo *CharacterRepo) IsDinkus(value string) bool {
 	return false
 }
 
+func (repo *CharacterRepo) ContainsDinkus(value string) bool {
+	for _, char := range value {
+		if _, exists := dunkusSet[string(char)]; exists {
+			return true
+		}
+	}
+	return false
+}
+
 var seperatorSet = map[string]struct{}{
 	" ": {},
 	".": {},
@@ -271,6 +280,15 @@ var seperatorSet = map[string]struct{}{
 func (repo *CharacterRepo) IsSeperator(value string) bool {
 	if _, exists := seperatorSet[value]; exists {
 		return true
+	}
+	return false
+}
+
+func (repo *CharacterRepo) ContainsSeperator(value string) bool {
+	for _, char := range value {
+		if _, exists := seperatorSet[string(char)]; exists {
+			return true
+		}
 	}
 	return false
 }

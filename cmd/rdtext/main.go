@@ -60,6 +60,7 @@ func main() {
 
 	// Define command-line flags
 	inputFile := flag.String("input", "", "Path to the input Excel file")
+	reverseWords := flag.Bool("reverse", false, "Reverse the words in the sentence")
 
 	// Parse the flags
 	flag.Parse()
@@ -109,7 +110,7 @@ func main() {
 	numWorkers := runtime.NumCPU() // Adjusted number of workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go insertSentenceToDB(i, &wg)
+		go insertSentenceToDB(i, &wg, *reverseWords)
 	}
 
 	// Call permuteCols with the provided output file name
@@ -178,7 +179,7 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation,
 	return nil
 }
 
-func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
+func insertSentenceToDB(workerId int, wg *sync.WaitGroup, reverseWords bool) {
 	conn, connErr := liberdatabase.InitConnection()
 	if connErr != nil {
 		fmt.Printf("error initializing MySQL connection: %v", connErr)
@@ -186,12 +187,12 @@ func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
 
 	for sentence := range sentenceChan {
 		runeglish := runer.PrepLatinToRune(sentence.Content)
-		runes := runer.TransposeLatinToRune(runeglish)
+		runes := runer.TransposeLatinToRune(runeglish, reverseWords)
 		gemSum := charRepo.CalculateGemSum(runes)
 		gemSumBig := big.NewInt(int64(gemSum))
 
 		if !sequences.IsPrime(gemSumBig) {
-			IncrementCounters()
+			incrementCounters()
 			continue
 		}
 
@@ -214,7 +215,7 @@ func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
 				sentenceMap[workerId] = []liberdatabase.SentenceRecord{}
 			}
 		}
-		IncrementCounters()
+		incrementCounters()
 		mapMutex.Unlock()
 	}
 
@@ -226,7 +227,7 @@ func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
 		} else {
 			sentenceMap[workerId] = []liberdatabase.SentenceRecord{}
 		}
-		IncrementCountersByValue(len(sentenceMap[workerId]))
+		incrementCountersByValue(len(sentenceMap[workerId]))
 	}
 	mapMutex.Unlock()
 
@@ -238,12 +239,12 @@ func insertSentenceToDB(workerId int, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func IncrementCounters() {
+func incrementCounters() {
 	processedCounter.Sub(processedCounter, big.NewInt(1))
 	rateCounter.Add(rateCounter, big.NewInt(1))
 }
 
-func IncrementCountersByValue(value int) {
+func incrementCountersByValue(value int) {
 	processedCounter.Sub(processedCounter, big.NewInt(int64(value)))
 	rateCounter.Add(rateCounter, big.NewInt(int64(value)))
 }

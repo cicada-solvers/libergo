@@ -25,7 +25,7 @@ func ParseTextType(textType string) (runer.TextType, error) {
 }
 
 // CalculateGemSumForText calculates the gem sum for the entire text and each word
-func CalculateGemSumForText(input string, outputToFile bool, outputFileName string, textType runer.TextType) error {
+func CalculateGemSumForText(input string, outputToFile bool, outputFileName string, textType runer.TextType, reverseWords bool) error {
 	var text string
 	if fileInfo, err := os.Stat(input); err == nil && !fileInfo.IsDir() {
 		file, err := os.Open(input)
@@ -54,10 +54,10 @@ func CalculateGemSumForText(input string, outputToFile bool, outputFileName stri
 		return r == ' ' || r == '•' || r == '⊹' || r == '.' || r == ',' || r == '!' || r == '?' || r == ':' || r == ';' || r == '(' || r == ')'
 	})
 
-	totalGemSum := runer.CalculateGemSum(text, textType)
+	totalGemSum := runer.CalculateGemSum(text, textType, reverseWords)
 	wordGemSums := make(map[string]int64)
 	for _, word := range words {
-		wordGemSums[word] = runer.CalculateGemSum(word, textType)
+		wordGemSums[word] = runer.CalculateGemSum(word, textType, reverseWords)
 	}
 
 	if outputToFile {
@@ -103,6 +103,7 @@ func main() {
 	input := flag.String("input", "", "Input string or file path")
 	outputFileName := flag.String("outputFileName", "", "Output file name (optional)")
 	textTypeStr := flag.String("textType", "latin", "Type of text (e.g., latin, runeglish, runes)")
+	reverseWords := flag.Bool("reverse", false, "Reverse the words in the sentence")
 
 	flag.Parse()
 
@@ -122,7 +123,7 @@ func main() {
 		return
 	}
 
-	err = CalculateGemSumForText(*input, outputToFile, *outputFileName, textType)
+	err = CalculateGemSumForText(*input, outputToFile, *outputFileName, textType, *reverseWords)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}

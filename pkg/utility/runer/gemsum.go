@@ -22,7 +22,7 @@ func (t TextType) String() string {
 }
 
 // CalculateGemSum calculates the gem sum of a given string
-func CalculateGemSum(gem string, textType TextType) int64 {
+func CalculateGemSum(gem string, textType TextType, reverseWords bool) int64 {
 	repo := runelib.NewCharacterRepo()
 	var retval int64
 	var runeText string
@@ -30,9 +30,9 @@ func CalculateGemSum(gem string, textType TextType) int64 {
 	switch textType {
 	case Latin:
 		prep := PrepLatinToRune(strings.ToUpper(gem))
-		runeText = TransposeLatinToRune(prep)
+		runeText = TransposeLatinToRune(prep, reverseWords)
 	case Runeglish:
-		runeText = TransposeLatinToRune(strings.ToUpper(gem))
+		runeText = TransposeLatinToRune(strings.ToUpper(gem), reverseWords)
 	case Runes:
 		runeText = gem
 	}
@@ -44,7 +44,7 @@ func CalculateGemSum(gem string, textType TextType) int64 {
 }
 
 // CalculateGemProduct calculates the product of the gem values of the given text
-func CalculateGemProduct(gem string, textType TextType) big.Int {
+func CalculateGemProduct(gem string, textType TextType, reverseWords bool) big.Int {
 	repo := runelib.NewCharacterRepo()
 	var retval big.Int
 	var zero big.Int
@@ -53,9 +53,9 @@ func CalculateGemProduct(gem string, textType TextType) big.Int {
 	switch textType {
 	case Latin:
 		prep := PrepLatinToRune(strings.ToUpper(gem))
-		runeText = TransposeLatinToRune(prep)
+		runeText = TransposeLatinToRune(prep, reverseWords)
 	case Runeglish:
-		runeText = TransposeLatinToRune(strings.ToUpper(gem))
+		runeText = TransposeLatinToRune(strings.ToUpper(gem), reverseWords)
 	case Runes:
 		runeText = gem
 	}

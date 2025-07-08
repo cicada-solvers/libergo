@@ -6,10 +6,14 @@ import (
 )
 
 // TransposeLatinToRune transposes a Latin text to a runic text.
-func TransposeLatinToRune(text string) string {
+func TransposeLatinToRune(text string, encodeBackwards bool) string {
 	var sb strings.Builder
 	repo := runelib.NewCharacterRepo()
 	text = strings.ToUpper(text)
+
+	if encodeBackwards {
+		text = reverseWords(text, repo)
+	}
 
 	for i := 0; i < len(text); i++ {
 		xchar := string(text[i])
@@ -75,4 +79,33 @@ func TransposeLatinToRune(text string) string {
 	}
 
 	return sb.String()
+}
+
+func reverseString(text string) string {
+	var sb strings.Builder
+	for i := len(text) - 1; i >= 0; i-- {
+		sb.WriteString(string(text[i]))
+	}
+	return sb.String()
+}
+
+func reverseWords(text string, repo *runelib.CharacterRepo) string {
+	var retval []string
+	charArray := strings.Split(text, "")
+	var sb strings.Builder
+	for i := 0; i < len(charArray); i++ {
+		if repo.IsSeperator(charArray[i]) {
+			retval = append(retval, charArray[i])
+			retval = append(retval, reverseString(sb.String()))
+			sb.Reset()
+		} else {
+			sb.WriteString(charArray[i])
+		}
+	}
+
+	if sb.Len() > 0 {
+		retval = append(retval, reverseString(sb.String()))
+	}
+
+	return strings.Join(retval, "")
 }

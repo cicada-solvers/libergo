@@ -3,6 +3,8 @@ base60
 binfile
 binstring
 binvert
+byte2bin
+byte2binstring
 byte2int
 calcioc
 calrunestats
@@ -15,12 +17,14 @@ decode64
 detangle
 dpattern
 factorize
+fanalysis
 gemproduct
 gemsum
 genseq
 hex2bytearray
 hex2int
 intgen
+invgoldbach
 ipaddressgen
 isprime
 libergo
@@ -30,7 +34,9 @@ numfile
 numstring
 permute
 primeaddressgen
+primedb
 railit
+rdcheck
 rdtext
 rencode
 runecalc

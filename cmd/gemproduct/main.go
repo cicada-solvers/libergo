@@ -26,7 +26,7 @@ func ParseTextType(textType string) (runer.TextType, error) {
 }
 
 // CalculateGemProductForText calculates the gem product for the entire text and each word
-func CalculateGemProductForText(input string, outputToFile bool, outputFileName string, textType runer.TextType) error {
+func CalculateGemProductForText(input string, outputToFile bool, outputFileName string, textType runer.TextType, reverseWords bool) error {
 	var text string
 	if fileInfo, err := os.Stat(input); err == nil && !fileInfo.IsDir() {
 		file, err := os.Open(input)
@@ -55,10 +55,10 @@ func CalculateGemProductForText(input string, outputToFile bool, outputFileName 
 		return r == ' ' || r == '•' || r == '⊹' || r == '.' || r == ',' || r == '!' || r == '?' || r == ':' || r == ';' || r == '(' || r == ')'
 	})
 
-	totalGemProduct := runer.CalculateGemProduct(text, textType)
+	totalGemProduct := runer.CalculateGemProduct(text, textType, reverseWords)
 	wordGemProducts := make(map[string]big.Int)
 	for _, word := range words {
-		wordGemProducts[word] = runer.CalculateGemProduct(word, textType)
+		wordGemProducts[word] = runer.CalculateGemProduct(word, textType, reverseWords)
 	}
 
 	if outputToFile {
@@ -104,6 +104,7 @@ func main() {
 	input := flag.String("input", "", "Input string or file path")
 	outputFileName := flag.String("outputFileName", "", "Output file name (optional)")
 	textTypeStr := flag.String("textType", "latin", "Type of text (e.g., latin, runeglish, runes)")
+	reverseWords := flag.Bool("reverse", false, "Reverse the words in the sentence")
 
 	flag.Parse()
 
@@ -123,7 +124,7 @@ func main() {
 		return
 	}
 
-	err = CalculateGemProductForText(*input, outputToFile, *outputFileName, textType)
+	err = CalculateGemProductForText(*input, outputToFile, *outputFileName, textType, *reverseWords)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}

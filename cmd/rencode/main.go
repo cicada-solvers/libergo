@@ -18,6 +18,7 @@ func main() {
 	typeFlag := flag.String("type", "l2r", "Type of encoding: 'l2r' or 'r2l'")
 	outputFile := flag.String("output", "", "Output file to write the encoded text")
 	helpFlag := flag.Bool("help", false, "Display help")
+	reverseWords := flag.Bool("reverse", false, "Reverse the words in the sentence")
 
 	// Parse flags
 	flag.Parse()
@@ -46,7 +47,7 @@ func main() {
 	switch *typeFlag {
 	case "l2r":
 		prepped := runer.PrepLatinToRune(inputText)
-		encodedText = runer.TransposeLatinToRune(prepped)
+		encodedText = runer.TransposeLatinToRune(prepped, *reverseWords)
 	case "r2l":
 		encodedText = runer.TransposeRuneToLatin(inputText)
 	default:

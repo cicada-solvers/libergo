@@ -21,6 +21,7 @@ import (
 // main reads text files from a directory and creates a SQL file with the dictionary words
 func main() {
 	// Define flags for the directory path and output SQL file
+	reverseWords := flag.Bool("reverse", false, "Reverse the words in the sentence")
 	dir := flag.String("dir", "./path/to/directory", "Directory to scan for text files")
 	flag.Parse()
 
@@ -54,10 +55,10 @@ func main() {
 		}
 
 		runeglish := runer.PrepLatinToRune(word)
-		runeText := runer.TransposeLatinToRune(runeglish)
+		runeText := runer.TransposeLatinToRune(runeglish, *reverseWords)
 		runeTextNoDoublet := lgstructs.RemoveDoublets(strings.Split(runeText, ""))
-		gemSum := runer.CalculateGemSum(runeText, runer.Runes)
-		gemProd := runer.CalculateGemProduct(runeText, runer.Runes)
+		gemSum := runer.CalculateGemSum(runeText, runer.Runes, false)
+		gemProd := runer.CalculateGemProduct(runeText, runer.Runes, false)
 
 		dictWord := lgstructs.DictionaryWord{
 			DictionaryWordText:          word,

@@ -193,7 +193,7 @@ func main() {
 
 		latinText.SetText(runer.TransposeRuneToLatin(tmpText))
 
-		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
+		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes, false)
 		gemText.SetText(fmt.Sprintf("%d", gemValue))
 		gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
 		gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
@@ -266,14 +266,14 @@ func main() {
 		selectedOption := combo.Selected
 		if selectedOption == "From Latin" {
 			latinText.SetText(runer.PrepLatinToRune(strings.ToUpper(entry.Text)))
-			runes := runer.TransposeLatinToRune(latinText.Text)
+			runes := runer.TransposeLatinToRune(latinText.Text, false)
 			displayText.SetText(runes)
 		} else if selectedOption == "From Runes" {
 			displayText.SetText(entry.Text)
 			latinText.SetText(runer.TransposeRuneToLatin(entry.Text))
 		}
 
-		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes)
+		gemValue = runer.CalculateGemSum(displayText.Text, runer.Runes, false)
 		gemText.SetText(fmt.Sprintf("%d", gemValue))
 		gemPrimeCheckbox.SetChecked(sequences.IsPrime64(gemValue))
 		gemSumEmirpCheckbox.SetChecked(sequences.IsEmirp64(gemValue))
