@@ -116,8 +116,6 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 		probability := calculateSentenceProbability(posCounts, totalWords)
 
 		if probability > 0 {
-			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
-
 			// Write the content to the output file
 			sentenceProb := liberdatabase.SentenceProb{
 				FileName:    sentence.FileName,
