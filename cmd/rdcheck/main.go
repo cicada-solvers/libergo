@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/jdkato/prose/v2"
+	"gorm.io/gorm"
 	"liberdatabase"
 	"log"
-	"os"
+	"math/big"
 	"runtime"
 	"sync"
 	"time"
@@ -19,12 +20,26 @@ type Sentence struct {
 	PrimeValue int64
 }
 
-var fileMutex = sync.Mutex{}
+var processedCounter = big.NewInt(0)
+var rateCounter = big.NewInt(0)
+var dbMutex sync.Mutex
 
 func main() {
 	outputFile := "output.txt"
 
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("Rate: %s/min - %s items processed\n", rateCounter.String(), processedCounter.String())
+			rateCounter.SetInt64(int64(0))
+		}
+	}()
+
 	// Now we are going to remove the million records from the database.
+	_, _ = liberdatabase.InitTables()
 	conn, connErr := liberdatabase.InitConnection()
 	if connErr != nil {
 		fmt.Printf("error initializing Postgres connection: %v", connErr)
@@ -80,7 +95,7 @@ func main() {
 		numWorkers := runtime.NumCPU() // Adjusted number of workers
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
-			go calculateProbabilityAndWriteToFile(sentenceChan, &wg)
+			go calculateProbabilityAndWriteToFile(sentenceChan, &wg, conn)
 		}
 
 		wg.Wait()
@@ -95,7 +110,7 @@ func main() {
 	}
 }
 
-func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup) {
+func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup, db *gorm.DB) {
 	defer wg.Done()
 
 	for sentence := range sentChan {
@@ -105,13 +120,19 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 		if probability > 0 {
 			fmt.Printf("Sentence Probability: %.2f%%\n", probability)
 
-			outputText := fmt.Sprintf("%.2f%%|%d|%s\n\n", probability, sentence.PrimeValue, sentence.Content)
-
 			// Write the content to the output file
-			outputBytes := []byte(outputText)
+			sentenceProb := liberdatabase.SentenceProb{
+				Sentence:    sentence.Content,
+				Probability: probability,
+				GemValue:    sentence.PrimeValue,
+			}
 
-			writeContentsToOutputFile(sentence.Output, outputBytes)
+			dbMutex.Lock()
+			_ = liberdatabase.AddSentenceProbRecord(db, sentenceProb)
+			dbMutex.Unlock()
 		}
+
+		incrementCounters()
 	}
 }
 
@@ -203,34 +224,7 @@ func calculateSentenceProbability(posCounts map[string]int, totalWords int) floa
 	return probability
 }
 
-func writeContentsToOutputFile(outputFile string, outputBytes []byte) {
-	for {
-		fileMutex.Lock()
-		file, openError := os.OpenFile(outputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-		if openError != nil {
-			fmt.Printf("Failed to open file: %v\n", openError)
-			fileMutex.Unlock()
-			time.Sleep(100 * time.Millisecond) // Wait before retrying
-			continue
-		}
-
-		_, writeErr := file.Write(outputBytes)
-		if writeErr != nil {
-			fmt.Printf("Failed to write to file: %v\n", writeErr)
-			err := file.Close()
-			if err != nil {
-				fmt.Printf("Failed to close file: %v\n", err)
-			}
-			fileMutex.Unlock()
-			time.Sleep(100 * time.Millisecond) // Wait before retrying
-			continue
-		}
-
-		closeError := file.Close()
-		if closeError != nil {
-			fmt.Printf("Failed to close file: %v\n", closeError)
-		}
-		fileMutex.Unlock()
-		break
-	}
+func incrementCounters() {
+	processedCounter.Add(processedCounter, big.NewInt(1))
+	rateCounter.Add(rateCounter, big.NewInt(1))
 }
