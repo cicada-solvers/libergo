@@ -6,8 +6,10 @@ import (
 	"gorm.io/gorm"
 	"liberdatabase"
 	"log"
+	"maps"
 	"math/big"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 )
@@ -16,7 +18,6 @@ import (
 type Sentence struct {
 	FileName   string
 	Content    string
-	Output     string
 	PrimeValue int64
 }
 
@@ -25,8 +26,6 @@ var rateCounter = big.NewInt(0)
 var dbMutex sync.Mutex
 
 func main() {
-	outputFile := "output.txt"
-
 	// Now we are going to remove the million records from the database.
 	_, _ = liberdatabase.InitTables()
 	conn, connErr := liberdatabase.InitConnection()
@@ -41,8 +40,8 @@ func main() {
 	// Presents a menu for the user to select a file
 	fmt.Println("\nSelect a file to process:")
 	fmt.Println("-------------------------------------")
-	for i, fileName := range fileNames {
-		fmt.Printf("%d. %s\n", i+1, fileName)
+	for i, fileName := range slices.Sorted(maps.Keys(fileNames)) {
+		fmt.Printf("%d. %s - %d\n", i+1, fileName, fileNames[fileName])
 	}
 
 	var selection int
@@ -53,10 +52,10 @@ func main() {
 		return
 	}
 
-	fileName := fileNames[selection-1]
+	fileName := slices.Sorted(maps.Keys(fileNames))[selection-1]
 	fmt.Printf("Selected file: %s\n", fileName)
 
-	// We are going to put timer to see how many we have processed.
+	// We are going to put a timer to see how many we have processed.
 	processedTicker := time.NewTicker(time.Minute)
 	defer processedTicker.Stop()
 
@@ -84,7 +83,6 @@ func main() {
 				sentence := Sentence{
 					FileName:   record.FileName,
 					Content:    record.DictSentence,
-					Output:     outputFile,
 					PrimeValue: record.GemValue,
 				}
 				sentenceChan <- sentence
@@ -122,6 +120,7 @@ func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGro
 
 			// Write the content to the output file
 			sentenceProb := liberdatabase.SentenceProb{
+				FileName:    sentence.FileName,
 				Sentence:    sentence.Content,
 				Probability: probability,
 				GemValue:    sentence.PrimeValue,

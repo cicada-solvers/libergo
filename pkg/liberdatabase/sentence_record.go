@@ -31,13 +31,23 @@ func GetRecordCountByFileName(db *gorm.DB, fileName string) (int64, error) {
 	return count, nil
 }
 
-func GetAllFileNames(db *gorm.DB) ([]string, error) {
+func GetAllFileNames(db *gorm.DB) (map[string]int, error) {
 	var fileNames []string
+	var fileCountMap = make(map[string]int)
 	result := db.Model(&SentenceRecord{}).Select("DISTINCT file_name").Find(&fileNames)
 	if result.Error != nil {
 		return nil, fmt.Errorf("error retrieving file names: %v", result.Error)
 	}
-	return fileNames, nil
+
+	for _, fileName := range fileNames {
+		count, err := GetRecordCountByFileName(db, fileName)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving record count: %v", err)
+		}
+		fileCountMap[fileName] = int(count)
+	}
+
+	return fileCountMap, nil
 }
 
 func GetTopMillionSentenceRecords(db *gorm.DB, fileName string) ([]SentenceRecord, error) {
