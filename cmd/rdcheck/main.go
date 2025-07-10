@@ -27,17 +27,6 @@ var dbMutex sync.Mutex
 func main() {
 	outputFile := "output.txt"
 
-	// We are going to put timer to see how many we have processed.
-	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
-
-	go func() {
-		for range processedTicker.C {
-			fmt.Printf("Rate: %s/min - %s items processed\n", rateCounter.String(), processedCounter.String())
-			rateCounter.SetInt64(int64(0))
-		}
-	}()
-
 	// Now we are going to remove the million records from the database.
 	_, _ = liberdatabase.InitTables()
 	conn, connErr := liberdatabase.InitConnection()
@@ -66,6 +55,17 @@ func main() {
 
 	fileName := fileNames[selection-1]
 	fmt.Printf("Selected file: %s\n", fileName)
+
+	// We are going to put timer to see how many we have processed.
+	processedTicker := time.NewTicker(time.Minute)
+	defer processedTicker.Stop()
+
+	go func() {
+		for range processedTicker.C {
+			fmt.Printf("Rate: %s/min - %s items processed\n", rateCounter.String(), processedCounter.String())
+			rateCounter.SetInt64(int64(0))
+		}
+	}()
 
 	totalRecords, _ := liberdatabase.GetRecordCountByFileName(conn, fileName)
 	for totalRecords > int64(0) {
