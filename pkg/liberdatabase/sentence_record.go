@@ -7,7 +7,7 @@ import (
 
 type SentenceRecord struct {
 	gorm.Model
-	FileName     string `gorm:"column:file_name"`
+	FileName     string `gorm:"index:idx_file_name"`
 	DictSentence string `gorm:"column:dict_sentence"`
 	GemValue     int64  `gorm:"column:gem_value"`
 	IsPrime      bool   `gorm:"column:is_prime"`

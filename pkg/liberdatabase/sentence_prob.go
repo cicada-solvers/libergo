@@ -7,7 +7,7 @@ import (
 
 type SentenceProb struct {
 	gorm.Model
-	FileName    string  `gorm:"column:file_name"`
+	FileName    string  `gorm:"index:idx_file_name"`
 	Sentence    string  `gorm:"column:sentence"`
 	Probability float64 `gorm:"column:probability"`
 	GemValue    int64   `gorm:"column:gem_value"`
