@@ -95,8 +95,8 @@ func reverseWords(text string, repo *runelib.CharacterRepo) string {
 	var sb strings.Builder
 	for i := 0; i < len(charArray); i++ {
 		if repo.IsSeperator(charArray[i]) {
-			retval = append(retval, charArray[i])
 			retval = append(retval, reverseString(sb.String()))
+			retval = append(retval, charArray[i])
 			sb.Reset()
 		} else {
 			sb.WriteString(charArray[i])

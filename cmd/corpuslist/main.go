@@ -36,6 +36,10 @@ func main() {
 			return err
 		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".txt") {
+			outputBase = strings.ReplaceAll(d.Name(), ".txt", "")
+			if (reverseWords != nil) && (*reverseWords == true) {
+				outputBase = fmt.Sprintf("%s_reverse", outputBase)
+			}
 			processFile(path, wordList)
 		}
 		return nil

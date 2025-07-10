@@ -29,8 +29,6 @@ use (
 	cmd/numstring
 	cmd/coller
 	cmd/dpattern
-	cmd/runecalc
-	cmd/runecalc2
 	cmd/rdtext
 	cmd/corpuslist
 	cmd/runedonkey
