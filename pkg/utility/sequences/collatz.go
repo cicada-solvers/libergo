@@ -6,6 +6,9 @@ import (
 	"math/big"
 )
 
+// GetCollatzSequence generates the Collatz sequence for a given number or finds a specific position-based sequence length.
+// If isPosition is true, it looks for a number whose sequence length matches the input and returns the sequence for that number.
+// Returns a NumericSequence containing the sequence or an error if input is invalid.
 func GetCollatzSequence(n int64, isPosition bool) (*NumericSequence, error) {
 	sequence := &NumericSequence{Name: "Collatz", Number: big.NewInt(n)}
 	longestSequence := int64(0)
@@ -36,6 +39,9 @@ func GetCollatzSequence(n int64, isPosition bool) (*NumericSequence, error) {
 	return sequence, nil
 }
 
+// getCollatzSequenceInternal generates a Collatz sequence recursively starting from a given number.
+// The sequence is appended to the provided NumericSequence object.
+// Returns the updated NumericSequence or an error if the input number is less than 1.
 func getCollatzSequenceInternal(n int64, sequence *NumericSequence) (*NumericSequence, error) {
 	// Generate the Collatz sequence
 	if n > 1 {

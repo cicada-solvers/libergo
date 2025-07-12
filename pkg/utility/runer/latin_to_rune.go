@@ -81,6 +81,7 @@ func TransposeLatinToRune(text string, encodeBackwards bool) string {
 	return sb.String()
 }
 
+// reverseString reverses the given string and returns the reversed result.
 func reverseString(text string) string {
 	var sb strings.Builder
 	for i := len(text) - 1; i >= 0; i-- {
@@ -89,6 +90,8 @@ func reverseString(text string) string {
 	return sb.String()
 }
 
+// reverseWords reverses all words in the given text while preserving the original order of delimiters.
+// A word is defined as a sequence of characters not classified as separators by the provided CharacterRepo.
 func reverseWords(text string, repo *runelib.CharacterRepo) string {
 	var retval []string
 	charArray := strings.Split(text, "")

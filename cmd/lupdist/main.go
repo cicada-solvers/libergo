@@ -14,6 +14,7 @@ import (
 	"strings"
 )
 
+// LiberWordDistance represents a word extracted from text with calculated metadata and a list of distance patterns.
 type LiberWordDistance struct {
 	LiberWordGuid     string
 	LiberWord         string
@@ -23,6 +24,7 @@ type LiberWordDistance struct {
 	Patterns          []WordDistancePattern
 }
 
+// WordDistancePattern represents the structure for storing data related to word distance analysis and associated metadata.
 type WordDistancePattern struct {
 	WordDistancePatternGuid       string
 	DictionaryWord                string
@@ -32,6 +34,7 @@ type WordDistancePattern struct {
 	TranslatedLatin               string
 }
 
+// main is the entry point of the application. It processes command-line flags, performs text measurement, and generates CSV outputs.
 func main() {
 	charRepo := runelib.NewCharacterRepo()
 	runes := charRepo.GetGematriaRunes()
@@ -109,6 +112,9 @@ func main() {
 	fmt.Printf("Done\n\n\n")
 }
 
+// writeCsvHeaderFile writes a CSV header and a record to the specified file based on the LiberWordDistance data provided.
+// It creates the file if it doesn't exist and appends data if the file is non-empty.
+// Ensures proper resource management with file closure and writer flushing.
 func writeCsvHeaderFile(headerFile string, word LiberWordDistance) {
 	// Create the CSV file
 	file, err := os.OpenFile(headerFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -152,6 +158,10 @@ func writeCsvHeaderFile(headerFile string, word LiberWordDistance) {
 	}
 }
 
+// writeCsvDetailFile writes detailed word distance analysis data to a CSV file specified by detailFile.
+// It ensures the file is created if it doesn't exist, writes a header if empty, and appends records for each pattern in word.
+// detailFile is the path to the CSV file where the data will be written.
+// word is the LiberWordDistance containing metadata and patterns to be written to the file.
 func writeCsvDetailFile(detailFile string, word LiberWordDistance) {
 	// Create the CSV file
 	file, err := os.OpenFile(detailFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -198,6 +208,7 @@ func writeCsvDetailFile(detailFile string, word LiberWordDistance) {
 	}
 }
 
+// breakTextApart splits a slice of text elements into individual word tokens, handling special characters appropriately.
 func breakTextApart(text []string) []string {
 	var words []string
 	var combinedText strings.Builder
@@ -221,6 +232,7 @@ func breakTextApart(text []string) []string {
 	return words
 }
 
+// getWordsFromListByLength filters and returns words from the input list that match the specified length.
 func getWordsFromListByLength(words []string, length int) []string {
 	var filteredWords []string
 	for _, word := range words {

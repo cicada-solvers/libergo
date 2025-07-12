@@ -150,6 +150,7 @@ func (repo *CharacterRepo) GetGematriaRunes() []string {
 	return retval
 }
 
+// runeToCharMap maps rune strings to their corresponding character representations in the Latin alphabet or symbols.
 var runeToCharMap = map[string]string{
 	"ᛝ": "ING",
 	"ᛟ": "OE",
@@ -184,6 +185,7 @@ var runeToCharMap = map[string]string{
 	"⊹": ".",
 }
 
+// GetCharFromRune returns the Latin character or symbol corresponding to the given rune string. Defaults to input if not mapped.
 func (repo *CharacterRepo) GetCharFromRune(value string) string {
 	if char, exists := runeToCharMap[value]; exists {
 		return char
@@ -191,6 +193,7 @@ func (repo *CharacterRepo) GetCharFromRune(value string) string {
 	return value
 }
 
+// charToRuneMap maps strings representing Latin characters or symbols to their corresponding runic representations.
 var charToRuneMap = map[string]string{
 	"ING": "ᛝ",
 	"NG":  "ᛝ",
@@ -231,6 +234,7 @@ var charToRuneMap = map[string]string{
 	".":   "⊹",
 }
 
+// GetRuneFromChar returns the runic representation of a given Latin character or symbol. Defaults to input if not mapped.
 func (repo *CharacterRepo) GetRuneFromChar(value string) string {
 	if runeChar, exists := charToRuneMap[value]; exists {
 		return runeChar
@@ -238,6 +242,7 @@ func (repo *CharacterRepo) GetRuneFromChar(value string) string {
 	return value
 }
 
+// runeSet is a map representing a set of unique runes used in the rune alphabet. It is used to check rune existence.
 var runeSet = map[string]struct{}{
 	"ᛝ": {}, "ᛟ": {}, "ᛇ": {}, "ᛡ": {}, "ᛠ": {}, "ᚫ": {}, "ᚦ": {}, "ᚠ": {},
 	"ᚢ": {}, "ᚩ": {}, "ᚱ": {}, "ᚳ": {}, "ᚷ": {}, "ᚹ": {}, "ᚻ": {}, "ᚾ": {},
@@ -245,26 +250,30 @@ var runeSet = map[string]struct{}{
 	"ᛗ": {}, "ᛚ": {}, "ᛞ": {}, "ᚪ": {}, "ᚣ": {},
 }
 
-var dunkusSet = map[string]struct{}{
+// dinkusSet is a map representing a set of unique "dinkus" characters used for recognition or validation purposes.
+var dinkusSet = map[string]struct{}{
 	"•": {}, "⊹": {},
 }
 
+// IsDinkus checks if the given string value exists in the predefined "dinkusSet" and returns true if found.
 func (repo *CharacterRepo) IsDinkus(value string) bool {
-	if _, exists := dunkusSet[value]; exists {
+	if _, exists := dinkusSet[value]; exists {
 		return true
 	}
 	return false
 }
 
+// ContainsDinkus checks if the provided string contains any character present in the predefined "dinkusSet".
 func (repo *CharacterRepo) ContainsDinkus(value string) bool {
 	for _, char := range value {
-		if _, exists := dunkusSet[string(char)]; exists {
+		if _, exists := dinkusSet[string(char)]; exists {
 			return true
 		}
 	}
 	return false
 }
 
+// seperatorSet is a set of strings representing commonly used punctuation and special characters.
 var seperatorSet = map[string]struct{}{
 	" ":  {},
 	".":  {},
@@ -296,6 +305,7 @@ var seperatorSet = map[string]struct{}{
 	"`":  {},
 }
 
+// IsSeperator checks if the given string value exists in the predefined "seperatorSet" and returns true if found.
 func (repo *CharacterRepo) IsSeperator(value string) bool {
 	if _, exists := seperatorSet[value]; exists {
 		return true
@@ -303,6 +313,7 @@ func (repo *CharacterRepo) IsSeperator(value string) bool {
 	return false
 }
 
+// ContainsSeperator checks if the provided string contains any character present in the predefined "seperatorSet".
 func (repo *CharacterRepo) ContainsSeperator(value string) bool {
 	for _, char := range value {
 		if _, exists := seperatorSet[string(char)]; exists {
@@ -312,9 +323,10 @@ func (repo *CharacterRepo) ContainsSeperator(value string) bool {
 	return false
 }
 
+// IsRune checks if the given string value exists in the rune set. Optionally includes dinkus set for validation if specified.
 func (repo *CharacterRepo) IsRune(value string, includeDunkus bool) bool {
 	if includeDunkus {
-		if _, exists := dunkusSet[value]; exists {
+		if _, exists := dinkusSet[value]; exists {
 			return true
 		}
 	}
@@ -322,6 +334,7 @@ func (repo *CharacterRepo) IsRune(value string, includeDunkus bool) bool {
 	return exists
 }
 
+// runeToValueMap maps specific runic symbols to their associated integer values in a gematria-style system.
 var runeToValueMap = map[string]int{
 	"ᛝ": 79, "ᛟ": 83, "ᛇ": 41, "ᛡ": 107, "ᛠ": 109, "ᚫ": 101, "ᚦ": 5, "ᚠ": 2,
 	"ᚢ": 3, "ᚩ": 7, "ᚱ": 11, "ᚳ": 13, "ᚷ": 17, "ᚹ": 19, "ᚻ": 23, "ᚾ": 29,
@@ -329,6 +342,7 @@ var runeToValueMap = map[string]int{
 	"ᛗ": 71, "ᛚ": 73, "ᛞ": 89, "ᚪ": 97, "ᚣ": 103,
 }
 
+// GetValueFromRune retrieves the integer value associated with a given rune string from the runeToValueMap. Returns 0 if not found.
 func (repo *CharacterRepo) GetValueFromRune(rune string) int {
 	if value, exists := runeToValueMap[rune]; exists {
 		return value
@@ -336,6 +350,7 @@ func (repo *CharacterRepo) GetValueFromRune(rune string) int {
 	return 0
 }
 
+// valueToRuneMap maps integer values to their corresponding runic representation as a string. Used for rune lookups.
 var valueToRuneMap = map[int]string{
 	2: "ᚠ", 3: "ᚢ", 5: "ᚦ", 7: "ᚩ", 11: "ᚱ", 13: "ᚳ", 17: "ᚷ", 19: "ᚹ",
 	23: "ᚻ", 29: "ᚾ", 31: "ᛁ", 37: "ᛄ", 41: "ᛇ", 43: "ᛈ", 47: "ᛉ", 53: "ᛋ",
@@ -343,6 +358,7 @@ var valueToRuneMap = map[int]string{
 	97: "ᚪ", 101: "ᚫ", 103: "ᚣ", 107: "ᛡ", 109: "ᛠ",
 }
 
+// GetRuneFromValue retrieves the rune string corresponding to the provided integer value from valueToRuneMap. Returns empty if not found.
 func (repo *CharacterRepo) GetRuneFromValue(value int) string {
 	if runeChar, exists := valueToRuneMap[value]; exists {
 		return runeChar

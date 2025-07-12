@@ -13,6 +13,7 @@ import (
 	"sync"
 )
 
+// main reads a file line by line and processes each line concurrently to match against a predefined hash value.
 func main() {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
 
@@ -74,6 +75,8 @@ func main() {
 	wg.Wait()
 }
 
+// processLine processes an input string by generating its hash values and compares them with an existing hash.
+// If a match is found, it outputs the matching hash type and value along with the input string.
 func processLine(inputString, existingHash string) {
 	// Convert the string to a byte array
 	byteArray := []byte(inputString)
@@ -87,6 +90,8 @@ func processLine(inputString, existingHash string) {
 	}
 }
 
+// generateHashes computes hash values for the input data using SHA-512, Whirlpool-512, Blake2b-512, and Blake-512 algorithms.
+// It returns a map where keys are hash algorithm names and values are corresponding hash strings.
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 

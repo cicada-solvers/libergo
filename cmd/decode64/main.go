@@ -9,6 +9,7 @@ import (
 	"titler"
 )
 
+// main is the entry point of the program, orchestrating Base64 decoding based on provided command-line flags.
 func main() {
 	titler.PrintTitle("Decode Base64")
 

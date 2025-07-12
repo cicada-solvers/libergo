@@ -6,6 +6,7 @@ import (
 	"lgstructs"
 )
 
+// main is the entry point of the application. It parses input flags, processes text, and outputs the corresponding rune pattern.
 func main() {
 	// Define flags
 	textFlag := flag.String("text", "", "Text to get rune pattern")

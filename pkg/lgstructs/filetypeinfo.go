@@ -19,6 +19,8 @@ type FileTypeInfo struct {
 	SubHeader []byte
 }
 
+// FileTypeInfoModel represents the structure for file type metadata information in the system.
+// It includes details like ID, name, file type, MIME type, header, alias, offset, and sub-header.
 type FileTypeInfoModel struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
@@ -30,6 +32,8 @@ type FileTypeInfoModel struct {
 	SubHeader string `json:"sub_header"`
 }
 
+// fetchFileTypeInfoModels fetches file type metadata from an external API and decodes it into a slice of FileTypeInfoModel structs.
+// Returns the slice of FileTypeInfoModel and an error if any occurs during the request or data processing.
 func fetchFileTypeInfoModels() ([]FileTypeInfoModel, error) {
 	resp, err := http.Get("https://cmbsolver.com/cmbsolver-api/filetypes.php/file_types")
 	if err != nil {
@@ -51,6 +55,7 @@ func fetchFileTypeInfoModels() ([]FileTypeInfoModel, error) {
 	return fileTypeInfoModels, nil
 }
 
+// GetAllFileTypeInfo retrieves and processes file type information, returning a slice of FileTypeInfo and an error if any occurs.
 func GetAllFileTypeInfo() ([]FileTypeInfo, error) {
 	fileTypeInfoModels, err := fetchFileTypeInfoModels()
 	if err != nil {

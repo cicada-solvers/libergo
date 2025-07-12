@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the program that reads comma-separated byte values, processes them, and outputs a big integer.
 func main() {
 	// Prompt the user for comma-separated values
 	fmt.Print("Enter comma-separated values (0-255): ")

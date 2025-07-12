@@ -8,8 +8,10 @@ import (
 	"strings"
 )
 
+// repo initializes and holds a new instance of CharacterRepo from the runelib package.
 var repo = runelib.NewCharacterRepo()
 
+// main serves as the entry point for the application, handling text parsing, input validation, and rail fence cipher decoding.
 func main() {
 	// Parse the flags
 	flag.Parse()
@@ -126,6 +128,7 @@ func divideTextLong(textArray []string, rail int) map[int][]string {
 	return retval
 }
 
+// divideTextTall redistributes characters from the input array into multiple rails in a "tall" arrangement based on the rail count.
 func divideTextTall(textArray []string, rail int) map[int][]string {
 	retval := make(map[int][]string)
 	currentRail := 0
@@ -143,6 +146,7 @@ func divideTextTall(textArray []string, rail int) map[int][]string {
 	return retval
 }
 
+// RemoveSpaces removes characters that are not in the defined alphabet or valid as runes and returns the filtered characters.
 func RemoveSpaces(text string) []string {
 	var retval []string
 	textArray := strings.Split(text, "")
@@ -156,6 +160,7 @@ func RemoveSpaces(text string) []string {
 	return retval
 }
 
+// DecodeUsingRailFenceCipher reassembles the original sequence from a map of rail slices based on Rail Fence Cipher logic.
 func DecodeUsingRailFenceCipher(rails map[int][]string) []string {
 	var retArray []string
 	currentRailPosition := 0

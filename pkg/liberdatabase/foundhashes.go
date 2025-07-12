@@ -5,12 +5,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// FoundHashes represents a database model for storing integer arrays and their corresponding hashing algorithms.
+// It includes fields for GORM model metadata, the integer array as a string, and the hashing algorithm as a string.
 type FoundHashes struct {
 	gorm.Model
 	IntegerArray     string `gorm:"column:integer_array"`
 	HashingAlgorithm string `gorm:"column:hashing_algorithm"`
 }
 
+// TableName specifies the database table name for the FoundHashes model. It returns "public.found_hashes".
 func (FoundHashes) TableName() string {
 	return "public.found_hashes"
 }

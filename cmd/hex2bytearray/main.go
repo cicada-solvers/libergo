@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application, prompting the user to convert a hex string into comma-separated decimals.
 func main() {
 	// Prompt the user for the hex string
 	fmt.Print("Enter a hex string: ")

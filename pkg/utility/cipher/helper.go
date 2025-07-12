@@ -6,22 +6,35 @@ import (
 	"strings"
 )
 
+// AlphabetType defines a custom type for representing different alphabet categories as integer values.
 type AlphabetType int
 
 const (
+
+	// Latin represents the category for the Latin alphabet within the AlphabetType enumeration.
 	Latin AlphabetType = iota
+
+	// Rune represents the category for runic alphabets within the AlphabetType enumeration.
 	Rune
 )
 
+// DecipheredText represents a decoded text, its occurrence count, and the key used for deciphering.
 type DecipheredText struct {
 	Text  string
 	Count int64
 	Key   string
 }
 
+// processedCounter tracks the total number of items processed during brute force decryption attempts.
 var processedCounter = big.NewInt(0)
+
+// rateCounter tracks the rate of processed items per minute during the execution of bulk decoding/decryption tasks.
 var rateCounter = big.NewInt(0)
+
+// latinWordList is a slice of strings containing Latin words used for text analysis or cryptographic operations.
 var latinWordList []string
+
+// topResults is a slice of DecipheredText used to store the top decoded texts ranked by their occurrence counts.
 var topResults []DecipheredText
 
 // indexOf returns the index of the target string in the slice, or -1 if not found.

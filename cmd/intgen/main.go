@@ -9,6 +9,7 @@ import (
 	"titler"
 )
 
+// main is the entry point of the program, handling prime number generation and their product calculation.
 func main() {
 	titler.PrintTitle("Integer Generation")
 
@@ -48,6 +49,9 @@ func main() {
 	fmt.Printf("Number of bits in the product: %d\n", numberOfBits(product))
 }
 
+// generateRandomPrime generates a random prime number with the specified number of bits.
+// It returns a pointer to the generated prime or an error if the process fails.
+// The function uses cryptographically secure randomness for prime generation.
 func generateRandomPrime(bits int) (*big.Int, error) {
 	maxNum := new(big.Int).Lsh(big.NewInt(1), uint(bits))
 	for {

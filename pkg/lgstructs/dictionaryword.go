@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// DictionaryWord represents a structured word entry with various properties for linguistic and numerical analysis.
 type DictionaryWord struct {
 	DictionaryWordText          string `json:"dict_word"`
 	RuneglishWordText           string `json:"dict_runeglish"`
@@ -76,6 +77,8 @@ func RemoveDoublets(word []string) string {
 	return result.String()
 }
 
+// CalculateWordDistances calculates the distances between corresponding runes of two words based on their positions in runeList.
+// It returns a comma-separated string of absolute distance values for each rune comparison.
 func CalculateWordDistances(word1, word2, runeList []string) string {
 	var result strings.Builder
 	var isFirstTime = true
@@ -99,6 +102,7 @@ func CalculateWordDistances(word1, word2, runeList []string) string {
 	return result.String()
 }
 
+// GetRuneDistancePattern generates a string representing the distances between adjacent runes in a slice of strings.
 func GetRuneDistancePattern(word []string) string {
 	charRepo := runelib.NewCharacterRepo()
 	gemRunes := charRepo.GetGematriaRunes()
@@ -122,6 +126,7 @@ func GetRuneDistancePattern(word []string) string {
 	return result.String()
 }
 
+// GetRuneComparisonDistancePattern calculates a distance pattern between corresponding runes in two word slices.
 func GetRuneComparisonDistancePattern(wordOne, wordTwo []string) string {
 	charRepo := runelib.NewCharacterRepo()
 	gemRunes := charRepo.GetGematriaRunes()
@@ -142,6 +147,8 @@ func GetRuneComparisonDistancePattern(wordOne, wordTwo []string) string {
 	return result.String()
 }
 
+// getRuneIndex finds the index of a given rune in the provided alphabet slice.
+// Returns the index if found, otherwise returns -1.
 func getRuneIndex(rune string, alphabet []string) int {
 	for i, r := range alphabet {
 		if r == rune {

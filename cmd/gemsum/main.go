@@ -97,6 +97,7 @@ func CalculateGemSumForText(input string, outputToFile bool, outputFileName stri
 	return nil
 }
 
+// main is the entry point of the application, parsing flags, processing input, and initiating gematria calculations.
 func main() {
 	titler.PrintTitle("Gematria Sum")
 	var outputToFile = false

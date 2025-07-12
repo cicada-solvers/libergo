@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application that parses input flags, converts input numbers to bytes, and writes to a file.
 func main() {
 	// Define flags
 	inputFlag := flag.String("input", "", "Comma-separated string of numbers (0-255)")

@@ -8,6 +8,7 @@ import (
 	"titler"
 )
 
+// main is the entry point of the program that converts binary string files to text or text files to binary strings.
 func main() {
 	titler.PrintTitle("Binary to String File Converter")
 	inputFile := flag.String("inputfile", "", "Input file")
@@ -39,6 +40,7 @@ func main() {
 	}
 }
 
+// isBinaryString checks if a given string contains only binary digits ('0' and '1') or spaces.
 func isBinaryString(s string) bool {
 	for _, c := range s {
 		if c != '0' && c != '1' && c != ' ' {
@@ -48,6 +50,7 @@ func isBinaryString(s string) bool {
 	return true
 }
 
+// binaryStringToText converts a binary string into its corresponding text representation.
 func binaryStringToText(s string) string {
 	s = strings.ReplaceAll(s, " ", "")
 	var result strings.Builder
@@ -62,6 +65,7 @@ func binaryStringToText(s string) string {
 	return result.String()
 }
 
+// textToBinaryString converts a byte slice to a binary string representation separated by spaces.
 func textToBinaryString(data []byte) string {
 	var result strings.Builder
 	for _, b := range data {

@@ -8,6 +8,7 @@ import (
 	"titler"
 )
 
+// main is the entry point of the program that handles binary string inversion from an input file and writes to an output file.
 func main() {
 	titler.PrintTitle("Binary Inverter")
 	// Define command-line flags

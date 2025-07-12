@@ -21,10 +21,16 @@ type Sentence struct {
 	PrimeValue int64
 }
 
+// processedCounter tracks the total number of records that have been processed during the execution of the application.
 var processedCounter = big.NewInt(0)
+
+// rateCounter is a counter that tracks the rate of items processed per minute during application execution.
 var rateCounter = big.NewInt(0)
+
+// dbMutex is a mutual exclusion lock used to synchronize access to shared resources, such as database operations.
 var dbMutex sync.Mutex
 
+// main is the entry point of the application that processes database records in batches for further analysis and output.
 func main() {
 	// Now we are going to remove the million records from the database.
 	_, _ = liberdatabase.InitTables()
@@ -108,6 +114,7 @@ func main() {
 	}
 }
 
+// calculateProbabilityAndWriteToFile processes sentences from a channel, calculates their probability, and stores results in the database.
 func calculateProbabilityAndWriteToFile(sentChan chan Sentence, wg *sync.WaitGroup, db *gorm.DB) {
 	defer wg.Done()
 
@@ -221,6 +228,7 @@ func calculateSentenceProbability(posCounts map[string]int, totalWords int) floa
 	return probability
 }
 
+// incrementCounters increments both processedCounter and rateCounter by 1 to track processing progress and rate.
 func incrementCounters() {
 	processedCounter.Add(processedCounter, big.NewInt(1))
 	rateCounter.Add(rateCounter, big.NewInt(1))

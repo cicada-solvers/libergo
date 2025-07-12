@@ -32,6 +32,7 @@ type ReadPermutation struct {
 	NumberOfPermutations int64
 }
 
+// TableName specifies the database table name for the Permutation model, used by GORM for ORM operations.
 func (Permutation) TableName() string {
 	return "public.permutations"
 }
@@ -149,6 +150,8 @@ func RemoveProcessedRows(db *gorm.DB) {
 	}
 }
 
+// InsertBatch inserts a batch of Permutation records into the database using GORM's Create method.
+// Logs an error message if the insertion fails.
 func InsertBatch(db *gorm.DB, batch []Permutation) {
 	result := db.Create(&batch)
 	if result.Error != nil {

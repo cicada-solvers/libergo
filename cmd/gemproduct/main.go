@@ -98,6 +98,7 @@ func CalculateGemProductForText(input string, outputToFile bool, outputFileName 
 	return nil
 }
 
+// main is the entry point of the application. It parses input flags and calculates the gematria product of the provided text.
 func main() {
 	titler.PrintTitle("Gematria Product")
 	var outputToFile = false

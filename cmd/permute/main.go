@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the program that collects user input, generates permutations, and writes them to a file.
 func main() {
 	// remove output files
 	removeOutputFileIfExists()

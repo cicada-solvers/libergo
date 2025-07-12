@@ -8,6 +8,7 @@ import (
 	"titler"
 )
 
+// main is the entry point of the application, responsible for handling flags, input/output, and invoking core functions.
 func main() {
 	titler.PrintTitle("Binary to String Converter")
 	inputFile := flag.String("inputfile", "", "Input file")
@@ -50,6 +51,7 @@ func main() {
 	}
 }
 
+// isBinaryString checks if the given string contains only binary digits ('0' and '1') and spaces. Returns true if valid.
 func isBinaryString(s string) bool {
 	for _, c := range s {
 		if c != '0' && c != '1' && c != ' ' {
@@ -59,6 +61,7 @@ func isBinaryString(s string) bool {
 	return true
 }
 
+// binaryStringToText converts a binary string representation into its corresponding text by decoding 8-bit binary groups.
 func binaryStringToText(s string) string {
 	s = strings.ReplaceAll(s, " ", "")
 	var result strings.Builder
@@ -73,6 +76,7 @@ func binaryStringToText(s string) string {
 	return result.String()
 }
 
+// textToBinaryString converts a given string into its binary representation, with each character encoded as an 8-bit binary value.
 func textToBinaryString(s string) string {
 	var result strings.Builder
 	for _, c := range s {

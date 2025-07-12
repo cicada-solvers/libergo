@@ -49,6 +49,7 @@ var dbConn *gorm.DB
 var processId string
 var dbMutex sync.Mutex
 
+// main is the entry point of the program. It initializes flags, processes input, and handles text processing tasks.
 func main() {
 	processId = uuid.New().String()
 	text := flag.String("text", "", "The text to decode")
@@ -150,6 +151,9 @@ func main() {
 	ProcessText(countPatterns, clonedText, 0, sentence)
 }
 
+// ProcessText recursively processes text based on patterns, extracting words from a database and structuring sentences.
+// It iterates over text patterns and database sequences, modifying the input text and appending results to sentences.
+// Handles remaining letters and resets text state if conditions require further recursive processing.
 func ProcessText(countPatterns []int, textCharacters []string, position int, passedSentence string) {
 	sequence, _ := GetMaxSequenceFromDatabaseByLevel(position)
 	levelPrefix := fmt.Sprintf("Processing level: %d/%d - %d", position+1, len(countPatterns), sequence)
@@ -200,6 +204,7 @@ func ProcessText(countPatterns []int, textCharacters []string, position int, pas
 	}
 }
 
+// RemoveLettersFromArray removes specified letters from the input array and returns the updated array and count of removed items.
 func RemoveLettersFromArray(array []string, letters []string) ([]string, int) {
 	result := make([]string, len(array))
 	copy(result, array)
@@ -219,6 +224,7 @@ func RemoveLettersFromArray(array []string, letters []string) ([]string, int) {
 	return result, removedCount
 }
 
+// WriteToFile writes the provided text to a file, appending a Latin-transposed version of the text and a newline.
 func WriteToFile(text string) {
 	dbMutex.Lock()
 	file, err := os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -245,6 +251,7 @@ func WriteToFile(text string) {
 	dbMutex.Unlock()
 }
 
+// CloneArray creates a new copy of the input string slice and returns it without modifying the original slice.
 func CloneArray(array []string) []string {
 	var retval []string
 	for _, value := range array {
@@ -253,6 +260,7 @@ func CloneArray(array []string) []string {
 	return retval
 }
 
+// CloneSentence creates a clone of the given sentence by splitting it into characters and rejoining them into a new string.
 func CloneSentence(sentence string) string {
 	var tmpval []string
 
@@ -263,6 +271,7 @@ func CloneSentence(sentence string) string {
 	return strings.Join(tmpval, "")
 }
 
+// GetCountPatterns processes a string and returns a slice of integers representing counts of valid sequential characters.
 func GetCountPatterns(text string) []int {
 	var retval []int
 	textArray := strings.Split(text, "")
@@ -280,6 +289,7 @@ func GetCountPatterns(text string) []int {
 	return retval
 }
 
+// GetAvailableCharacters filters and returns a list of characters from the input text that exist in the predefined alphabet.
 func GetAvailableCharacters(text string) []string {
 	var retval []string
 	textArray := strings.Split(text, "")
@@ -292,6 +302,7 @@ func GetAvailableCharacters(text string) []string {
 	return retval
 }
 
+// IsLetterInAlphabet checks if the given character exists in the predefined alphabet array and returns true if found.
 func IsLetterInAlphabet(character string) bool {
 	for _, char := range alphabetArray {
 		if char == character {
@@ -301,6 +312,9 @@ func IsLetterInAlphabet(character string) bool {
 	return false
 }
 
+// GetCSVFiles retrieves the list of CSV file names from the current directory.
+// The function scans the current directory and filters files ending with ".csv".
+// It returns a slice containing names of all found CSV files.
 func GetCSVFiles() []string {
 	// Get the CSV files from the current directory
 	var fileNames []string
@@ -352,6 +366,9 @@ func LoadWordsFromTable(length, level int) (int64, error) {
 	return readCount, nil
 }
 
+// LoadFilesToDb reads words from a CSV file and inserts them into the database in batches.
+// Takes filePath as the path to the input CSV file.
+// Returns an error if file operations, CSV parsing, or database operations fail.
 func LoadFilesToDb(filePath string) error {
 	var words []WordEntry
 	fmt.Printf("Loading words to DB\n")
@@ -411,6 +428,9 @@ func InitSQLiteConnection() {
 	dbConn, _ = gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
 }
 
+// InitSQLiteTables initializes and sets up the necessary SQLite database tables.
+// It drops pre-existing tables if they exist and creates new ones based on the defined schemas.
+// Returns an error if there is any issue during the table creation or migration process.
 func InitSQLiteTables() error {
 	// Remove the old table if it exists
 	dropError := dbConn.Migrator().DropTable(&WordStruct{})
@@ -431,6 +451,8 @@ func InitSQLiteTables() error {
 	return nil
 }
 
+// AddWordEntryToDatabase inserts a batch of WordEntry records into the database, ensuring thread safety with a mutex lock.
+// Accepts a slice of WordEntry as input. Logs an error if database insertion fails.
 func AddWordEntryToDatabase(words []WordEntry) {
 	dbMutex.Lock()
 	result := dbConn.CreateInBatches(&words, len(words))
@@ -440,6 +462,8 @@ func AddWordEntryToDatabase(words []WordEntry) {
 	dbMutex.Unlock()
 }
 
+// AddWordToDatabase inserts a batch of words into the database and handles errors during the insertion process.
+// It uses a mutex lock to ensure thread safety when accessing the database connection.
 func AddWordToDatabase(words []WordStruct) {
 	dbMutex.Lock()
 	result := dbConn.CreateInBatches(&words, len(words))
@@ -449,6 +473,8 @@ func AddWordToDatabase(words []WordStruct) {
 	dbMutex.Unlock()
 }
 
+// GetFirstWordFromDatabase retrieves the first valid word from the database matching the provided sequence, level, and criteria.
+// It locks database access, filters words against provided characters, and decrements the sequence if conditions aren't met.
 func GetFirstWordFromDatabase(sequence *int64, level int, charactersLeft []string) (WordStruct, error) {
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
@@ -473,6 +499,7 @@ func GetFirstWordFromDatabase(sequence *int64, level int, charactersLeft []strin
 	return word, errors.New("no words left in database")
 }
 
+// AreAllLettersInRemaining checks if all letters in the given word are present in the provided slice of remaining characters.
 func AreAllLettersInRemaining(word WordStruct, charactersLeft []string) bool {
 	lettersInWord := strings.Split(word.Word, "")
 	for _, letter := range lettersInWord {
@@ -484,6 +511,9 @@ func AreAllLettersInRemaining(word WordStruct, charactersLeft []string) bool {
 	return true
 }
 
+// GetWordsFromDatabaseByLength retrieves words from the database where the word length matches the specified value.
+// Returns a slice of WordEntry and an error if the query fails.
+// Thread-safe due to a mutex lock while accessing the database connection.
 func GetWordsFromDatabaseByLength(length int) ([]WordEntry, error) {
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
@@ -497,6 +527,8 @@ func GetWordsFromDatabaseByLength(length int) ([]WordEntry, error) {
 	return words, nil
 }
 
+// GetMaxSequenceFromDatabaseByLevel retrieves the maximum sequence value from the database for a specified level.
+// It locks the database access, executes the query, and returns the maximum sequence value or an error if one occurs.
 func GetMaxSequenceFromDatabaseByLevel(level int) (int64, error) {
 	dbMutex.Lock()
 	var maxSequence int64
@@ -506,6 +538,7 @@ func GetMaxSequenceFromDatabaseByLevel(level int) (int64, error) {
 	return maxSequence, nil
 }
 
+// VacuumDb clears and reorganizes the SQLite database by truncating, vacuuming, and reindexing the `word_structs` table.
 func VacuumDb() {
 	dbMutex.Lock()
 	result := dbConn.Exec("DELETE FROM word_structs")

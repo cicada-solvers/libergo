@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// BulkDecodeAffineCipherRaw attempts to decode the given text for all affine cipher key combinations within the specified alphabet.
+// It returns a concatenated string of all possible decodings or an error if decoding fails.
 func BulkDecodeAffineCipherRaw(alphabet []string, text string) (string, error) {
 	var result strings.Builder
 
@@ -27,6 +29,9 @@ func BulkDecodeAffineCipherRaw(alphabet []string, text string) (string, error) {
 	return result.String(), nil
 }
 
+// BulkDecodeAffineCipher attempts to decode a text using all possible affine cipher keys within the given alphabet size.
+// Returns the decoded text with all key combinations and may optionally transpose decoded results to Latin characters.
+// Takes the alphabet, the text to decode, and a decodeToLatin flag as arguments. Returns the resulting string and an error.
 func BulkDecodeAffineCipher(alphabet []string, text string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 

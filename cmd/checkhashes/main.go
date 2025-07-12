@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// main is the entry point of the program; it processes input strings and checks for matching cryptographic hash values.
 func main() {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
 
@@ -44,6 +45,8 @@ func main() {
 	fmt.Print("Done\n\n\n")
 }
 
+// generateHashes computes cryptographic hashes (SHA-512, Whirlpool-512, Blake2b-512, and Blake-512) for the given input data.
+// It returns a map where the keys are the hash algorithm names and the values are the corresponding hexadecimal hash strings.
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 

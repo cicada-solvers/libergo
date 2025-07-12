@@ -17,14 +17,17 @@ import (
 	"titler"
 )
 
+// NumberToCheck represents information for verifying divisors of a number during factorization.
 type NumberToCheck struct {
 	Number  string
 	Counter string
 	IsBound bool
 }
 
+// status represents the current status of a computation or process, stored as a big integer for large number handling.
 var status big.Int
 
+// main is the entry point of the program. It handles input parsing, initializes resources, and executes the factorization process.
 func main() {
 	titler.PrintTitle("Factorize")
 	startTime := time.Now() // Record the start time
@@ -368,6 +371,7 @@ func factorize(db *gorm.DB, mainId string, n *big.Int, lastSeq int64) bool {
 	}
 }
 
+// sortBigInts sorts a slice of big.Int in ascending order and returns the sorted slice.
 func sortBigInts(bigInts []big.Int) []big.Int {
 	sort.Slice(bigInts, func(i, j int) bool {
 		return bigInts[i].Cmp(&bigInts[j]) < 0
@@ -375,6 +379,7 @@ func sortBigInts(bigInts []big.Int) []big.Int {
 	return bigInts
 }
 
+// writeOutputToFile appends the given output string to a file named "factorize_output.txt".
 func writeOutputToFile(output string) {
 	file, err := os.OpenFile("factorize_output.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -393,6 +398,8 @@ func writeOutputToFile(output string) {
 	}
 }
 
+// getSixPercentFromSquareRoot calculates square root of a number and determines bounds +/- 6% around the square root.
+// It returns the lower bound, upper bound, and an error if any operation fails.
 func getSixPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
 	sqrt := new(big.Int).Sqrt(number)
 
@@ -406,6 +413,7 @@ func getSixPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
 	return lowerBound, upperBound, nil
 }
 
+// getTwoPercentFromSquareRoot calculates 2% of the input number and returns the lower and upper bounds around 2.
 func getTwoPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
 	twoPercent := calculateTwoPercent(number)
 
@@ -416,6 +424,8 @@ func getTwoPercentFromSquareRoot(number *big.Int) (*big.Int, *big.Int, error) {
 	return lowerBound, upperBound, nil
 }
 
+// calculateTwoPercent calculates 2% of the given value rounded to the nearest integer using high precision arithmetic.
+// Returns 1 if the resulting value is less than 1 and the original value is greater than 0.
 func calculateTwoPercent(value *big.Int) *big.Int {
 	// Method 2: Using big.Float for more precision
 	valueFloat := new(big.Float).SetInt(value)
@@ -436,6 +446,8 @@ func calculateTwoPercent(value *big.Int) *big.Int {
 	return twoPercent
 }
 
+// calculateSixPercent calculates 6% of the given *big.Int value and returns the result as *big.Int, ensuring precision.
+// If the original value is non-zero, the function ensures a minimum result of 1. It rounds to the nearest integer.
 func calculateSixPercent(value *big.Int) *big.Int {
 	// Method 2: Using big.Float for more precision
 	valueFloat := new(big.Float).SetInt(value)

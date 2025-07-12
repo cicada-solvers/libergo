@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// PrimeNumRecord represents a database record for prime number metadata and performance metrics.
 type PrimeNumRecord struct {
 	gorm.Model
 	Number             int64 `gorm:"column:num"`
@@ -14,6 +15,7 @@ type PrimeNumRecord struct {
 	IsPtpPrimeDuration int64 `gorm:"column:is_ptp_prime_duration"`
 }
 
+// AddPrimeNumRecord inserts a PrimeNumRecord into the database and returns an error if the operation fails.
 func AddPrimeNumRecord(db *gorm.DB, record PrimeNumRecord) error {
 	result := db.Create(&record)
 	if result.Error != nil {

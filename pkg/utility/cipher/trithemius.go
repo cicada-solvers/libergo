@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// BulkDecodeTrithemiusStringRaw performs bulk decoding of a string using a Trithemius cipher with shifted alphabets.
+// It iterates through all possible alphabet shifts, decodes the input text for each shift, and appends the results.
+// Returns the concatenated results for all shifts or an error if the decoding process fails.
 func BulkDecodeTrithemiusStringRaw(alphabet []string, text string) (string, error) {
 	var result strings.Builder
 
@@ -24,6 +27,15 @@ func BulkDecodeTrithemiusStringRaw(alphabet []string, text string) (string, erro
 	return result.String(), nil
 }
 
+// BulkDecodeTrithemiusString applies Trithemius cipher decoding to a text using multiple alphabet shifts.
+// It iteratively shifts the given alphabet and performs decoding for each shift, keeping track of results.
+// Parameters:
+// - alphabet: A slice of strings representing the alphabet used for decoding.
+// - text: The encoded string to be decoded.
+// - decodeToLatin: A boolean indicating whether to transpose the decoded text to Latin characters.
+// Returns:
+// - A string containing decoding results for all shifts.
+// - An error if any issues occur during the decoding process.
 func BulkDecodeTrithemiusString(alphabet []string, text string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 

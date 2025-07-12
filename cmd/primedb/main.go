@@ -10,6 +10,7 @@ import (
 	"sync"
 )
 
+// main orchestrates the initialization of the system, worker creation, number generation, and prime number processing.
 func main() {
 	// Initialize database
 	_, _ = liberdatabase.InitTables()

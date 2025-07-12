@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 )
 
+// sigma is a 2D array defining permutation constants used in the BLAKE-512 cryptographic hashing algorithm.
 var sigma = [16][16]uint8{
 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 	{14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3},
@@ -23,6 +24,7 @@ var sigma = [16][16]uint8{
 	{2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9},
 }
 
+// u512 is a predefined array of 16 uint64 constants used in the BLAKE-512 cryptographic hashing algorithm.
 var u512 = [16]uint64{
 	0x243f6a8885a308d3, 0x13198a2e03707344,
 	0xa4093822299f31d0, 0x082efa98ec4e6c89,
@@ -34,6 +36,7 @@ var u512 = [16]uint64{
 	0x0801f2e2858efc16, 0x636920d871574e69,
 }
 
+// padding is a predefined array of 129 bytes, used for padding during the BLAKE-512 hashing process.
 var padding = [129]byte{
 	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -45,6 +48,7 @@ var padding = [129]byte{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 }
 
+// Blake512State represents the internal state of the BLAKE-512 hashing algorithm.
 type Blake512State struct {
 	h      [8]uint64
 	s      [4]uint64
@@ -54,10 +58,12 @@ type Blake512State struct {
 	buf    [128]byte
 }
 
+// rot performs a bitwise rotation of the 64-bit unsigned integer x by n bits to the right.
 func rot(x uint64, n uint) uint64 {
 	return (x << (64 - n)) | (x >> n)
 }
 
+// g performs a single round of the BLAKE-512 G function, updating the state `v` with the provided parameters and constants.
 func g(v *[16]uint64, m *[16]uint64, a, b, c, d, e int, i int) {
 	v[a] += (m[sigma[i][e]] ^ u512[sigma[i][e+1]]) + v[b]
 	v[d] = rot(v[d]^v[a], 32)
@@ -69,6 +75,7 @@ func g(v *[16]uint64, m *[16]uint64, a, b, c, d, e int, i int) {
 	v[b] = rot(v[b]^v[c], 11)
 }
 
+// blake512Compress performs the BLAKE-512 compression function on a single 128-byte block of input.
 func blake512Compress(S *Blake512State, block *[128]byte) {
 	var v [16]uint64
 	var m [16]uint64
@@ -117,6 +124,7 @@ func blake512Compress(S *Blake512State, block *[128]byte) {
 	}
 }
 
+// Blake512Init initializes the state for the BLAKE-512 hashing algorithm with the predefined initial values.
 func Blake512Init(S *Blake512State) {
 	S.h[0] = 0x6a09e667f3bcc908
 	S.h[1] = 0xbb67ae8584caa73b
@@ -136,6 +144,7 @@ func Blake512Init(S *Blake512State) {
 	S.s[3] = 0
 }
 
+// Blake512Update processes the input data and updates the internal state of the BLAKE-512 hashing algorithm.
 func Blake512Update(S *Blake512State, in []byte) {
 	left := S.buflen
 	fill := 128 - left
@@ -168,6 +177,8 @@ func Blake512Update(S *Blake512State, in []byte) {
 	}
 }
 
+// Blake512Final completes the BLAKE-512 hashing process, producing the final hash output from the given state.
+// S is the BLAKE-512 state containing the intermediate hash data, and out is the 64-byte array to store the final hash.
 func Blake512Final(S *Blake512State, out []byte) {
 	var msglen [16]byte
 	lo := S.t[0] + uint64(S.buflen<<3)
@@ -209,6 +220,7 @@ func Blake512Final(S *Blake512State, out []byte) {
 	}
 }
 
+// Blake512Hash computes the BLAKE-512 cryptographic hash for the given input byte slice and returns the 64-byte hash.
 func Blake512Hash(in []byte) []byte {
 	var S Blake512State
 	Blake512Init(&S)

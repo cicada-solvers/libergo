@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// main is the entry point of the program that reads a user-provided byte array, converts it to binary, and writes the output to a file.
 func main() {
 	// Prompt the user for input
 	fmt.Println("Enter a byte array as comma-separated values (e.g., 10,255,7,0):")

@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the program that processes IPv4 ranges and filters valid IP-port combinations.
 func main() {
 	ranges := map[string][2]string{
 		"A": {"1.0.0.0", "127.0.0.0"},
@@ -56,6 +57,7 @@ func main() {
 	fmt.Println("Processed range successfully.")
 }
 
+// checkIpString verifies if all octets of an IPv4 address are prime numbers.
 func checkIpString(ip string) bool {
 	// Check each octet is prime
 	for _, octet := range strings.Split(ip, ".") {
@@ -67,6 +69,7 @@ func checkIpString(ip string) bool {
 	return true
 }
 
+// ipToInt converts an IPv4 address represented as net.IP to its 64-bit integer equivalent.
 func ipToInt(ip net.IP) int64 {
 	var result int64
 	for _, b := range ip {

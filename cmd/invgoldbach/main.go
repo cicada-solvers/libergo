@@ -9,6 +9,7 @@ import (
 	"sync"
 )
 
+// main is the entry point of the program. It manages database setup, worker initialization, and Goldbach processing workflow.
 func main() {
 	// Initialize database
 	_, _ = liberdatabase.InitTables()

@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// main initializes the program, parses input flags, validates them, and performs decoding based on the cipher type provided.
 func main() {
 	// Define the flags
 	text := flag.String("text", "", "The text to decode")

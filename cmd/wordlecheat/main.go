@@ -15,16 +15,23 @@ import (
 	"sync"
 )
 
+// WordEntry represents a word and its length, stored in a database using GORM for ORM.
 type WordEntry struct {
 	gorm.Model
 	Word       string
 	WordLength int `gorm:"index:idx_word_length"`
 }
 
+// csvFiles holds the list of CSV file names to be processed or loaded into the database.
 var csvFiles []string
+
+// dbConn is a global variable representing the database connection instance, managed using the GORM library.
 var dbConn *gorm.DB
+
+// dbMutex is used to synchronize access to shared database resources, preventing race conditions during operations.
 var dbMutex sync.Mutex
 
+// main is the entry point of the program, handling command-line arguments and executing logic based on the specified mode.
 func main() {
 	length := flag.Int("length", 5, "The length of the word")
 	text := flag.String("text", "", "The text to decode")
@@ -68,6 +75,9 @@ func main() {
 	}
 }
 
+// DetectAndLoadTheFiles initializes the database, removes existing data if present, and loads CSV file data into the database.
+// It concurrently processes each CSV file, ensuring all files are loaded before completing.
+// Returns true if the operation succeeds, false if any errors occur during the process.
 func DetectAndLoadTheFiles() bool {
 	// Get the CSV files
 	csvFiles = GetCSVFiles()
@@ -108,6 +118,7 @@ func DetectAndLoadTheFiles() bool {
 	return true
 }
 
+// GetCSVFiles retrieves a slice of CSV file names from the current working directory. Logs a fatal error if directory read fails.
 func GetCSVFiles() []string {
 	// Get the CSV files from the current directory
 	var fileNames []string
@@ -125,6 +136,7 @@ func GetCSVFiles() []string {
 	return fileNames
 }
 
+// InitSQLiteConnection initializes the SQLite database connection and sets the global dbConn variable using GORM.
 func InitSQLiteConnection() {
 	foldrPath := "."
 
@@ -133,6 +145,7 @@ func InitSQLiteConnection() {
 	dbConn, _ = gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
 }
 
+// InitSQLiteTables initializes the database schema by creating tables using GORM's AutoMigrate function. Returns an error if schema creation fails.
 func InitSQLiteTables() error {
 	// Migrate the schemas
 	dbCreateError := dbConn.AutoMigrate(&WordEntry{})
@@ -144,6 +157,8 @@ func InitSQLiteTables() error {
 	return nil
 }
 
+// LoadFilesToDb reads a CSV file, processes its contents, and adds WordEntry records to the database in batches.
+// Accepts the filePath of the CSV as input and returns an error if the operation fails.
 func LoadFilesToDb(filePath string) error {
 	var words []WordEntry
 	fmt.Printf("Loading words to DB\n")
@@ -190,6 +205,8 @@ func LoadFilesToDb(filePath string) error {
 	return nil
 }
 
+// AddWordEntryToDatabase adds a batch of WordEntry records to the database, ensuring thread-safe operation using dbMutex.
+// It creates the entries using GORM's CreateInBatches method and logs errors if the insertion fails.
 func AddWordEntryToDatabase(words []WordEntry) {
 	dbMutex.Lock()
 	result := dbConn.CreateInBatches(&words, len(words))
@@ -199,6 +216,8 @@ func AddWordEntryToDatabase(words []WordEntry) {
 	dbMutex.Unlock()
 }
 
+// GetWordsByLength retrieves words from the database with the specified length, sorts them alphabetically, and ensures uniqueness.
+// Returns the sorted list of WordEntry objects or an error if the query fails.
 func GetWordsByLength(length int) ([]WordEntry, error) {
 	var words []WordEntry
 	result := dbConn.Where("word_length = ?", length).Find(&words)
@@ -211,6 +230,7 @@ func GetWordsByLength(length int) ([]WordEntry, error) {
 	return words, nil
 }
 
+// SortWordsAlphabetically sorts a slice of WordEntry objects alphabetically based on the Word field and returns the sorted slice.
 func SortWordsAlphabetically(words []WordEntry) []WordEntry {
 	sort.Slice(words, func(i, j int) bool {
 		return words[i].Word < words[j].Word
@@ -218,6 +238,7 @@ func SortWordsAlphabetically(words []WordEntry) []WordEntry {
 	return words
 }
 
+// UniqueSort removes duplicate WordEntry objects from the input slice and returns a slice with unique entries.
 func UniqueSort(words []WordEntry) []WordEntry {
 	var uniqueWords []WordEntry
 	for _, word := range words {
@@ -228,6 +249,7 @@ func UniqueSort(words []WordEntry) []WordEntry {
 	return uniqueWords
 }
 
+// ParseWords filters a list of WordEntry objects based on inclusion, exclusion, and positional criteria in the input parameters.
 func ParseWords(text, contains, exclude []string, words []WordEntry) ([]WordEntry, error) {
 	var preFilteredWords []WordEntry
 	var filteredWords []WordEntry

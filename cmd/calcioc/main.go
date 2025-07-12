@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// main is the entry point of the program that calculates the Index of Coincidence (IoC) for a given text input.
+// It parses command-line flags to determine the input text and alphabet type, validates the input, and outputs the IoC value.
 func main() {
 	// Define command line flags
 	alphabetType := flag.String("alphabet", "english", "Type of alphabet to use (english, runeglish, or rune)")

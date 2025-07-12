@@ -201,6 +201,7 @@ func processFile(filePath string, wordList map[string]bool) {
 	}
 }
 
+// filterNumbersOut removes all numeric characters from the input string, retaining only alphabetic characters and valid symbols.
 func filterNumbersOut(text string) string {
 	wordArray := strings.Split(text, "")
 	var newWordArray []string

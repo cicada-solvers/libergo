@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// BulkDecodeAtbashStringRaw decodes a string using multiple iterations of the Atbash cipher with a rotating alphabet.
+// Each iteration shifts the alphabet and appends the decoded result with its iteration index to the output.
+// Returns the collected decoded string results or an error.
 func BulkDecodeAtbashStringRaw(alphabet []string, text string) (string, error) {
 	var result strings.Builder
 
@@ -24,6 +27,9 @@ func BulkDecodeAtbashStringRaw(alphabet []string, text string) (string, error) {
 	return result.String(), nil
 }
 
+// BulkDecodeAtbashString iteratively decodes text using the Atbash cipher across multiple alphabet shifts.
+// If decodeToLatin is true, the decoded text is also transposed to Latin characters.
+// Returns the combined results or an error if a decoding issue occurs.
 func BulkDecodeAtbashString(alphabet []string, text string, decodeToLatin bool) (string, error) {
 	var result strings.Builder
 

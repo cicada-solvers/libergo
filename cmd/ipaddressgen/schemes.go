@@ -1,5 +1,6 @@
 package main
 
+// getSchemes returns a slice of strings containing predefined URI schemes.
 func getSchemes() []string {
 	return []string{
 		"aaa",

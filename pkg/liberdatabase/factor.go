@@ -5,6 +5,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// Factor represents a database model mapped to the "factors" table.
+// It contains fields for ID, Factor, MainId, and SeqNumber for storage and retrieval operations.
 type Factor struct {
 	ID        string `gorm:"column:id"`
 	Factor    string `gorm:"column:factor"`
@@ -12,6 +14,7 @@ type Factor struct {
 	SeqNumber int64  `gorm:"column:seqnumber"`
 }
 
+// TableName specifies the database table name "factors" for the Factor model.
 func (Factor) TableName() string {
 	return "factors"
 }

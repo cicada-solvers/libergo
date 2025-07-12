@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application responsible for parsing command-line flags and processing input data.
 func main() {
 	// Define flags
 	inputFlag := flag.String("input", "", "Comma-separated string of numbers (0-255)")

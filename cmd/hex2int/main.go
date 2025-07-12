@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the program that converts a hexadecimal input to a decimal value and writes the result to a file.
 func main() {
 	// Prompt the user for a hex value
 	fmt.Print("Enter a hexadecimal value: ")

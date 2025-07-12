@@ -38,6 +38,7 @@ func mobiusFunction(n int64) int {
 	return -1
 }
 
+// main is the entry point of the program. It validates the input, calculates the Möbius function, and prints the result.
 func main() {
 	// Validate the number of arguments
 	if len(os.Args) < 2 {

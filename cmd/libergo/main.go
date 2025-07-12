@@ -14,6 +14,7 @@ import (
 	"config"
 )
 
+// main is the entry point for the application, handling command-line flags and executing the appropriate functionality.
 func main() {
 	titler.PrintTitle("Liber Go Configurator")
 
@@ -111,6 +112,7 @@ func main() {
 	fmt.Println("This program is used to init or update the configuration for the toolset.")
 }
 
+// executeScript executes a shell script to initialize a database, waits for its completion, and then initializes the database connection.
 func executeScript() {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

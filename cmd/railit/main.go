@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application, which decodes a Rail Fence cipher based on user input and prints the plaintext.
 func main() {
 	fmt.Println("Rail Fence Cipher Decoder")
 	fmt.Println("-------------------------")

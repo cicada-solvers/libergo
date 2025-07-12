@@ -100,6 +100,9 @@ func InitDatabase() (*gorm.DB, error) {
 	return conn, nil
 }
 
+// InitTables initializes database tables by performing schema migrations for all defined models with GORM.
+// It establishes a connection using InitConnection and applies AutoMigrate for each model to create/update tables.
+// Returns a database connection and an error if the connection or migrations fail.
 func InitTables() (*gorm.DB, error) {
 	// Now we need to put in our migrations.
 	conn, err := InitConnection()
@@ -186,6 +189,8 @@ func InitSQLiteConnection() (*gorm.DB, error) {
 	return db, nil
 }
 
+// InitPrimesConnection initializes a connection to the SQLite database used for storing prime numbers.
+// It constructs the database path using configuration data and returns the connection or an error if any occurs.
 func InitPrimesConnection() (*gorm.DB, error) {
 	fldrPath, err := config.GetConfigFolderPath()
 	if err != nil {
@@ -201,6 +206,8 @@ func InitPrimesConnection() (*gorm.DB, error) {
 	return db, nil
 }
 
+// InitPrimeTables initializes the database table for storing prime numbers by establishing a connection and applying migrations.
+// It ensures the required schema is in place and returns an error if the process fails.
 func InitPrimeTables() error {
 	// Now we need to put in our migrations.
 	conn, err := InitPrimesConnection()

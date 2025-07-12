@@ -38,6 +38,9 @@ func BulkDecodeCaesarString(alphabet []string, text []string, decodeToLatin bool
 	return result.String(), nil
 }
 
+// DecodeCaesarCipher decodes the given text using the Caesar cipher, based on the provided alphabet and shift key.
+// The key can be a single value or a sequence matching the length of the text.
+// Non-alphabetic characters in the text are preserved unchanged in the output.
 func DecodeCaesarCipher(alphabet, text []string, key []int) []string {
 	var result []string
 

@@ -16,9 +16,13 @@ import (
 	"time"
 )
 
+// processedCounter tracks the total number of processed items as a big integer, allowing for large-scale operations.
 var processedCounter = big.NewInt(0)
+
+// rateCounter tracks the rate of processed items per minute as a big integer, initialized to zero.
 var rateCounter = big.NewInt(0)
 
+// main is the entry point of the program. It processes a specified IPv4 class range to handle IP-related operations.
 func main() {
 	ranges := map[string][2]string{
 		"A": {"1.0.0.0", "127.0.0.0"},
@@ -94,6 +98,11 @@ func main() {
 	fmt.Println("Processed range successfully.")
 }
 
+// checkIPs processes IP addresses within a specified range and validates them using various schemes and formats.
+// Parameters:
+// - start: The starting point of the IP range as an int64.
+// - end: The ending point of the IP range as an int64.
+// - currentIP: A pointer to an int64 that tracks the current IP being processed.
 func checkIPs(start, end int64, currentIP *int64) {
 	totalIps := end - start + 1
 	fmt.Printf("Processing %d IPs...\n", totalIps)
@@ -157,6 +166,7 @@ func checkIPs(start, end int64, currentIP *int64) {
 	fmt.Printf("Processing: 100.00%% complete\n") // Ensure 100% is printed at the end
 }
 
+// checkLine processes a given input line by generating hash values, comparing them to an existing hash, and logging matches.
 func checkLine(line string) {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
 	one := big.NewInt(1)
@@ -177,6 +187,7 @@ func checkLine(line string) {
 	}
 }
 
+// generateHashes computes and returns a map of different 512-bit hash algorithms for the provided data.
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 
@@ -197,6 +208,9 @@ func generateHashes(data []byte) map[string]string {
 	return hashes
 }
 
+// writeToOutputFile writes the provided data to a file with the given filename, appending if the file already exists.
+// It creates the file if it does not exist and uses appropriate file permissions.
+// Errors during file operations are logged to the standard output.
 func writeToOutputFile(filename string, data []byte) {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -215,6 +229,8 @@ func writeToOutputFile(filename string, data []byte) {
 	}
 }
 
+// readProcessedIPFromFile reads the last processed IP from a file and converts it to an integer format.
+// It returns the IP as int64 and an error if the file does not exist or contains an invalid IP.
 func readProcessedIPFromFile(filename string) (int64, error) {
 	// Check if file exists
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -247,6 +263,8 @@ func readProcessedIPFromFile(filename string) (int64, error) {
 	return 0, fmt.Errorf("no valid IP found in file")
 }
 
+// writeCounterToFile writes the counter, last processed IP, and a timestamp to the specified file.
+// Returns an error if the file operation fails.
 func writeCounterToFile(counter *big.Int, lastIP int64, filename string) error {
 	ipStr := intToIP(lastIP).String()
 	data := []byte(fmt.Sprintf("Processed count: %s\nLast processed IP: %s\nTimestamp: %s\n",

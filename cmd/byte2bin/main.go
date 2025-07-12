@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application that reads user input, converts it to a byte slice, and writes it to a file.
 func main() {
 	// Prompt the user for comma-separated byte values
 	fmt.Print("Enter comma-separated byte values (0-255): ")

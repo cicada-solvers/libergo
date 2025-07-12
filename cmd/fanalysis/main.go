@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// main is the entry point of the application, responsible for file parsing, database interaction, and data processing.
 func main() {
 	// Check if the filename is provided as a command line argument
 	if len(os.Args) < 2 {
@@ -142,6 +143,7 @@ func verifyFactors(number *big.Int, factors []*big.Int) bool {
 	return product.Cmp(number) == 0
 }
 
+// sortFactorsDesc sorts a slice of *big.Int in descending order based on their values.
 func sortFactorsDesc(factors []*big.Int) []*big.Int {
 	sort.Slice(factors, func(i, j int) bool {
 		return factors[i].Cmp(factors[j]) > 0
@@ -149,6 +151,8 @@ func sortFactorsDesc(factors []*big.Int) []*big.Int {
 	return factors
 }
 
+// getDistancePercentage calculates the percentage distance between two numbers based on a given reference number.
+// It utilizes arbitrary-precision integers for the calculation to handle large values accurately.
 func getDistancePercentage(number *big.Int, numberOne *big.Int, numberTwo *big.Int) float64 {
 	// Calculate the absolute difference between numberOne and numberTwo
 	diff := new(big.Int).Sub(numberOne, numberTwo)

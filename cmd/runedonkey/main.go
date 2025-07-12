@@ -12,22 +12,39 @@ import (
 	"unicode/utf8"
 )
 
+// Actions is an enumerated type representing various operations or instructions in the RuneDonkey application.
 type Actions int
 
 const (
+	// GemSum represents an operation to calculate the gematria sum of a word.
 	GemSum Actions = iota
+
+	// WordLength represents an operation to calculate the length of a word in terms of the number of characters.
 	WordLength
+
+	// RuneLength represents an operation to calculate the number of runes in a string.
 	RuneLength
+
+	// RuneNoDoubletLength represents an operation to calculate the length of a string excluding consecutive duplicate runes.
 	RuneNoDoubletLength
+
+	// RuneglishLength represents an operation to determine the length of a word after converting it to Runeglish.
 	RuneglishLength
+
+	// RunePattern represents an operation for retrieving the pattern of runes in a string.
 	RunePattern
+
+	// RunePatternNoDoublet represents an operation for retrieving rune patterns excluding consecutive identical runes.
 	RunePatternNoDoublet
 )
 
+// RuneDonkey is a struct that provides functionality for handling rune-based data and interacting with a database.
+// DB is a pointer to a gorm.DB, which manages database operations related to rune processing.
 type RuneDonkey struct {
 	DB *gorm.DB
 }
 
+// GenerateExcelFromValues generates an Excel file based on input string data and operations, and saves it to the specified path.
 func (rd *RuneDonkey) GenerateExcelFromValues(value string, textType runer.TextType, whatToDo Actions, outputFile string) error {
 	values := rd.GetValuesFromString(value, textType, whatToDo)
 	f := excelize.NewFile()
@@ -60,6 +77,7 @@ func (rd *RuneDonkey) GenerateExcelFromValues(value string, textType runer.TextT
 	return nil
 }
 
+// GetValuesFromString processes a given string and returns a list of values based on the specified text type and action.
 func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType, whatToDo Actions) []string {
 	var valuesToGetFromDB []string
 	wordArray := rd.getWordsFromString(value)
@@ -99,6 +117,7 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 	return valuesToGetFromDB
 }
 
+// queryDatabase queries the database for words based on the specified operation (field) and value, returning a list of matching words.
 func (rd *RuneDonkey) queryDatabase(field Actions, value string) []string {
 	var results []string
 	var rows *gorm.DB
@@ -131,6 +150,7 @@ func (rd *RuneDonkey) queryDatabase(field Actions, value string) []string {
 	return results
 }
 
+// getWordsFromString splits the input string by the delimiter "•" and returns a slice of the resulting substrings.
 func (rd *RuneDonkey) getWordsFromString(value string) []string {
 	var words []string
 	wordSplit := strings.Split(value, "•")
@@ -141,6 +161,7 @@ func (rd *RuneDonkey) getWordsFromString(value string) []string {
 	return words
 }
 
+// main initializes flags, connects to MySQL databases, performs operations on text, and generates Excel files with results.
 func main() {
 	// Define flags
 	text := flag.String("text", "", "Text to process")
