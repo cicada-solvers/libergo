@@ -5,14 +5,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// SentenceRecord represents a database record containing a sentence, its associated file name, and additional metadata.
 type SentenceRecord struct {
 	gorm.Model
 	FileName     string `gorm:"index:idx_file_name"`
-	DictSentence string `gorm:"column:dict_sentence"`
+	DictSentence string `gorm:"index:idx_sentence"`
 	GemValue     int64  `gorm:"column:gem_value"`
 	IsPrime      bool   `gorm:"column:is_prime"`
 }
 
+// AddSentenceRecord inserts a slice of SentenceRecord structures into the database using Gorm's Create method.
+// Returns an error if the insertion process fails.
 func AddSentenceRecord(db *gorm.DB, records []SentenceRecord) error {
 	result := db.Create(&records)
 	if result.Error != nil {
@@ -22,6 +25,7 @@ func AddSentenceRecord(db *gorm.DB, records []SentenceRecord) error {
 	return nil
 }
 
+// GetRecordCountByFileName returns the count of SentenceRecord entries in the database matching the specified fileName.
 func GetRecordCountByFileName(db *gorm.DB, fileName string) (int64, error) {
 	var count int64
 	result := db.Model(&SentenceRecord{}).Where("file_name = ?", fileName).Count(&count)
@@ -31,6 +35,7 @@ func GetRecordCountByFileName(db *gorm.DB, fileName string) (int64, error) {
 	return count, nil
 }
 
+// GetAllFileNames retrieves all distinct file names from the database and maps each file name to its associated record count.
 func GetAllFileNames(db *gorm.DB) (map[string]int, error) {
 	var fileNames []string
 	var fileCountMap = make(map[string]int)
@@ -50,6 +55,8 @@ func GetAllFileNames(db *gorm.DB) (map[string]int, error) {
 	return fileCountMap, nil
 }
 
+// GetTopMillionSentenceRecords retrieves up to one million SentenceRecord entries for a specified file name from the database.
+// Returns the records and any encountered error.
 func GetTopMillionSentenceRecords(db *gorm.DB, fileName string) ([]SentenceRecord, error) {
 	var records []SentenceRecord
 	result := db.Model(&SentenceRecord{}).Where("file_name = ?", fileName).Limit(1000000).Find(&records)
@@ -59,6 +66,7 @@ func GetTopMillionSentenceRecords(db *gorm.DB, fileName string) ([]SentenceRecor
 	return records, nil
 }
 
+// RemoveMillionSentenceRecords deletes a batch of SentenceRecord entries from the database and returns an error if any occur.
 func RemoveMillionSentenceRecords(db *gorm.DB, records []SentenceRecord) error {
 	for _, record := range records {
 		result := db.Delete(&record)
@@ -69,6 +77,8 @@ func RemoveMillionSentenceRecords(db *gorm.DB, records []SentenceRecord) error {
 	return nil
 }
 
+// RemoveAllSentenceRecords removes all records of type SentenceRecord from the database using the provided gorm.DB instance.
+// Returns an error if the deletion operation fails.
 func RemoveAllSentenceRecords(db *gorm.DB) error {
 	result := db.Delete(&SentenceRecord{})
 	if result.Error != nil {

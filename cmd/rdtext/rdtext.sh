@@ -12,18 +12,26 @@ if [ ! -d "$INPUT_DIRECTORY" ]; then
   exit 1
 fi
 
-# Iterate over each file in the input directory
-for FILE in "$INPUT_DIRECTORY"/*; do
-  if [ -f "$FILE" ]; then
-    # If the file does not end with .xlsx, we want to skip it.
-    if [[ ! "$FILE" =~ \.xlsx$ ]]; then
-        continue
-    fi
-    
-    echo "Processing $FILE..."
+# Create a temporary file to store file sizes and names
+temp_file=$(mktemp)
 
-    # Call the rdtext binary with the file name
-    ./rdtext -input="$FILE"
-    ./rdtext -input="$FILE" -reverse="true"
+# Get all the .xlsx files and their sizes
+for FILE in "$INPUT_DIRECTORY"/*.xlsx; do
+  if [ -f "$FILE" ]; then
+    # Get file size in bytes
+    size=$(stat -c %s "$FILE")
+    echo "$size $FILE" >> "$temp_file"
   fi
 done
+
+# Sort files by size (ascending) and process them
+while read size file; do
+  echo "Processing $file... (Size: $size bytes)"
+
+  # Call the rdtext binary with the file name
+  ./rdtext -input="$file"
+  ./rdtext -input="$file" -reverse="true"
+done < <(sort -n "$temp_file")
+
+# Remove the temporary file
+rm "$temp_file"

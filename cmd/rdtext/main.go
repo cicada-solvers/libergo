@@ -101,7 +101,7 @@ func main() {
 	fmt.Printf("Total combinations: %s\n", n.String())
 	processedCounter.Set(n)
 
-	// Initialize a strings.Builder
+	// Initialize a string builder
 	var builder strings.Builder
 
 	// Threading for sentence processing.
@@ -179,6 +179,10 @@ func permuteCols(f *excelize.File, sheetName string, cols []ColInformation,
 	return nil
 }
 
+// insertSentenceToDB processes sentences from a channel, computes their properties, and inserts them into the database.
+// workerId identifies the worker handling this operation.
+// wg is the WaitGroup for synchronizing completion of concurrent workers.
+// the reverseWords parameter indicates whether the sentences should be reversed during processing.
 func insertSentenceToDB(workerId int, wg *sync.WaitGroup, reverseWords bool) {
 	conn, connErr := liberdatabase.InitConnection()
 	if connErr != nil {
@@ -239,11 +243,13 @@ func insertSentenceToDB(workerId int, wg *sync.WaitGroup, reverseWords bool) {
 	wg.Done()
 }
 
+// incrementCounters decrements the processedCounter by 1 and increments the rateCounter by 1.
 func incrementCounters() {
 	processedCounter.Sub(processedCounter, big.NewInt(1))
 	rateCounter.Add(rateCounter, big.NewInt(1))
 }
 
+// incrementCountersByValue adjusts `processedCounter` by decrementing and `rateCounter` by incrementing the given value.
 func incrementCountersByValue(value int) {
 	processedCounter.Sub(processedCounter, big.NewInt(int64(value)))
 	rateCounter.Add(rateCounter, big.NewInt(int64(value)))
@@ -251,7 +257,7 @@ func incrementCountersByValue(value int) {
 
 // cloneStringBuilder clones the given strings.Builder and returns a new instance with the same content.
 func cloneStringBuilder(sb *strings.Builder) *strings.Builder {
-	// Create a new strings.Builder
+	// Create a new string builder
 	newSb := &strings.Builder{}
 	// Write the content of the original builder to the new builder
 	newSb.WriteString(sb.String())
