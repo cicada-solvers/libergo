@@ -86,11 +86,15 @@ func main() {
 		log.Fatalf("Failed to open the Excel file: %v", fileErr)
 	}
 
-	colInfo, excelErr := getColInformation(f, sheetName)
+	sheetInfo, colInfo, excelErr := getColInformation(f, sheetName, *inputFile)
 	if excelErr != nil {
 		fmt.Printf("Failed to get column info: %v", excelErr)
 		return
 	}
+
+	db, _ := liberdatabase.InitConnection()
+	_ = liberdatabase.AddSheetInformation(db, sheetInfo)
+	_ = liberdatabase.CloseConnection(db)
 
 	// Print the column information
 	fmt.Printf("%v\n", colInfo)
@@ -265,14 +269,23 @@ func cloneStringBuilder(sb *strings.Builder) *strings.Builder {
 }
 
 // getColInformation gets the column information from the given Excel file and sheet name.
-func getColInformation(f *excelize.File, sheetName string) (cols []ColInformation, err error) {
+func getColInformation(f *excelize.File, sheetName, fileName string) (sheet liberdatabase.SheetInformation, cols []ColInformation, err error) {
+	sheetCol := intToExcelColumn(1)
+	sheetRow := 1
+	sheetCellValue, _ := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", sheetCol, sheetRow))
+
+	sheetInformation := liberdatabase.SheetInformation{
+		FileName: fileName,
+		Text:     sheetCellValue,
+	}
+
 	// Get the column information
 	cols = make([]ColInformation, 0)
 
 	// Get all the columns in the sheet
 	columns, err := f.GetCols(sheetName)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get columns: %v\n", err)
+		return sheetInformation, nil, fmt.Errorf("Failed to get columns: %v\n", err)
 	}
 
 	for colId, colValues := range columns {
@@ -287,7 +300,7 @@ func getColInformation(f *excelize.File, sheetName string) (cols []ColInformatio
 		for i := 3; i < rowCounts+5; i++ {
 			cellValue, cellError := f.GetCellValue(sheetName, fmt.Sprintf("%s%d", colName, i))
 			if cellError != nil {
-				return nil, fmt.Errorf("Failed to get cell value: %v\n", cellError)
+				return sheetInformation, nil, fmt.Errorf("Failed to get cell value: %v\n", cellError)
 			}
 
 			if cellValue != "" {
@@ -304,7 +317,7 @@ func getColInformation(f *excelize.File, sheetName string) (cols []ColInformatio
 		cols = append(cols, colInfo)
 	}
 
-	return cols, nil
+	return sheetInformation, cols, nil
 }
 
 // intToExcelColumn converts the given integer to an Excel column name.

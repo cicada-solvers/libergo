@@ -31,6 +31,7 @@ while read size file; do
   # Call the rdtext binary with the file name
   ./rdtext -input="$file"
   ./rdtext -input="$file" -reverse="true"
+  rm -fv "$file"
 done < <(sort -n "$temp_file")
 
 # Remove the temporary file
