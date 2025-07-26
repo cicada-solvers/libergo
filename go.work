@@ -58,4 +58,6 @@ use (
 	cmd/invgoldbach
 	pkg/utility/numeric
 	cmd/rdcheck
+	cmd/bin2rune
+	cmd/rune2bin
 )
