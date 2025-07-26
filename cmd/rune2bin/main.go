@@ -109,12 +109,18 @@ func padBinaryString(binStr string) string {
 
 // binStringToBytes converts a binary string into a byte slice, grouping bits into 8-bit segments.
 func binStringToBytes(binStr string) []byte {
+	stringArray := strings.Split(binStr, "")
 	tmpBuilder := strings.Builder{}
 	var retval []byte
 
-	for i := 0; i < len(binStr); i++ {
+	for i := 0; i < len(stringArray); i++ {
+		tmpBuilder.WriteString(stringArray[i])
 		if len(tmpBuilder.String())%8 == 0 {
-			byteVal, _ := strconv.ParseInt(tmpBuilder.String(), 2, 8)
+			byteVal, parseError := strconv.ParseUint(tmpBuilder.String(), 2, 8)
+			if parseError != nil {
+				fmt.Println("Error parsing binary string:", parseError)
+				os.Exit(1)
+			}
 			retval = append(retval, byte(byteVal))
 			tmpBuilder.Reset()
 		}
