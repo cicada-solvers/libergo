@@ -11,7 +11,7 @@ import (
 
 var charRepo *runelib.CharacterRepo
 
-// main is the entry point of the application.
+// The main is the entry point of the application.
 // It processes input text, performs transformations, and writes a binary file.
 func main() {
 	builder := strings.Builder{}
