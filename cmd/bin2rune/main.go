@@ -41,29 +41,21 @@ func main() {
 
 	// Now we loop through it to see if we need to reduce it or not
 	for counter, intValue := range intArray {
-		//fmt.Println(counter, intValue)
 		if counter > 0 {
 			outputBuilder.WriteString("•")
 		}
 
 		if charRepo.IsPrimer(intValue) {
 			outputBuilder.WriteString(charRepo.GetRuneFromValue(intValue))
-			//tempString := charRepo.GetRuneFromValue(intValue)
-			//fmt.Println(tempString)
 		} else {
 			breakValues := breakNonPrimerIntoPrimers(intValue)
-			//tempString := ""
 			for _, breakValue := range breakValues {
-				//tempString += charRepo.GetRuneFromValue(breakValue)
 				outputBuilder.WriteString(charRepo.GetRuneFromValue(breakValue))
 			}
-
-			//fmt.Println(tempString)
 		}
 	}
 
 	outputBuilder.WriteString("⊹")
-
 	fmt.Println(outputBuilder.String())
 }
 
