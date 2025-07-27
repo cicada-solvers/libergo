@@ -68,7 +68,7 @@ func main() {
 	processed := replacer.Replace(*textPtr)
 
 	// Then split on the common separator
-	runeArray := strings.Split(processed, ",")
+	runeArray := strings.Split(processed, "|")
 
 	// Calculate each gem sum, then write it out to a binary string
 	for _, runeStr := range runeArray {

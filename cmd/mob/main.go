@@ -8,6 +8,26 @@ import (
 	"strconv"
 )
 
+// main is the entry point of the program. It validates the input, calculates the Möbius function, and prints the result.
+func main() {
+	// Validate the number of arguments
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: go run main.go <number>")
+	}
+
+	// Parse the number from the arguments
+	number, err := strconv.ParseInt(os.Args[1], 10, 64)
+	if err != nil || number <= 0 {
+		log.Fatal("The input number must be a positive integer")
+	}
+
+	// Calculate the Möbius function
+	result := mobiusFunction(number)
+
+	// Print the result
+	fmt.Printf("The Möbius function μ(%d) = %d\n", number, result)
+}
+
 // mobiusFunction calculates the Möbius function μ(n)
 func mobiusFunction(n int64) int {
 	if n == 1 {
@@ -36,24 +56,4 @@ func mobiusFunction(n int64) int {
 		return 1
 	}
 	return -1
-}
-
-// main is the entry point of the program. It validates the input, calculates the Möbius function, and prints the result.
-func main() {
-	// Validate the number of arguments
-	if len(os.Args) < 2 {
-		log.Fatal("Usage: go run main.go <number>")
-	}
-
-	// Parse the number from the arguments
-	number, err := strconv.ParseInt(os.Args[1], 10, 64)
-	if err != nil || number <= 0 {
-		log.Fatal("The input number must be a positive integer")
-	}
-
-	// Calculate the Möbius function
-	result := mobiusFunction(number)
-
-	// Print the result
-	fmt.Printf("The Möbius function μ(%d) = %d\n", number, result)
 }

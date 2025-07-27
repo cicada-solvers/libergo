@@ -405,3 +405,52 @@ func (repo *CharacterRepo) CalculateGemSum(input string) int {
 	}
 	return sum
 }
+
+// primerValues is a pre-defined slice of prime numbers used as constants for operations or validation functions.
+var primerValues = []int{
+	2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+	31, 37, 41, 43, 47, 53, 59, 61, 67,
+	71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
+}
+
+// GetPrimers returns a slice of predefined prime numbers used for operations or validations.
+func (repo *CharacterRepo) GetPrimers() []int {
+	return primerValues
+}
+
+// IsPrimer checks if the given index exists within the predefined list of prime numbers (primerValues) and returns true if found.
+func (repo *CharacterRepo) IsPrimer(index int) bool {
+	for _, value := range primerValues {
+		if value == index {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (repo *CharacterRepo) GetPrimerFromPosition(position int) int {
+	return primerValues[position]
+}
+
+func (repo *CharacterRepo) GetMaxPrimerAndPositionFromValue(value int) (int, int) {
+	maxPrimer := 0
+	maxIndex := 0
+
+	if value <= 2 {
+		return 2, 0
+	}
+
+	if value >= 109 {
+		return 109, len(primerValues)
+	}
+
+	for index, pvalue := range primerValues {
+		if pvalue > value {
+			maxPrimer = primerValues[index-1]
+			maxIndex = index - 1
+		}
+	}
+
+	return maxPrimer, maxIndex
+}
