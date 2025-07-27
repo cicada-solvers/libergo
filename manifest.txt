@@ -1,5 +1,6 @@
 
 base60
+bin2rune
 binfile
 binstring
 binvert
@@ -39,8 +40,7 @@ railit
 rdcheck
 rdtext
 rencode
-runecalc
-runecalc2
+rune2bin
 runedonkey
 winchafftext
 wordlecheat
