@@ -29,6 +29,7 @@ invgoldbach
 ipaddressgen
 isprime
 libergo
+linxtract
 lupdist
 mob
 numfile
