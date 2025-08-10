@@ -16,7 +16,7 @@ func main() {
 	outputFile := flag.String("outputfile", "", "Output file")
 	flag.Parse()
 
-	if *inputFile == "" && *inputText == "" {
+	if *inputFile == "" || *inputText == "" {
 		fmt.Println("Error: Either inputfile or inputtext must be specified")
 		flag.Usage()
 		return
