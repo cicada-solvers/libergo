@@ -60,4 +60,5 @@ use (
 	cmd/rdcheck
 	cmd/bin2rune
 	cmd/rune2bin
+	cmd/linxtract
 )
