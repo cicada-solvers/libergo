@@ -13,13 +13,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
-
-	"gorm.io/gorm"
 )
 
-// dbConn is a pointer to the gorm.DB instance for interacting with the PostgreSQL database.
-var dbConn *gorm.DB
-var dbMutex sync.Mutex
 var fileChannel chan string
 
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
@@ -30,8 +25,6 @@ func main() {
 
 	// Parse the flags
 	flag.Parse()
-
-	dbConn, _ = liberdatabase.InitConnection()
 
 	// Threading for sentence processing.
 	var wg sync.WaitGroup
@@ -52,12 +45,6 @@ func main() {
 	}()
 
 	wg.Wait()
-
-	err := liberdatabase.CloseConnection(dbConn)
-	if err != nil {
-		fmt.Printf("error closing DB connection: %v", err)
-		return
-	}
 }
 
 // walkAndProcess traverses the directory tree starting at root and processes only .txt files using processTextFile.
@@ -92,30 +79,32 @@ func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 
 // processTextFile processes a text file, tracks each word, and updates the database with word counts for that file.
 func processTextFile(path string) error {
+	dbConn, _ := liberdatabase.InitConnection()
 	lines, _ := readAllLines(path)
 
-	dbMutex.Lock()
 	var df liberdatabase.DocumentFile
 	if liberdatabase.DoesDocumentFileExist(dbConn, path) {
 		df, _ = liberdatabase.GetDocumentFile(dbConn, path)
 	} else {
 		df = liberdatabase.AddDocumentFile(dbConn, path)
 	}
-	dbMutex.Unlock()
 
 	for _, line := range lines {
 		separators := extractSeparators(line)
 		words := getAllWords(line, separators)
 
 		for _, word := range words {
-			dbMutex.Lock()
 			if liberdatabase.DoesWordExist(dbConn, word, df.FileId) {
 				liberdatabase.IncrementWordCount(dbConn, word, df.FileId)
 			} else {
 				liberdatabase.AddDocumentWord(dbConn, word, df.FileId, 1)
 			}
-			dbMutex.Unlock()
 		}
+	}
+
+	err := liberdatabase.CloseConnection(dbConn)
+	if err != nil {
+		fmt.Printf("error closing DB connection: %v", err)
 	}
 
 	return nil
