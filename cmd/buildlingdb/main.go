@@ -13,9 +13,12 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 var fileChannel chan string
+var connections map[int]*gorm.DB
 
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
 func main() {
@@ -29,8 +32,10 @@ func main() {
 	// Threading for sentence processing.
 	var wg sync.WaitGroup
 
-	numWorkers := runtime.NumCPU() // Adjusted number of workers
+	numWorkers := runtime.NumCPU() * 2 // Adjusted number of workers
+	connections = make(map[int]*gorm.DB, numWorkers)
 	for i := 0; i < numWorkers; i++ {
+		connections[i], _ = liberdatabase.InitConnection()
 		wg.Add(1)
 		go processTextFileChannel(i, &wg)
 	}
@@ -45,6 +50,11 @@ func main() {
 	}()
 
 	wg.Wait()
+
+	// Close the DB connections
+	for i := 0; i < numWorkers; i++ {
+		_ = liberdatabase.CloseConnection(connections[i])
+	}
 }
 
 // walkAndProcess traverses the directory tree starting at root and processes only .txt files using processTextFile.
@@ -67,7 +77,7 @@ func walkAndProcess(root string) error {
 
 func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 	for document := range fileChannel {
-		err := processTextFile(document)
+		err := processTextFile(document, workerId)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error processing file %s: %v\n", document, err)
 			continue
@@ -78,8 +88,8 @@ func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 }
 
 // processTextFile processes a text file, tracks each word, and updates the database with word counts for that file.
-func processTextFile(path string) error {
-	dbConn, _ := liberdatabase.InitConnection()
+func processTextFile(path string, workerId int) error {
+	dbConn := connections[workerId]
 	lines, _ := readAllLines(path)
 
 	var df liberdatabase.DocumentFile
@@ -102,11 +112,6 @@ func processTextFile(path string) error {
 		}
 	}
 
-	err := liberdatabase.CloseConnection(dbConn)
-	if err != nil {
-		fmt.Printf("error closing DB connection: %v", err)
-	}
-
 	return nil
 }
 
@@ -122,7 +127,7 @@ func readAllLines(path string) ([]string, error) {
 	}(file) // Ensure the file is closed
 
 	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 64*1024)
+	buf := make([]byte, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
