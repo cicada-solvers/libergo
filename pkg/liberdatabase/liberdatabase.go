@@ -4,12 +4,13 @@ import (
 	"config"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/jackc/pgx/v5"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"os"
-	"path/filepath"
 )
 
 // InitDatabase initializes the PostgreSQL database
@@ -57,47 +58,63 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating Factor table: %v\n", dbCreateError)
 	}
-	dbCreateError = conn.AutoMigrate(&FoundHashes{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
+
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberInformation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberFactors{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&PrimeValue{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&GoldbachNumberEven{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&GoldbachAddendEven{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SentenceRecord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SentenceProb{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SheetInformation{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dbCreateError = conn.AutoMigrate(&DocumentFile{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dbCreateError = conn.AutoMigrate(&DocumentWord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
@@ -119,43 +136,63 @@ func InitTables() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&FoundHashes{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberInformation{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&AdvancedNumberFactors{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&PrimeValue{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&GoldbachNumberEven{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&GoldbachAddendEven{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SentenceRecord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&PrimeNumRecord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SentenceProb{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
 	dbCreateError = conn.AutoMigrate(&SheetInformation{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dbCreateError = conn.AutoMigrate(&DocumentFile{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dbCreateError = conn.AutoMigrate(&DocumentWord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}

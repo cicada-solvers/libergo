@@ -61,4 +61,5 @@ use (
 	cmd/bin2rune
 	cmd/rune2bin
 	cmd/linxtract
+	cmd/buildlingdb
 )
