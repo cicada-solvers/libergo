@@ -19,9 +19,11 @@ import (
 
 var fileChannel chan string
 var connections map[int]*gorm.DB
+var lettersArray []string
 
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
 func main() {
+	lettersArray = strings.Split("abcdefghijklmnopqrstuvwxyz'", "")
 	fileChannel = make(chan string, 16384) // Increased buffer size
 
 	dir := flag.String("dir", "", "The text to decode")
@@ -100,8 +102,7 @@ func processTextFile(path string, workerId int) error {
 	}
 
 	for _, line := range lines {
-		separators := extractSeparators(line)
-		words := getAllWords(line, separators)
+		words := getAllWords(line)
 
 		for _, word := range words {
 			if liberdatabase.DoesWordExist(dbConn, word, df.FileId) {
@@ -147,30 +148,14 @@ func readAllLines(path string) ([]string, error) {
 	return lines, nil
 }
 
-// extractSeparators takes a string and returns a string containing only the non-alphabetic characters from the input.
-func extractSeparators(text string) string {
-	stringArray := strings.Split(text, "")
-	lettersArray := strings.Split("abcdefghijklmnopqrstuvwxyz'", "")
-	var retval []string
-
-	for _, character := range stringArray {
-		if !slices.Contains(lettersArray, character) {
-			if !slices.Contains(retval, character) {
-				retval = append(retval, character)
-			}
-		}
-	}
-
-	return strings.Join(retval, "")
-}
-
 // getAllWords splits a line of text into words based on the specified separators and returns a slice of words.
-func getAllWords(line, separators string) []string {
+func getAllWords(line string) []string {
 	lineArray := strings.Split(line, "")
+
 	var words []string
 	var wordBuilder strings.Builder
 	for _, character := range lineArray {
-		if !strings.Contains(separators, character) {
+		if slices.Contains(lettersArray, character) {
 			wordBuilder.WriteString(character)
 		} else {
 			if wordBuilder.Len() > 0 {
