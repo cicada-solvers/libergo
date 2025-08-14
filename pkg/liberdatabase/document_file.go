@@ -17,14 +17,19 @@ func (DocumentFile) TableName() string {
 }
 
 // DoesDocumentFileExist checks if a DocumentFile record exists in the database with the specified fileName.
+// Uses an optimized query that only checks for existence without retrieving the full record.
 func DoesDocumentFileExist(db *gorm.DB, fileName string) bool {
-	var df DocumentFile
-	result := db.Where("file_name = ?", fileName).First(&df)
+	var exists bool
+	result := db.Model(&DocumentFile{}).
+		Select("count(*) > 0").
+		Where("file_name = ?", fileName).
+		Find(&exists)
+
 	if result.Error != nil {
 		return false
 	}
 
-	return true
+	return exists
 }
 
 // GetDocumentFile retrieves a DocumentFile record by its fileName from the database. Returns the record or an error if not found.
