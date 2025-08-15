@@ -119,6 +119,9 @@ func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 			_, _ = fmt.Fprintf(os.Stderr, "Error processing file %s: %v\n", document, err)
 			continue
 		}
+
+		// Remove file after processing
+		_ = os.Remove(document)
 	}
 
 	wg.Done()
