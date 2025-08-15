@@ -9,12 +9,19 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
 	"gorm.io/gorm"
 )
 
+type FileStruct struct {
+	FileName string
+	Size     int64
+}
+
+var fileList []FileStruct
 var fileChannel chan string
 var connections map[int]*gorm.DB
 
@@ -38,6 +45,16 @@ func main() {
 	// Parse the flags
 	flag.Parse()
 
+	// Get FileList
+	fmt.Printf("Getting file list from %s\n", *dir)
+	err := getFileList(*dir)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return
+	}
+	fmt.Printf("Found %d files\n", len(fileList))
+	sortFileListAscending()
+
 	// Threading for sentence processing.
 	var wg sync.WaitGroup
 
@@ -50,10 +67,8 @@ func main() {
 	}
 
 	go func() {
-		err := walkAndProcess(*dir)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			return
+		for _, file := range fileList {
+			fileChannel <- file.FileName
 		}
 		close(fileChannel)
 	}()
@@ -67,7 +82,7 @@ func main() {
 }
 
 // walkAndProcess traverses the directory tree starting at root and processes only .txt files using processTextFile.
-func walkAndProcess(root string) error {
+func getFileList(root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			// If we can't access a file/dir, log and continue
@@ -78,9 +93,22 @@ func walkAndProcess(root string) error {
 			return nil
 		}
 
-		fileChannel <- path
+		fileInfo, _ := os.Stat(path)
+
+		file := FileStruct{
+			FileName: path,
+			Size:     fileInfo.Size(),
+		}
+
+		fileList = append(fileList, file)
 
 		return nil
+	})
+}
+
+func sortFileListAscending() {
+	sort.Slice(fileList, func(i, j int) bool {
+		return fileList[i].Size < fileList[j].Size
 	})
 }
 
