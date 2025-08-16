@@ -1,9 +1,6 @@
 package liberdatabase
 
 import (
-	"fmt"
-
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -21,30 +18,6 @@ func (DocumentWord) TableName() string {
 }
 
 // AddDocumentWord inserts a new DocumentWord record into the database.
-func AddDocumentWord(db *gorm.DB, word, fileId string, wordCount int64) {
-	id := uuid.New().String()
-
-	dw := DocumentWord{
-		Id:        id,
-		Word:      word,
-		FileId:    fileId,
-		WordCount: wordCount,
-	}
-
-	db.Create(&dw)
-}
-
-// IncrementWordCount increments the word count for a DocumentWord record with the specified word and fileId.
-func IncrementWordCount(db *gorm.DB, word, fileId string) {
-	db.Model(&DocumentWord{}).Where("word = ? AND file_id = ?", word, fileId).Update("word_count", gorm.Expr("word_count + 1"))
-}
-
-// DoesWordExist checks if a DocumentWord record exists in the database with the specified word and fileId.
-func DoesWordExist(db *gorm.DB, word, fileId string) bool {
-	var count int64
-	result := db.Model(&DocumentWord{}).Where("word = ? AND file_id = ?", word, fileId).Count(&count)
-	if result.Error != nil {
-		fmt.Printf("error querying words: %v\n", result.Error)
-	}
-	return count > 0
+func AddDocumentWord(db *gorm.DB, words []DocumentWord) {
+	db.Create(&words)
 }

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -128,6 +129,7 @@ func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 }
 
 func processTextFile(path string, workerId int) error {
+	mapOfWords := make(map[string]int64)
 	fmt.Printf("Processing file %s\n", path)
 	dbConn := connections[workerId]
 
@@ -161,10 +163,11 @@ func processTextFile(path string, workerId int) error {
 		words := getAllWords(line)
 
 		for _, word := range words {
-			if liberdatabase.DoesWordExist(dbConn, word, df.FileId) {
-				liberdatabase.IncrementWordCount(dbConn, word, df.FileId)
+			_, keyExists := mapOfWords[word]
+			if keyExists {
+				mapOfWords[word]++
 			} else {
-				liberdatabase.AddDocumentWord(dbConn, word, df.FileId, 1)
+				mapOfWords[word] = 1
 			}
 		}
 	}
@@ -172,6 +175,26 @@ func processTextFile(path string, workerId int) error {
 	if scanError := scanner.Err(); scanError != nil {
 		return fmt.Errorf("error reading file %s: %w", path, scanError)
 	}
+
+	tempWords := make([]liberdatabase.DocumentWord, 0, len(mapOfWords))
+	for word, count := range mapOfWords {
+		if len(tempWords) >= 500 {
+			liberdatabase.AddDocumentWord(dbConn, tempWords)
+			tempWords = []liberdatabase.DocumentWord{}
+		} else {
+			tempWord := liberdatabase.DocumentWord{
+				Id:        uuid.New().String(),
+				FileId:    df.FileId,
+				Word:      word,
+				WordCount: count,
+			}
+
+			tempWords = append(tempWords, tempWord)
+		}
+	}
+
+	liberdatabase.AddDocumentWord(dbConn, tempWords)
+	tempWords = []liberdatabase.DocumentWord{}
 
 	return nil
 }
