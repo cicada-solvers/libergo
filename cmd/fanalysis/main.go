@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gorm.io/gorm"
 	"liberdatabase"
 	"math/big"
 	"os"
 	"sort"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // main is the entry point of the application, responsible for file parsing, database interaction, and data processing.
