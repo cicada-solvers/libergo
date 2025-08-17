@@ -196,6 +196,8 @@ func processTextFile(path string, workerId int) error {
 	liberdatabase.AddDocumentWord(dbConn, tempWords)
 	tempWords = []liberdatabase.DocumentWord{}
 
+	calculateWordPercentages(dbConn, df.FileId)
+
 	return nil
 }
 
@@ -223,4 +225,35 @@ func getAllWords(line string) []string {
 	}
 
 	return words
+}
+
+func calculateWordPercentages(dbConn *gorm.DB, fileId string) {
+	words := liberdatabase.GetDistinctWords(dbConn, fileId)
+	totalCount := int64(0)
+	percentages := make([]liberdatabase.DocumentWordStatistics, 0, len(words))
+
+	for _, word := range words {
+		totalCount += word.WordCount
+	}
+
+	for _, word := range words {
+		wordPercent := (float64(word.WordCount) / float64(totalCount)) * 100
+
+		documentPercent := liberdatabase.DocumentWordStatistics{
+			Word:             word.Word,
+			PercentageOfText: wordPercent,
+			FileId:           fileId,
+			Id:               uuid.New().String(),
+		}
+
+		percentages = append(percentages, documentPercent)
+
+		if len(percentages) >= 500 {
+			liberdatabase.AddDocumentWordStatistics(dbConn, percentages)
+			percentages = []liberdatabase.DocumentWordStatistics{}
+		}
+	}
+
+	liberdatabase.AddDocumentWordStatistics(dbConn, percentages)
+	percentages = []liberdatabase.DocumentWordStatistics{}
 }

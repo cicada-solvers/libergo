@@ -21,3 +21,9 @@ func (DocumentWord) TableName() string {
 func AddDocumentWord(db *gorm.DB, words []DocumentWord) {
 	db.Create(&words)
 }
+
+func GetDistinctWords(db *gorm.DB, fileId string) []DocumentWord {
+	var words []DocumentWord
+	db.Where("file_id = ?", fileId).Find(&words)
+	return words
+}

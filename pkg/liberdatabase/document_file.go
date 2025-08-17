@@ -56,3 +56,9 @@ func AddDocumentFile(db *gorm.DB, fileName string) DocumentFile {
 
 	return df
 }
+
+func GetAllDocumentFiles(db *gorm.DB) []DocumentFile {
+	var dfs []DocumentFile
+	db.Find(&dfs)
+	return dfs
+}
