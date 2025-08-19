@@ -252,7 +252,7 @@ var runeSet = map[string]struct{}{
 
 // dinkusSet is a map representing a set of unique "dinkus" characters used for recognition or validation purposes.
 var dinkusSet = map[string]struct{}{
-	"•": {}, "⊹": {},
+	"•": {}, "⊹": {}, "␍": {}, "␊": {},
 }
 
 // IsDinkus checks if the given string value exists in the predefined "dinkusSet" and returns true if found.

@@ -39,27 +39,25 @@ func main() {
 		}
 	}
 
-	repeatCounts = sortMapDesc(repeatCounts)
-
+	// Create a slice of key-value pairs for sorting
+	type wordCount struct {
+		word  string
+		count int64
+	}
+	pairs := make([]wordCount, 0, len(repeatCounts))
 	for word, count := range repeatCounts {
-		fmt.Printf("%s: %d\n", word, count)
+		pairs = append(pairs, wordCount{word, count})
 	}
-}
 
-func sortMapDesc(m map[string]int64) map[string]int64 {
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return m[keys[i]] > m[keys[j]]
+	// Sort pairs by count in descending order
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].count > pairs[j].count
 	})
-	sortedMap := make(map[string]int64)
-	for _, k := range keys {
-		sortedMap[k] = m[k]
-	}
 
-	return sortedMap
+	// Print sorted results
+	for _, pair := range pairs {
+		fmt.Printf("%s: %d\n", pair.word, pair.count)
+	}
 }
 
 func getAllWords(line string) []string {
