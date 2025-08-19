@@ -62,4 +62,5 @@ use (
 	cmd/rune2bin
 	cmd/linxtract
 	cmd/buildlingdb
+	cmd/repeata
 )
