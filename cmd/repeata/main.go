@@ -29,8 +29,16 @@ func main() {
 	fmt.Println(string(fileText))
 	lines := strings.Split(string(fileText), "\n")
 	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
 		words := getAllWords(line)
 		for _, word := range words {
+			if word == "" {
+				continue
+			}
+
 			if _, exists := repeatCounts[word]; exists {
 				repeatCounts[word]++
 			} else {
