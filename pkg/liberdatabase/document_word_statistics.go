@@ -16,3 +16,8 @@ func (DocumentWordStatistics) TableName() string {
 func AddDocumentWordStatistics(db *gorm.DB, statistics []DocumentWordStatistics) {
 	db.Create(&statistics)
 }
+
+func DeleteStatisticsByFileId(db *gorm.DB, fileId string) {
+	db.Where("file_id = ?", fileId).Delete(&DocumentWordStatistics{})
+	return
+}

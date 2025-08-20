@@ -27,3 +27,8 @@ func GetDistinctWords(db *gorm.DB, fileId string) []DocumentWord {
 	db.Where("file_id = ?", fileId).Find(&words)
 	return words
 }
+
+func DeleteWordsByFileId(db *gorm.DB, fileId string) {
+	db.Where("file_id = ?", fileId).Delete(&DocumentWord{})
+	return
+}

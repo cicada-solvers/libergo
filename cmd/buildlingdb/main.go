@@ -144,6 +144,8 @@ func processTextFile(path string, workerId int) error {
 	var df liberdatabase.DocumentFile
 	if liberdatabase.DoesDocumentFileExist(dbConn, path) {
 		df, _ = liberdatabase.GetDocumentFile(dbConn, path)
+		liberdatabase.DeleteStatisticsByFileId(dbConn, df.FileId)
+		liberdatabase.DeleteWordsByFileId(dbConn, df.FileId)
 	} else {
 		df = liberdatabase.AddDocumentFile(dbConn, path)
 	}
