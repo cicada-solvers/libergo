@@ -22,11 +22,12 @@ func main() {
 	listFlag := flag.Bool("list", false, "List the current configuration")
 	workersFlag := flag.Int("workers", 0, "Set the number of workers")
 	initDBServerFlag := flag.Bool("initdbserver", false, "Initialize the podman database server")
+	initTables := flag.Bool("inittables", false, "Initialize the tables only (no database server)")
 	showHashesFlag := flag.Bool("showhashes", false, "Show all found hashes")
 	hideTitleFlag := flag.Bool("hidetitle", false, "Hide the title")
 	flag.Parse()
 
-	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*hideTitleFlag {
+	if !*initFlag && !*listFlag && *workersFlag <= 0 && !*initDBServerFlag && !*showHashesFlag && !*hideTitleFlag && !*initTables {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
 	}
@@ -67,6 +68,17 @@ func main() {
 
 	if *initDBServerFlag {
 		executeScript()
+		fmt.Println("Tables loaded successfully.")
+		os.Exit(0)
+	}
+
+	if *initTables {
+		_, dbError := liberdatabase.InitTables()
+		if dbError != nil {
+			return
+		} else {
+			fmt.Println("Tables initialized successfully.")
+		}
 		fmt.Println("Tables loaded successfully.")
 		os.Exit(0)
 	}
