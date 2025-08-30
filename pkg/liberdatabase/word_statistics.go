@@ -18,7 +18,7 @@ func AddWordStatistics(db *gorm.DB, statistics []WordStatistics) {
 }
 
 func DeleteAllWordStatistics(db *gorm.DB) {
-	db.Delete(&WordStatistics{})
+	db.Exec("TRUNCATE TABLE word_statistics")
 }
 
 func GetWordByStatisticRange(db *gorm.DB, min float64, max float64) []WordStatistics {

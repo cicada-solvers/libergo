@@ -83,6 +83,7 @@ func main() {
 
 	for len(distinctWords) > 0 {
 		for _, dw := range distinctWords {
+			fmt.Printf("Processing word %s\n", dw.Word)
 			if dw.ID > currentFileId {
 				currentFileId = dw.ID
 			}
