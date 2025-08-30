@@ -33,3 +33,8 @@ func GetAllLexDocumentLineTestsByDocumentLineId(db *gorm.DB, documentId string) 
 	db.Where("lex_document_line_id = ?", documentId).Find(&lexDocumentLineTests)
 	return lexDocumentLineTests
 }
+
+func DeleteLexDocumentLineTextByDocumentId(db *gorm.DB, documentId string) {
+	db.Where("lex_doc_id = ?", documentId).Delete(&LexDocumentLineTest{})
+	return
+}

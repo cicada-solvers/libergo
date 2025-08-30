@@ -6,7 +6,7 @@ import (
 
 // DocumentWord represents a word in a document and its associated word count.
 type DocumentWord struct {
-	Id        string `gorm:"column:id"`
+	gorm.Model
 	Word      string `gorm:"index:idx_word"`
 	FileId    string `gorm:"index:idx_file_id"`
 	WordCount int64  `gorm:"column:word_count"`
@@ -31,4 +31,10 @@ func GetDistinctWords(db *gorm.DB, fileId string) []DocumentWord {
 func DeleteWordsByFileId(db *gorm.DB, fileId string) {
 	db.Where("file_id = ?", fileId).Delete(&DocumentWord{})
 	return
+}
+
+func GetAllDistinctWords(db *gorm.DB, minId uint) []DocumentWord {
+	var words []DocumentWord
+	db.Where("id > ?", minId).Order("id ASC").Find(&words).Limit(25000)
+	return words
 }

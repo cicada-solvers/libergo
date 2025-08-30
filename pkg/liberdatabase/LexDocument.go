@@ -11,6 +11,12 @@ func (LexDocument) TableName() string {
 	return "lex_documents"
 }
 
+func DoesLexDocumentExist(db *gorm.DB, fileName string) bool {
+	var lexDocument LexDocument
+	db.Where("file_name = ?", fileName).First(&lexDocument)
+	return lexDocument.LexDocumentId != ""
+}
+
 func AddLexDocument(db *gorm.DB, lexDocument LexDocument) {
 	db.Create(&lexDocument)
 }

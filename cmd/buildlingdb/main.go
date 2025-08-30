@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -75,6 +74,33 @@ func main() {
 	}()
 
 	wg.Wait()
+
+	// Get All the Words
+	currentFileId := uint(0)
+	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
+	distinctWords := liberdatabase.GetAllDistinctWords(connections[0], 0)
+
+	for len(distinctWords) > 0 {
+		for _, dw := range distinctWords {
+			if dw.ID > currentFileId {
+				currentFileId = dw.ID
+			}
+
+			average := liberdatabase.GetAveraegePercentageOfTextByWord(connections[0], dw.Word)
+
+			wordBatch = append(wordBatch, liberdatabase.WordStatistics{
+				Word:                    dw.Word,
+				AveragePercentageOfText: average,
+			})
+
+			if len(wordBatch) >= 500 {
+				liberdatabase.AddWordStatistics(connections[0], wordBatch)
+				wordBatch = []liberdatabase.WordStatistics{}
+			}
+		}
+
+		distinctWords = liberdatabase.GetAllDistinctWords(connections[0], currentFileId)
+	}
 
 	// Close the DB connections
 	for i := 0; i < numWorkers; i++ {
@@ -185,7 +211,6 @@ func processTextFile(path string, workerId int) error {
 			tempWords = []liberdatabase.DocumentWord{}
 		} else {
 			tempWord := liberdatabase.DocumentWord{
-				Id:        uuid.New().String(),
 				FileId:    df.FileId,
 				Word:      word,
 				WordCount: count,
@@ -245,7 +270,6 @@ func calculateWordPercentages(dbConn *gorm.DB, fileId string) {
 			Word:             word.Word,
 			PercentageOfText: wordPercent,
 			FileId:           fileId,
-			Id:               uuid.New().String(),
 		}
 
 		percentages = append(percentages, documentPercent)

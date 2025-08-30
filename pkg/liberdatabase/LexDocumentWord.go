@@ -25,3 +25,8 @@ func GetAllLexDocumentWordsByDocumentId(db *gorm.DB, documentId string) []LexDoc
 	db.Where("lex_document_id = ?", documentId).Find(&words)
 	return words
 }
+
+func DeleteAllLexDocumentWordsByDocumentId(db *gorm.DB, documentId string) {
+	db.Where("lex_doc_id = ?", documentId).Delete(&LexDocumentWord{})
+	return
+}
