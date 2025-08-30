@@ -13,6 +13,11 @@ func (WordStatistics) TableName() string {
 }
 
 func AddWordStatistics(db *gorm.DB, statistics []WordStatistics) {
+	existing := db.Where("word = ?", statistics[0].Word).Find(&WordStatistics{})
+	if existing.RowsAffected > 0 {
+		db.Delete(&WordStatistics{}, "word = ?", statistics[0].Word)
+	}
+
 	db.Create(&statistics)
 	return
 }

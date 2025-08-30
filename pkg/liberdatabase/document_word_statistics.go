@@ -24,6 +24,6 @@ func DeleteStatisticsByFileId(db *gorm.DB, fileId string) {
 
 func GetAveraegePercentageOfTextByWord(db *gorm.DB, word string) float64 {
 	var statistics DocumentWordStatistics
-	db.Select("AVG(average_percentage_of_text)").Where("word = ?", word).First(&statistics)
+	db.Select("AVG(average_percentage_of_text)").Where("word = ?", word).Group("average_percentage_of_text").First(&statistics)
 	return statistics.PercentageOfText
 }

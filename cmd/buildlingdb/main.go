@@ -79,6 +79,7 @@ func main() {
 	liberdatabase.DeleteAllWordStatistics(connections[0])
 	currentFileId := uint(0)
 	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
+	fmt.Printf("Getting all distinct words\n")
 	distinctWords := liberdatabase.GetAllDistinctWords(connections[0], 0)
 
 	for len(distinctWords) > 0 {
