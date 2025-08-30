@@ -17,6 +17,10 @@ func AddWordStatistics(db *gorm.DB, statistics []WordStatistics) {
 	return
 }
 
+func DeleteAllWordStatistics(db *gorm.DB) {
+	db.Delete(&WordStatistics{})
+}
+
 func GetWordByStatisticRange(db *gorm.DB, min float64, max float64) []WordStatistics {
 	var statistics []WordStatistics
 	db.Where("average_percentage_of_text >= ? AND average_percentage_of_text <= ?", min, max).Find(&statistics)
