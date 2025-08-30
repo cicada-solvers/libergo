@@ -35,6 +35,6 @@ func DeleteWordsByFileId(db *gorm.DB, fileId string) {
 
 func GetAllDistinctWords(db *gorm.DB, minId uint) []DocumentWord {
 	var words []DocumentWord
-	db.Where("id > ?", minId).Order("id ASC").Find(&words).Limit(25000)
+	db.Where("id > ?", minId).Order("id ASC").Find(&words).Limit(500)
 	return words
 }
