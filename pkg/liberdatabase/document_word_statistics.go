@@ -9,6 +9,11 @@ type DocumentWordStatistics struct {
 	PercentageOfText float64 `gorm:"column:average_percentage_of_text"`
 }
 
+type AverageDocumentWordStatistics struct {
+	Word string  `gorm:"index:word"`
+	Avg  float64 `gorm:"column:avg"`
+}
+
 func (DocumentWordStatistics) TableName() string {
 	return "document_word_statistics"
 }
@@ -23,7 +28,12 @@ func DeleteStatisticsByFileId(db *gorm.DB, fileId string) {
 }
 
 func GetAveraegePercentageOfTextByWord(db *gorm.DB, word string) float64 {
-	var statistics DocumentWordStatistics
-	db.Select("AVG(average_percentage_of_text)").Where("word = ?", word).Group("average_percentage_of_text").Group("id").First(&statistics)
-	return statistics.PercentageOfText
+	var statistics AverageDocumentWordStatistics
+	db.
+		Table("document_word_statistics").
+		Select("AVG(average_percentage_of_text)").
+		Where("word = ?", word).
+		Group("average_percentage_of_text").
+		Group("id").First(&statistics)
+	return statistics.Avg
 }
