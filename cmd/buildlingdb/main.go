@@ -76,6 +76,7 @@ func main() {
 	wg.Wait()
 
 	// Get All the Words
+	fmt.Printf("Truncating word statistics\n")
 	liberdatabase.DeleteAllWordStatistics(connections[0])
 	currentFileId := uint(0)
 	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
@@ -102,6 +103,7 @@ func main() {
 			}
 		}
 
+		fmt.Printf("Getting more distinct words\n")
 		distinctWords = liberdatabase.GetAllDistinctWords(connections[0], currentFileId)
 	}
 
