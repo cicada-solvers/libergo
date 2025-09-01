@@ -23,6 +23,7 @@ type FileStruct struct {
 
 var fileList []FileStruct
 var fileChannel chan string
+var wordChannel chan liberdatabase.DocumentWord
 var connections map[int]*gorm.DB
 
 // Create letterMap once at initialization instead of for each call
@@ -39,6 +40,7 @@ func init() {
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
 func main() {
 	fileChannel = make(chan string, 16384) // Increased buffer size
+	wordChannel = make(chan liberdatabase.DocumentWord, 16384)
 
 	dir := flag.String("dir", "", "The text to decode")
 
@@ -76,41 +78,67 @@ func main() {
 	wg.Wait()
 
 	// Get All the Words
-	fmt.Printf("Truncating word statistics\n")
-	liberdatabase.DeleteAllWordStatistics(connections[0])
-	currentFileId := uint(0)
-	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
-	fmt.Printf("Getting all distinct words\n")
-	distinctWords := liberdatabase.GetAllDistinctWords(connections[0], 0)
-
-	for len(distinctWords) > 0 {
-		for _, dw := range distinctWords {
-			fmt.Printf("Processing word %s\n", dw.Word)
-			if dw.ID > currentFileId {
-				currentFileId = dw.ID
-			}
-
-			average := liberdatabase.GetAveraegePercentageOfTextByWord(connections[0], dw.Word)
-
-			wordBatch = append(wordBatch, liberdatabase.WordStatistics{
-				Word:                    dw.Word,
-				AveragePercentageOfText: average,
-			})
-
-			if len(wordBatch) >= 500 {
-				liberdatabase.AddWordStatistics(connections[0], wordBatch)
-				wordBatch = []liberdatabase.WordStatistics{}
-			}
-		}
-
-		fmt.Printf("Getting more distinct words\n")
-		distinctWords = liberdatabase.GetAllDistinctWords(connections[0], currentFileId)
+	var wgStatistics sync.WaitGroup
+	connections = make(map[int]*gorm.DB, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		wgStatistics.Add(1)
+		go processWordStatistics(i, &wgStatistics)
 	}
+
+	dbConn, _ := liberdatabase.InitConnection()
+
+	go func() {
+		fmt.Printf("Truncating word statistics\n")
+		liberdatabase.DeleteAllWordStatistics(dbConn)
+		currentFileId := uint(0)
+		fmt.Printf("Getting all distinct words\n")
+		distinctWords := liberdatabase.GetAllDistinctWords(dbConn, 0)
+
+		for len(distinctWords) > 0 {
+			for _, dw := range distinctWords {
+				if dw.ID > currentFileId {
+					currentFileId = dw.ID
+				}
+
+				wordChannel <- dw
+			}
+
+			fmt.Printf("Getting more distinct words\n")
+			distinctWords = liberdatabase.GetAllDistinctWords(dbConn, currentFileId)
+		}
+		close(wordChannel)
+	}()
+
+	wgStatistics.Wait()
 
 	// Close the DB connections
 	for i := 0; i < numWorkers; i++ {
 		_ = liberdatabase.CloseConnection(connections[i])
 	}
+
+	_ = liberdatabase.CloseConnection(dbConn)
+}
+
+func processWordStatistics(workerId int, wg *sync.WaitGroup) {
+	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
+
+	for word := range wordChannel {
+		fmt.Printf("Processing word %s\n", word.Word)
+
+		average := liberdatabase.GetAveraegePercentageOfTextByWord(connections[workerId], word.Word)
+
+		wordBatch = append(wordBatch, liberdatabase.WordStatistics{
+			Word:                    word.Word,
+			AveragePercentageOfText: average,
+		})
+
+		if len(wordBatch) >= 500 {
+			liberdatabase.AddWordStatistics(connections[0], wordBatch)
+			wordBatch = []liberdatabase.WordStatistics{}
+		}
+	}
+
+	wg.Done()
 }
 
 // walkAndProcess traverses the directory tree starting at root and processes only .txt files using processTextFile.
