@@ -176,6 +176,59 @@ func BulkDecryptAutokeyCipher(alphabet, wordList, latinList []string, text strin
 	return result.String(), nil
 }
 
+// DecryptAutokeyWithKey decrypts ciphertext using the Autokey cipher by starting from the provided key.
+// The keystream is initialized with 'key' and extended with plaintext as characters are decrypted.
+// Non-alphabet symbols in ciphertext are passed through and do not consume the keystream.
+// Returns an empty string if the key is empty or contains symbols not present in the alphabet.
+func DecryptAutokeyWithKey(alphabet, key, ciphertext []string) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	// Validate that all key symbols are in the alphabet
+	for _, k := range key {
+		if indexOf(alphabet, k) == -1 {
+			return ""
+		}
+	}
+
+	// Initialize keystream with the provided key
+	keyStream := make([]string, len(key))
+	copy(keyStream, key)
+
+	var plaintext strings.Builder
+
+	for _, c := range ciphertext {
+		cIdx := indexOf(alphabet, c)
+		if cIdx == -1 {
+			// Pass through non-alphabet chars without consuming keystream
+			plaintext.WriteString(c)
+			continue
+		}
+
+		// If keystream somehow becomes empty, we cannot proceed deterministically
+		if len(keyStream) == 0 {
+			return plaintext.String()
+		}
+
+		k := keyStream[0]
+		kIdx := indexOf(alphabet, k)
+		if kIdx == -1 {
+			// Invalid keystream symbol relative to the alphabet
+			return ""
+		}
+
+		pIdx := (cIdx - kIdx + len(alphabet)) % len(alphabet)
+		pChar := alphabet[pIdx]
+		plaintext.WriteString(pChar)
+
+		// Extend keystream with the newly decrypted plaintext symbol
+		keyStream = append(keyStream[1:], pChar)
+	}
+
+	return plaintext.String()
+}
+
 // DecryptAutokeyCipher decrypts a given ciphertext using the Autokey cipher.
 func DecryptAutokeyCipher(alphabet, ciphertext, keyStream []string) string {
 	var plaintext strings.Builder

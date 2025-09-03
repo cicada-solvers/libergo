@@ -177,10 +177,35 @@ func BulkDecodeVigenereCipher(alphabet, wordList, latinList []string, text strin
 	return result.String(), nil
 }
 
-// DecodeVigenereCipher decodes the text using the Vigenere cipher.
 func DecodeVigenereCipher(alphabet, key, text []string) string {
 	if len(key) == 0 {
 		fmt.Printf("Key cannot be empty")
+		return ""
+	}
+	if len(alphabet) == 0 {
+		fmt.Printf("Alphabet cannot be empty")
+		return ""
+	}
+
+	// Build a fast lookup for the alphabet
+	alphaIndex := make(map[string]int, len(alphabet))
+	for i, a := range alphabet {
+		alphaIndex[a] = i
+	}
+
+	// Pre-clean the key: drop empties and normalize for lookup
+	cleanKey := make([]string, 0, len(key))
+	for _, k := range key {
+		if k == "" {
+			continue
+		}
+		kl := strings.ToLower(k)
+		if _, ok := alphaIndex[kl]; ok {
+			cleanKey = append(cleanKey, kl)
+		}
+	}
+	if len(cleanKey) == 0 {
+		// No usable key symbols in the given alphabet
 		return ""
 	}
 
@@ -189,23 +214,42 @@ func DecodeVigenereCipher(alphabet, key, text []string) string {
 	keyIndex := 0
 
 	for _, c := range text {
-		if isLetter(c) || charRepo.IsRune(string(c), false) {
-			keyChar := key[keyIndex]
-			textIndex := indexOf(alphabet, string(c))
-			keyIndexInAlphabet := indexOf(alphabet, keyChar)
-			decodedCharIndex := (textIndex - keyIndexInAlphabet + len(alphabet)) % len(alphabet)
-			decodedChar := alphabet[decodedCharIndex]
+		if c == "" {
+			// Ignore empty splits from strings.Split(s, "")
+			continue
+		}
+
+		if isLetter(c) || charRepo.IsRune(c, false) {
+			// Normalize for lookup if this is a Latin letter (case-sensitive alphabets should adapt this)
+			inLookup := c
+			restoreUpper := false
+
+			if !charRepo.IsRune(c, false) {
+				if isUpper(c) {
+					restoreUpper = true
+				}
+				inLookup = strings.ToLower(c)
+			}
+
+			ti, okT := alphaIndex[inLookup]
+			ki, okK := alphaIndex[cleanKey[keyIndex]]
+			if !okT || !okK {
+				// Character or key symbol not in alphabet: keep as-is and do not advance key
+				decodedText.WriteString(c)
+				continue
+			}
+
+			decodedChar := alphabet[(ti-ki+len(alphabet))%len(alphabet)]
 
 			if charRepo.IsRune(c, false) {
 				decodedText.WriteString(decodedChar)
+			} else if restoreUpper {
+				decodedText.WriteString(strings.ToUpper(decodedChar))
 			} else {
-				if isUpper(c) {
-					decodedText.WriteString(strings.ToUpper(decodedChar))
-				} else {
-					decodedText.WriteString(strings.ToLower(decodedChar))
-				}
+				decodedText.WriteString(strings.ToLower(decodedChar))
 			}
-			keyIndex = (keyIndex + 1) % len(key)
+
+			keyIndex = (keyIndex + 1) % len(cleanKey)
 		} else {
 			decodedText.WriteString(c)
 		}

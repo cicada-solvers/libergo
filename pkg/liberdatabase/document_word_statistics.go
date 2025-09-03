@@ -10,8 +10,7 @@ type DocumentWordStatistics struct {
 }
 
 type AverageDocumentWordStatistics struct {
-	Word string  `gorm:"index:word"`
-	Avg  float64 `gorm:"column:avg"`
+	Avg float64 `gorm:"column:avg"`
 }
 
 func (DocumentWordStatistics) TableName() string {
