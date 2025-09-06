@@ -65,4 +65,5 @@ use (
 	cmd/repeata
 	cmd/delexify
 	cmd/schwifty
+	cmd/kasiski
 )
