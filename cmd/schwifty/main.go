@@ -4,6 +4,7 @@ import (
 	runelib "characterrepo"
 	"flag"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -14,7 +15,7 @@ var charRepo *runelib.CharacterRepo
 // main is the entry point of the program.
 func main() {
 	textFlag := flag.String("text", "", "Text to shift")
-	shiftFlag := flag.Int("shift", 0, "Number of positions to shift to the left")
+	shiftFlag := flag.Int("shift", 0, "Number of positions to shift")
 	textDirectionFlag := flag.String("direction", "left", "Direction to shift text (left or right)")
 	flag.Parse()
 
@@ -24,8 +25,11 @@ func main() {
 	}
 
 	var output strings.Builder
+	var inverted strings.Builder
 	charRepo = runelib.NewCharacterRepo()
+
 	words := getWordsFromText(*textFlag)
+
 	for _, word := range words {
 		letters := strings.Split(word, "")
 		direction := *textDirectionFlag
@@ -41,6 +45,8 @@ func main() {
 			} else {
 				direction = "left"
 			}
+
+			directionValue = int(math.Abs(float64(directionValue)))
 		}
 
 		fmt.Printf("Word: %s - Direction %s - Shift %d \n", word, direction, directionValue)
@@ -48,13 +54,20 @@ func main() {
 		if direction == "right" {
 			result := shiftLettersRight(letters, directionValue)
 			output.WriteString(fmt.Sprintf("%s•", result))
+
+			result = shiftLettersLeft(letters, directionValue)
+			inverted.WriteString(fmt.Sprintf("%s•", result))
 		} else {
 			result := shiftLettersLeft(letters, directionValue)
 			output.WriteString(fmt.Sprintf("%s•", result))
+
+			result = shiftLettersRight(letters, directionValue)
+			inverted.WriteString(fmt.Sprintf("%s•", result))
 		}
 	}
 
-	fmt.Println(output.String())
+	fmt.Printf("Output: %s \n", output.String())
+	fmt.Printf("Inverted: %s \n", inverted.String())
 }
 
 // ShiftLettersLeft shifts the letters in the text to the left by the specified shift.
