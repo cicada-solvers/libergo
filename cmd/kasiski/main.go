@@ -34,6 +34,9 @@ func main() {
 // 4) Use GCD of distances; if GCD < 2, fallback to factor frequency
 func determineKeyLength(text []string) (int, error) {
 	norm := normalizeText(text)
+
+	fmt.Printf("Normalized text: %s\n", norm)
+
 	if len(norm) < 6 {
 		return 0, errors.New("text too short for Kasiski examination")
 	}
