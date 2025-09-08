@@ -1,4 +1,4 @@
-package lgstructs
+package liberdatabase
 
 import (
 	runelib "characterrepo"
@@ -6,26 +6,43 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // DictionaryWord represents a structured word entry with various properties for linguistic and numerical analysis.
 type DictionaryWord struct {
-	DictionaryWordText          string `json:"dict_word"`
-	RuneglishWordText           string `json:"dict_runeglish"`
-	RuneWordText                string `json:"dict_rune"`
-	RuneWordTextNoDoublet       string `json:"dict_rune_no_doublet"`
-	GemSum                      int64  `json:"gem_sum"`
-	GemSumPrime                 bool   `json:"gem_sum_prime"`
-	GemProduct                  string `json:"gem_product"`
-	GemProductPrime             bool   `json:"gem_product_prime"`
-	DictionaryWordLength        int    `json:"dict_word_length"`
-	RuneglishWordLength         int    `json:"dict_runeglish_length"`
-	RuneWordLength              int    `json:"dict_rune_length"`
-	DictRuneNoDoubletLength     int    `json:"dict_rune_no_doublet_length"`
-	RunePattern                 string `json:"rune_pattern"`
-	RunePatternNoDoubletPattern string `json:"rune_pattern_no_doublet"`
-	RuneDistancePattern         string `json:"rune_distance_pattern"`
-	Language                    string `json:"language"`
+	DictionaryWordText          string `gorm:"dict_word"`
+	RuneglishWordText           string `gorm:"dict_runeglish"`
+	RuneWordText                string `gorm:"dict_rune"`
+	RuneWordTextNoDoublet       string `gorm:"dict_rune_no_doublet"`
+	GemSum                      int64  `gorm:"gem_sum"`
+	GemSumPrime                 bool   `gorm:"gem_sum_prime"`
+	GemProduct                  string `gorm:"gem_product"`
+	GemProductPrime             bool   `gorm:"gem_product_prime"`
+	DictionaryWordLength        int    `gorm:"dict_word_length"`
+	RuneglishWordLength         int    `gorm:"dict_runeglish_length"`
+	RuneWordLength              int    `gorm:"dict_rune_length"`
+	DictRuneNoDoubletLength     int    `gorm:"dict_rune_no_doublet_length"`
+	RunePattern                 string `gorm:"rune_pattern"`
+	RunePatternNoDoubletPattern string `gorm:"rune_pattern_no_doublet"`
+	RuneDistancePattern         string `gorm:"rune_distance_pattern"`
+	Language                    string `gorm:"language"`
+}
+
+func (DictionaryWord) TableName() string {
+	return "dictionary_words"
+}
+
+func AddDictionaryWords(db *gorm.DB, dictionaryWords []DictionaryWord) {
+	db.Create(&dictionaryWords)
+	return
+}
+
+func GetDictionaryWordsByRuneLength(db *gorm.DB, length int) []DictionaryWord {
+	var dictionaryWords []DictionaryWord
+	db.Where("dict_rune_length = ?", length).Find(&dictionaryWords)
+	return dictionaryWords
 }
 
 // GetRunePattern gets the rune pattern for the dictionary word

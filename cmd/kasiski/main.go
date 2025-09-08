@@ -53,10 +53,13 @@ func determineKeyLength(text []string) (int, error) {
 			if len(indices) < 2 {
 				continue
 			}
-			for i := 1; i < len(indices); i++ {
-				d := indices[i] - indices[i-1]
-				if d > 0 {
-					distances = append(distances, d)
+			// Use all pairwise distances for robustness (not just adjacent)
+			for i := 0; i < len(indices)-1; i++ {
+				for j := i + 1; j < len(indices); j++ {
+					d := indices[j] - indices[i]
+					if d > 0 {
+						distances = append(distances, d)
+					}
 				}
 			}
 		}
@@ -73,9 +76,10 @@ func determineKeyLength(text []string) (int, error) {
 	// Fallback: factor frequency analysis
 	// Count factors (>=2) of all distances and choose the most frequent
 	freq := map[int]int{}
+	const maxCandidate = 30 // limit to plausible key lengths
 	for _, d := range distances {
 		for _, f := range properFactors(d) {
-			if f >= 2 {
+			if f >= 2 && f <= maxCandidate {
 				freq[f]++
 			}
 		}

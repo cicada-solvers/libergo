@@ -148,6 +148,11 @@ func InitDatabase() (*gorm.DB, error) {
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
+
+	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
 	return conn, nil
 }
 
@@ -253,6 +258,11 @@ func InitTables() (*gorm.DB, error) {
 	}
 
 	dbCreateError = conn.AutoMigrate(&WordStatistics{})
+	if dbCreateError != nil {
+		fmt.Printf("Error creating table: %v\n", dbCreateError)
+	}
+
+	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}

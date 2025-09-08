@@ -2,18 +2,15 @@ package main
 
 import (
 	"bufio"
-	"encoding/csv"
 	"flag"
 	"fmt"
-	"lgstructs"
-	"math"
+	"liberdatabase"
 	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runer"
 	"sequences"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -26,9 +23,7 @@ func main() {
 	flag.Parse()
 
 	wordList := make(map[string]bool)
-	dictList := make([]lgstructs.DictionaryWord, 0, 16384)
-	outputBase := "dictionary_words"
-	outputCounter := 1
+	dictList := make([]liberdatabase.DictionaryWord, 0, 16384)
 
 	// Scan the directory for text files
 	err := filepath.WalkDir(*dir, func(path string, d os.DirEntry, err error) error {
@@ -36,10 +31,6 @@ func main() {
 			return err
 		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".txt") {
-			outputBase = strings.ReplaceAll(d.Name(), ".txt", "")
-			if (reverseWords != nil) && (*reverseWords == true) {
-				outputBase = fmt.Sprintf("%s_reverse", outputBase)
-			}
 			processFile(path, wordList)
 		}
 		return nil
@@ -48,6 +39,9 @@ func main() {
 		fmt.Printf("Failed to read directory: %v\n", err)
 		return
 	}
+
+	_, _ = liberdatabase.InitTables()
+	dbConn, _ := liberdatabase.InitConnection()
 
 	// Read every word from the word list
 	for word := range wordList {
@@ -60,11 +54,11 @@ func main() {
 
 		runeglish := runer.PrepLatinToRune(word)
 		runeText := runer.TransposeLatinToRune(runeglish, *reverseWords)
-		runeTextNoDoublet := lgstructs.RemoveDoublets(strings.Split(runeText, ""))
+		runeTextNoDoublet := liberdatabase.RemoveDoublets(strings.Split(runeText, ""))
 		gemSum := runer.CalculateGemSum(runeText, runer.Runes, false)
 		gemProd := runer.CalculateGemProduct(runeText, runer.Runes, false)
 
-		dictWord := lgstructs.DictionaryWord{
+		dictWord := liberdatabase.DictionaryWord{
 			DictionaryWordText:          word,
 			RuneglishWordText:           runeglish,
 			RuneWordText:                runeText,
@@ -77,95 +71,24 @@ func main() {
 			RuneglishWordLength:         len(runeglish),
 			DictRuneNoDoubletLength:     utf8.RuneCountInString(runeTextNoDoublet),
 			RuneWordLength:              utf8.RuneCountInString(runeText),
-			RunePattern:                 lgstructs.GetRunePattern(word),
-			RunePatternNoDoubletPattern: lgstructs.GetRunePattern(runeTextNoDoublet),
-			RuneDistancePattern:         lgstructs.GetRuneDistancePattern(strings.Split(runeText, "")),
+			RunePattern:                 liberdatabase.GetRunePattern(word),
+			RunePatternNoDoubletPattern: liberdatabase.GetRunePattern(runeTextNoDoublet),
+			RuneDistancePattern:         liberdatabase.GetRuneDistancePattern(strings.Split(runeText, "")),
 			Language:                    "English",
 		}
 
 		dictList = append(dictList, dictWord)
 		delete(wordList, word) // Remove the word from wordList
 
-		if len(dictList) >= math.MaxInt-1 {
-			outputFile := fmt.Sprintf("%s_%05d.csv", outputBase, outputCounter)
-			writeCsvFile(outputFile, dictList)
-			outputCounter++
+		if len(dictList) >= 500 {
+			liberdatabase.AddDictionaryWords(dbConn, dictList)
 			dictList = dictList[:0]
 		}
 	}
 
-	outputFile := fmt.Sprintf("%s_%05d.csv", outputBase, outputCounter)
-	writeCsvFile(outputFile, dictList)
-}
+	liberdatabase.AddDictionaryWords(dbConn, dictList)
 
-// writeCsvFile writes the dictionary words to a CSV file
-func writeCsvFile(outputFile string, dictList []lgstructs.DictionaryWord) {
-	// Create the CSV file
-	file, err := os.Create(outputFile)
-	if err != nil {
-		fmt.Printf("Failed to create output file: %v\n", err)
-		return
-	}
-	defer func(file *os.File) {
-		fileError := file.Close()
-		if fileError != nil {
-			fmt.Printf("Failed to close output file: %v\n", fileError)
-		}
-	}(file)
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write the header
-	header := []string{
-		"dict_word", "dict_runeglish", "dict_rune", "dict_rune_no_doublet",
-		"gem_sum", "gem_sum_prime", "gem_product", "gem_product_prime",
-		"dict_word_length", "dict_runeglish_length", "dict_rune_length",
-		"rune_pattern", "rune_pattern_no_doublet", "dict_rune_no_doublet_length",
-		"rune_distance_pattern", "language",
-	}
-	if err := writer.Write(header); err != nil {
-		fmt.Printf("Failed to write header to output file: %v\n", err)
-		return
-	}
-
-	// Write the data
-	for _, dictWord := range dictList {
-		pprime := 0
-		if dictWord.GemProductPrime {
-			pprime = 1
-		}
-
-		gprime := 0
-		if dictWord.GemSumPrime {
-			gprime = 1
-		}
-
-		record := []string{
-			dictWord.DictionaryWordText,
-			dictWord.RuneglishWordText,
-			dictWord.RuneWordText,
-			dictWord.RuneWordTextNoDoublet,
-			strconv.Itoa(int(dictWord.GemSum)),
-			strconv.Itoa(gprime),
-			dictWord.GemProduct,
-			strconv.Itoa(pprime),
-			strconv.Itoa(dictWord.DictionaryWordLength),
-			strconv.Itoa(dictWord.RuneglishWordLength),
-			strconv.Itoa(dictWord.RuneWordLength),
-			dictWord.RunePattern,
-			dictWord.RunePatternNoDoubletPattern,
-			strconv.Itoa(dictWord.DictRuneNoDoubletLength),
-			dictWord.RuneDistancePattern,
-			dictWord.Language,
-		}
-		if err := writer.Write(record); err != nil {
-			fmt.Printf("Failed to write record to output file: %v\n", err)
-			return
-		}
-	}
-
-	fmt.Printf("CSV file created successfully: %s\n", outputFile)
+	_ = liberdatabase.CloseConnection(dbConn)
 }
 
 // processFile reads a file and adds all words to the word list
