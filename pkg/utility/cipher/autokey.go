@@ -12,8 +12,7 @@ import (
 )
 
 // BulkDecryptAutokeyCipherRaw decodes the text using the Autokey cipher in a brute force fashion.
-func BulkDecryptAutokeyCipherRaw(alphabet, wordList, latinList []string, text string, maxDepth int, file *os.File) (string, error) {
-	latinWordList = latinList
+func BulkDecryptAutokeyCipherRaw(alphabet, wordList []string, text string, maxDepth int, file *os.File) (string, error) {
 	if maxDepth > 10 {
 		return "", fmt.Errorf("max depth of %d is not allowed, the maximum allowed depth is 10", maxDepth)
 	}
@@ -90,8 +89,7 @@ func BulkDecryptAutokeyCipherRaw(alphabet, wordList, latinList []string, text st
 }
 
 // BulkDecryptAutokeyCipher decodes the text using the Vigenere cipher in a brute force fashion.
-func BulkDecryptAutokeyCipher(alphabet, wordList, latinList []string, text string, maxDepth int) (string, error) {
-	latinWordList = latinList
+func BulkDecryptAutokeyCipher(alphabet, wordList []string, text string, maxDepth int) (string, error) {
 	if maxDepth > 10 {
 		return "", fmt.Errorf("max depth of %d is not allowed, the maximum allowed depth is 10", maxDepth)
 	}
@@ -132,17 +130,14 @@ func BulkDecryptAutokeyCipher(alphabet, wordList, latinList []string, text strin
 				}
 
 				latinText := runer.TransposeRuneToLatin(decodedText)
-				totalWords := countWords(latinText)
 
-				if totalWords > 0 {
-					totalText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin: %s\nCount: %d\n\n", decodedText, key, latinText, totalWords)
-					decText := DecipheredText{
-						Count: totalWords,
-						Text:  totalText,
-						Key:   key,
-					}
-					resultsChan <- decText
+				totalText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin: %s\n\n", decodedText, key, latinText)
+				decText := DecipheredText{
+					Count: 0,
+					Text:  totalText,
+					Key:   key,
 				}
+				resultsChan <- decText
 			}
 		}()
 	}

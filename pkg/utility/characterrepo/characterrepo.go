@@ -1,7 +1,6 @@
 package runelib
 
 import (
-	"sort"
 	"strings"
 )
 
@@ -127,24 +126,8 @@ func (repo *CharacterRepo) GetASCIICharFromDec(dec int, includeControlCharacters
 func (repo *CharacterRepo) GetGematriaRunes() []string {
 	var retval []string
 
-	// Create a slice of key-value pairs
-	type kv struct {
-		Key   string
-		Value int
-	}
-	var sortedRunes []kv
-	for k, v := range runeToValueMap {
-		sortedRunes = append(sortedRunes, kv{k, v})
-	}
-
-	// Sort the slice by the integer values
-	sort.Slice(sortedRunes, func(i, j int) bool {
-		return sortedRunes[i].Value < sortedRunes[j].Value
-	})
-
-	// Print the sorted runes
-	for _, kv := range sortedRunes {
-		retval = append(retval, kv.Key)
+	for _, v := range valueToRuneMap {
+		retval = append(retval, v)
 	}
 
 	return retval

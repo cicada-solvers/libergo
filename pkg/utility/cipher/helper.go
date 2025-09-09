@@ -3,7 +3,6 @@ package cipher
 import (
 	"math/big"
 	"sort"
-	"strings"
 )
 
 // AlphabetType defines a custom type for representing different alphabet categories as integer values.
@@ -30,9 +29,6 @@ var processedCounter = big.NewInt(0)
 
 // rateCounter tracks the rate of processed items per minute during the execution of bulk decoding/decryption tasks.
 var rateCounter = big.NewInt(0)
-
-// latinWordList is a slice of strings containing Latin words used for text analysis or cryptographic operations.
-var latinWordList []string
 
 // topResults is a slice of DecipheredText used to store the top decoded texts ranked by their occurrence counts.
 var topResults []DecipheredText
@@ -87,17 +83,6 @@ func generate(wordList []string, length int, current []string, combinations chan
 	for i, word := range wordList {
 		generate(wordList[i:], length-1, append(current, word), combinations)
 	}
-}
-
-// countWords counts the number of words in the text.
-func countWords(text string) int64 {
-	var count int64
-	for _, word := range latinWordList {
-		if strings.Contains(text, word) {
-			count = count + (int64(len(word)) * 2)
-		}
-	}
-	return count
 }
 
 // sortTopResults sorts the top results based on the count of words.
