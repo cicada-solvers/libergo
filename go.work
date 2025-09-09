@@ -66,4 +66,5 @@ use (
 	cmd/delexify
 	cmd/schwifty
 	cmd/kasiski
+	cmd/querytool
 )
