@@ -13,6 +13,7 @@ import (
 // BulkDecryptAutokeyCipherRaw decodes the text using the Autokey cipher in a brute force fashion.
 func BulkDecryptAutokeyCipherRaw(alphabet, wordList []string, text string, db *gorm.DB) error {
 	id := uuid.NewString()
+	list := liberdatabase.GetDictionaryWords(db)
 
 	for _, key := range wordList {
 		keyArray := strings.Split(key, "")
@@ -21,9 +22,11 @@ func BulkDecryptAutokeyCipherRaw(alphabet, wordList []string, text string, db *g
 
 		outputText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin:%s\n\n", decodedText, key, latinText)
 		fmt.Println(outputText)
+		score := ScoreTextWithList(db, outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
+			Score: score,
 		}
 		db.Create(&output)
 	}

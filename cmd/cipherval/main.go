@@ -59,51 +59,63 @@ func main() {
 
 	switch strings.ToLower(*cipherType) {
 	case "caesar":
+		list := liberdatabase.GetDictionaryWords(dbconn)
 		decodedText, decodeErr = cipher.BulkDecodeCaesarStringRaw(alphabetSet, strings.Split(*text, ""))
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
+		score := cipher.ScoreTextWithList(dbconn, outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
+			Score: score,
 		}
 		liberdatabase.AddOutputData(dbconn, output)
 	case "affine":
+		list := liberdatabase.GetDictionaryWords(dbconn)
 		decodedText, decodeErr = cipher.BulkDecodeAffineCipherRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
+		score := cipher.ScoreTextWithList(dbconn, outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
+			Score: score,
 		}
 		liberdatabase.AddOutputData(dbconn, output)
 	case "atbash":
+		list := liberdatabase.GetDictionaryWords(dbconn)
 		decodedText, decodeErr = cipher.BulkDecodeAtbashStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
+		score := cipher.ScoreTextWithList(dbconn, outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
+			Score: score,
 		}
 		liberdatabase.AddOutputData(dbconn, output)
 	case "trithemius":
+		list := liberdatabase.GetDictionaryWords(dbconn)
 		decodedText, decodeErr = cipher.BulkDecodeTrithemiusStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
+		score := cipher.ScoreTextWithList(dbconn, outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
+			Score: score,
 		}
 		liberdatabase.AddOutputData(dbconn, output)
 	case "vigenere":

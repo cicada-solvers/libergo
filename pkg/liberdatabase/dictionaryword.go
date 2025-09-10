@@ -40,13 +40,28 @@ func AddDictionaryWords(db *gorm.DB, dictionaryWords []DictionaryWord) {
 	return
 }
 
+func GetDictionaryWords(db *gorm.DB) []string {
+	var dictionaryWords []DictionaryWord
+	var retval []string
+
+	db.Distinct().Find(&dictionaryWords)
+
+	for _, word := range dictionaryWords {
+		if !slices.Contains(retval, word.RuneglishWordText) {
+			retval = append(retval, word.RuneglishWordText)
+		}
+	}
+
+	return retval
+}
+
 func GetDictionaryWordsByRuneLength(db *gorm.DB, length int) []string {
 	var dictionaryWords []DictionaryWord
 	var retval []string
 	db.Where("dict_rune_length = ?", length).Distinct().Find(&dictionaryWords)
 
 	for _, word := range dictionaryWords {
-		if slices.Contains(retval, word.RuneWordText) == false {
+		if !slices.Contains(retval, word.RuneWordText) {
 			retval = append(retval, word.RuneWordText)
 		}
 	}
