@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"lgstructs"
+	"liberdatabase"
 )
 
 // main is the entry point of the application. It parses input flags, processes text, and outputs the corresponding rune pattern.
@@ -21,12 +21,12 @@ func main() {
 	}
 
 	// Create a DictionaryWord instance
-	dw := lgstructs.DictionaryWord{
+	dw := liberdatabase.DictionaryWord{
 		RuneWordText: *textFlag,
 	}
 
 	// Get the rune pattern
-	pattern := lgstructs.GetRunePattern(dw.RuneWordText)
+	pattern := liberdatabase.GetRunePattern(dw.RuneWordText)
 
 	// Output the result
 	fmt.Println("Pattern:", pattern)

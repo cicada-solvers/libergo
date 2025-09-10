@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/xuri/excelize/v2"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"lgstructs"
+	"liberdatabase"
 	"runer"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/xuri/excelize/v2"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 // Actions is an enumerated type representing various operations or instructions in the RuneDonkey application.
@@ -103,12 +104,12 @@ func (rd *RuneDonkey) GetValuesFromString(value string, textType runer.TextType,
 			valuesToGetFromDB = append(valuesToGetFromDB, fmt.Sprintf("%d", length))
 			break
 		case RunePattern:
-			pattern := lgstructs.GetRunePattern(word)
+			pattern := liberdatabase.GetRunePattern(word)
 			valuesToGetFromDB = append(valuesToGetFromDB, pattern)
 			break
 		case RunePatternNoDoublet:
-			word = lgstructs.RemoveDoublets(strings.Split(word, ""))
-			pattern := lgstructs.GetRunePattern(word)
+			word = liberdatabase.RemoveDoublets(strings.Split(word, ""))
+			pattern := liberdatabase.GetRunePattern(word)
 			valuesToGetFromDB = append(valuesToGetFromDB, pattern)
 			break
 		}

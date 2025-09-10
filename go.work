@@ -35,7 +35,6 @@ use (
 	cmd/cipherval
 	cmd/mob
 	cmd/calrunestats
-	cmd/lupdist
 	cmd/checkhashes
 	cmd/ipaddressgen
 	cmd/checkmultihash
