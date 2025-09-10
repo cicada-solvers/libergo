@@ -21,7 +21,6 @@ func main() {
 	alphabet := flag.String("alphabet", "rune", "The alphabet to use (rune or english)")
 	wordFile := flag.String("wordfile", "", "The text file of words to try for brute force decoding")
 	cipherType := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
-	maxDepth := flag.Int("maxdepth", 1, "The maximum depth for brute force decoding (default is 10)")
 
 	// Parse the flags
 	flag.Parse()
@@ -36,7 +35,6 @@ func main() {
 	fmt.Printf("Alphabet: %s\n", *alphabet)
 	fmt.Printf("Word File: %s\n", *wordFile)
 	fmt.Printf("Cipher: %s\n", *cipherType)
-	fmt.Printf("Max Depth: %d\n", *maxDepth)
 
 	// Add your decoding logic here
 	// Determine the alphabet to use
