@@ -3,173 +3,33 @@ package cipher
 import (
 	runelib "characterrepo"
 	"fmt"
-	"math/big"
-	"os"
+	"liberdatabase"
 	"runer"
-	"runtime"
 	"strings"
-	"sync"
-	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // BulkDecodeVigenereCipherRaw decodes the text using the Vigenere cipher in a brute force fashion.
-func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, maxDepth int, file *os.File) (string, error) {
-	if maxDepth > 10 {
-		return "", fmt.Errorf("max depth of %d is not allowed, the maximum allowed depth is 10", maxDepth)
-	}
+func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *gorm.DB) error {
+	id := uuid.NewString()
 
-	// We are going to put timer to see how many we have processed.
-	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
+	for _, key := range wordList {
+		keyArray := strings.Split(key, "")
+		decodedText := DecodeVigenereCipher(alphabet, keyArray, strings.Split(text, ""))
+		latinText := runer.TransposeRuneToLatin(decodedText)
 
-	go func() {
-		for range processedTicker.C {
-			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
-			rateCounter.SetInt64(int64(0))
+		outputText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin:%s\n\n", decodedText, key, latinText)
+		fmt.Println(outputText)
+		output := liberdatabase.OutputData{
+			DocId: id,
+			Data:  outputText,
 		}
-	}()
-
-	var result strings.Builder
-	combinations := generateCombinations(wordList, maxDepth)
-	combinationChan := make(chan []string)
-	resultsChan := make(chan DecipheredText)
-	var wg sync.WaitGroup
-
-	// Start worker goroutines
-	numWorkers := runtime.NumCPU() + (runtime.NumCPU() / 2) // Adjust based on your system's capabilities
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for combination := range combinationChan {
-				processedCounter.Add(processedCounter, big.NewInt(1))
-				rateCounter.Add(rateCounter, big.NewInt(1))
-
-				key := strings.Join(combination, "")
-				keyArray := strings.Split(key, "")
-				decodedText := DecodeVigenereCipher(alphabet, keyArray, strings.Split(text, ""))
-
-				if decodedText == "" {
-					continue
-				}
-
-				decText := DecipheredText{
-					Count: 0,
-					Text:  decodedText,
-					Key:   key,
-				}
-				resultsChan <- decText
-			}
-		}()
+		db.Create(&output)
 	}
 
-	// Send combinations to workers
-	go func() {
-		for combination := range combinations {
-			combinationChan <- combination
-		}
-		close(combinationChan)
-	}()
-
-	// Close results channel when workers are done
-	go func() {
-		wg.Wait()
-
-		close(resultsChan)
-	}()
-
-	// Collect results
-	for decText := range resultsChan {
-		_, err := file.WriteString(fmt.Sprintf("%s : %s\n", decText.Key, decText.Text))
-		if err != nil {
-			fmt.Printf("Failed to write to file: %v", err)
-		}
-	}
-
-	return result.String(), nil
-}
-
-// BulkDecodeVigenereCipher decodes the text using the Vigenere cipher in a brute force fashion.
-func BulkDecodeVigenereCipher(alphabet, wordList []string, text string, maxDepth int) (string, error) {
-	if maxDepth > 10 {
-		return "", fmt.Errorf("max depth of %d is not allowed, the maximum allowed depth is 10", maxDepth)
-	}
-
-	// We are going to put timer to see how many we have processed.
-	processedTicker := time.NewTicker(time.Minute)
-	defer processedTicker.Stop()
-
-	go func() {
-		for range processedTicker.C {
-			fmt.Printf("Rate: %s/min - Processed %s items\n", rateCounter.String(), processedCounter.String())
-			rateCounter.SetInt64(int64(0))
-		}
-	}()
-
-	var result strings.Builder
-	combinations := generateCombinations(wordList, maxDepth)
-	combinationChan := make(chan []string)
-	resultsChan := make(chan DecipheredText)
-	var wg sync.WaitGroup
-
-	// Start worker goroutines
-	numWorkers := runtime.NumCPU() + (runtime.NumCPU() / 2) // Adjust based on your system's capabilities
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for combination := range combinationChan {
-				processedCounter.Add(processedCounter, big.NewInt(1))
-				rateCounter.Add(rateCounter, big.NewInt(1))
-
-				key := strings.Join(combination, "")
-				keyArray := strings.Split(key, "")
-				decodedText := DecodeVigenereCipher(alphabet, keyArray, strings.Split(text, ""))
-
-				if decodedText == "" {
-					continue
-				}
-
-				latinText := runer.TransposeRuneToLatin(decodedText)
-
-				totalText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin: %s\n\n", decodedText, key, latinText)
-				decText := DecipheredText{
-					Count: 0,
-					Text:  totalText,
-					Key:   key,
-				}
-				resultsChan <- decText
-			}
-		}()
-	}
-
-	// Send combinations to workers
-	go func() {
-		for combination := range combinations {
-			combinationChan <- combination
-		}
-		close(combinationChan)
-	}()
-
-	// Close results channel when workers are done
-	go func() {
-		wg.Wait()
-
-		close(resultsChan)
-	}()
-
-	// Collect results
-	for decText := range resultsChan {
-		topResults = append(topResults, decText)
-		topResults = sortTopResults(topResults)
-	}
-
-	result.Reset()
-	for _, key := range topResults {
-		result.WriteString(key.Text)
-	}
-
-	return result.String(), nil
+	return nil
 }
 
 func DecodeVigenereCipher(alphabet, key, text []string) string {

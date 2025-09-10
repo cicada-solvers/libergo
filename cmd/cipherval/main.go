@@ -6,9 +6,12 @@ import (
 	"cipher"
 	"flag"
 	"fmt"
+	"liberdatabase"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // main initializes the program, parses input flags, validates them, and performs decoding based on the cipher type provided.
@@ -16,7 +19,6 @@ func main() {
 	// Define the flags
 	text := flag.String("text", "", "The text to decode")
 	alphabet := flag.String("alphabet", "rune", "The alphabet to use (rune or english)")
-	outputFile := flag.String("output", "", "The output file to write the results")
 	wordFile := flag.String("wordfile", "", "The text file of words to try for brute force decoding")
 	cipherType := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
 	maxDepth := flag.Int("maxdepth", 1, "The maximum depth for brute force decoding (default is 10)")
@@ -28,26 +30,10 @@ func main() {
 	if *text == "" {
 		log.Fatal("The -text flag is required")
 	}
-	if *outputFile == "" {
-		log.Fatal("The -output flag is required")
-	}
-
-	// Open the output file
-	file, err := os.OpenFile(*outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatalf("Failed to create output file: %v", err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Fatalf("Failed to close output file: %v", err)
-		}
-	}(file)
 
 	// Print the parsed flags (for debugging or further processing)
 	fmt.Printf("Text: %s\n", *text)
 	fmt.Printf("Alphabet: %s\n", *alphabet)
-	fmt.Printf("Output File: %s\n", *outputFile)
 	fmt.Printf("Word File: %s\n", *wordFile)
 	fmt.Printf("Cipher: %s\n", *cipherType)
 	fmt.Printf("Max Depth: %d\n", *maxDepth)
@@ -64,6 +50,11 @@ func main() {
 			"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 	}
 
+	// Database stuff
+	id := uuid.NewString()
+	_, _ = liberdatabase.InitTables()
+	dbconn, _ := liberdatabase.InitConnection()
+
 	// Now we are going to decode the text based on the cipher type
 	var decodedText string
 	var decodeErr error
@@ -75,28 +66,48 @@ func main() {
 			fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		outputText := fmt.Sprintf("%s\n", decodedText)
+		output := liberdatabase.OutputData{
+			DocId: id,
+			Data:  outputText,
+		}
+		liberdatabase.AddOutputData(dbconn, output)
 	case "affine":
 		decodedText, decodeErr = cipher.BulkDecodeAffineCipherRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		outputText := fmt.Sprintf("%s\n", decodedText)
+		output := liberdatabase.OutputData{
+			DocId: id,
+			Data:  outputText,
+		}
+		liberdatabase.AddOutputData(dbconn, output)
 	case "atbash":
 		decodedText, decodeErr = cipher.BulkDecodeAtbashStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		outputText := fmt.Sprintf("%s\n", decodedText)
+		output := liberdatabase.OutputData{
+			DocId: id,
+			Data:  outputText,
+		}
+		liberdatabase.AddOutputData(dbconn, output)
 	case "trithemius":
 		decodedText, decodeErr = cipher.BulkDecodeTrithemiusStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
-		_, err = file.WriteString(fmt.Sprintf("%s\n", decodedText))
+		outputText := fmt.Sprintf("%s\n", decodedText)
+		output := liberdatabase.OutputData{
+			DocId: id,
+			Data:  outputText,
+		}
+		liberdatabase.AddOutputData(dbconn, output)
 	case "vigenere":
 		if *wordFile == "" {
 			log.Fatal("The -wordfile flag is required for Vigenere cipher")
@@ -108,7 +119,7 @@ func main() {
 			return
 		}
 
-		decodedText, decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, *text, *maxDepth, file)
+		decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, *text, dbconn)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
 		}
@@ -123,11 +134,13 @@ func main() {
 			return
 		}
 
-		decodedText, decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, *text, *maxDepth, file)
+		decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, *text, dbconn)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Autokey cipher: %v", decodeErr)
 		}
 	}
+
+	_ = liberdatabase.CloseConnection(dbconn)
 }
 
 // ReadWordsFromTextFile reads all the words from a text file.
