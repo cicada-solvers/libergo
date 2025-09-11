@@ -43,12 +43,18 @@ func AddDictionaryWords(db *gorm.DB, dictionaryWords []DictionaryWord) {
 func GetDictionaryWords(db *gorm.DB) []string {
 	var dictionaryWords []DictionaryWord
 	var retval []string
+	counter := 0
 
 	db.Distinct().Find(&dictionaryWords)
 
 	for _, word := range dictionaryWords {
 		if !slices.Contains(retval, word.RuneglishWordText) {
-			fmt.Printf("Loading %s - %s\n", word.DictionaryWordText, word.RuneglishWordText)
+			if counter == math.MaxInt16 {
+				fmt.Printf("Loading %s - %s\n", word.DictionaryWordText, word.RuneglishWordText)
+				counter = 0
+			}
+			counter++
+
 			retval = append(retval, word.RuneglishWordText)
 		}
 	}
