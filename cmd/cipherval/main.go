@@ -51,7 +51,7 @@ func main() {
 	// Database stuff
 	id := uuid.NewString()
 	_, _ = liberdatabase.InitTables()
-	dbconn, _ := liberdatabase.InitConnection()
+	dbConn, _ := liberdatabase.InitConnection()
 
 	// Now we are going to decode the text based on the cipher type
 	var decodedText string
@@ -59,65 +59,69 @@ func main() {
 
 	switch strings.ToLower(*cipherType) {
 	case "caesar":
-		list := liberdatabase.GetDictionaryWords(dbconn)
+		list := liberdatabase.GetDictionaryWords(dbConn)
+		fmt.Printf("List Length: %d\n", len(list))
 		decodedText, decodeErr = cipher.BulkDecodeCaesarStringRaw(alphabetSet, strings.Split(*text, ""))
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Caesar cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
-		score := cipher.ScoreTextWithList(dbconn, outputText, list)
+		score := cipher.ScoreTextWithList(outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
 			Score: score,
 		}
-		liberdatabase.AddOutputData(dbconn, output)
+		liberdatabase.AddOutputData(dbConn, output)
 	case "affine":
-		list := liberdatabase.GetDictionaryWords(dbconn)
+		list := liberdatabase.GetDictionaryWords(dbConn)
+		fmt.Printf("List Length: %d\n", len(list))
 		decodedText, decodeErr = cipher.BulkDecodeAffineCipherRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Affine cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
-		score := cipher.ScoreTextWithList(dbconn, outputText, list)
+		score := cipher.ScoreTextWithList(outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
 			Score: score,
 		}
-		liberdatabase.AddOutputData(dbconn, output)
+		liberdatabase.AddOutputData(dbConn, output)
 	case "atbash":
-		list := liberdatabase.GetDictionaryWords(dbconn)
+		list := liberdatabase.GetDictionaryWords(dbConn)
+		fmt.Printf("List Length: %d\n", len(list))
 		decodedText, decodeErr = cipher.BulkDecodeAtbashStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Atbash cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
-		score := cipher.ScoreTextWithList(dbconn, outputText, list)
+		score := cipher.ScoreTextWithList(outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
 			Score: score,
 		}
-		liberdatabase.AddOutputData(dbconn, output)
+		liberdatabase.AddOutputData(dbConn, output)
 	case "trithemius":
-		list := liberdatabase.GetDictionaryWords(dbconn)
+		list := liberdatabase.GetDictionaryWords(dbConn)
+		fmt.Printf("List Length: %d\n", len(list))
 		decodedText, decodeErr = cipher.BulkDecodeTrithemiusStringRaw(alphabetSet, *text)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Trithemius cipher: %v", decodeErr)
 		}
 		// Write the decoded text to the output file
 		outputText := fmt.Sprintf("%s\n", decodedText)
-		score := cipher.ScoreTextWithList(dbconn, outputText, list)
+		score := cipher.ScoreTextWithList(outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,
 			Score: score,
 		}
-		liberdatabase.AddOutputData(dbconn, output)
+		liberdatabase.AddOutputData(dbConn, output)
 	case "vigenere":
 		if *wordFile == "" {
 			log.Fatal("The -wordfile flag is required for Vigenere cipher")
@@ -129,7 +133,7 @@ func main() {
 			return
 		}
 
-		decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, *text, dbconn)
+		decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, *text, dbConn)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
 		}
@@ -144,13 +148,13 @@ func main() {
 			return
 		}
 
-		decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, *text, dbconn)
+		decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, *text, dbConn)
 		if decodeErr != nil {
 			fmt.Printf("Failed to decode using Autokey cipher: %v", decodeErr)
 		}
 	}
 
-	_ = liberdatabase.CloseConnection(dbconn)
+	_ = liberdatabase.CloseConnection(dbConn)
 }
 
 // ReadWordsFromTextFile reads all the words from a text file.

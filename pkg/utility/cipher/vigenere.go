@@ -15,6 +15,7 @@ import (
 func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *gorm.DB) error {
 	id := uuid.NewString()
 	list := liberdatabase.GetDictionaryWords(db)
+	fmt.Printf("List Length: %d\n", len(list))
 
 	for _, key := range wordList {
 		keyArray := strings.Split(key, "")
@@ -23,7 +24,7 @@ func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *g
 
 		outputText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin:%s\n\n", decodedText, key, latinText)
 		fmt.Println(outputText)
-		score := ScoreTextWithList(db, outputText, list)
+		score := ScoreTextWithList(outputText, list)
 		output := liberdatabase.OutputData{
 			DocId: id,
 			Data:  outputText,

@@ -19,7 +19,7 @@ func ScoreText(db *gorm.DB, text string) int64 {
 	return score
 }
 
-func ScoreTextWithList(db *gorm.DB, text string, list []string) int64 {
+func ScoreTextWithList(text string, list []string) int64 {
 	score := int64(0)
 	for _, word := range list {
 		if strings.Contains(text, word) {

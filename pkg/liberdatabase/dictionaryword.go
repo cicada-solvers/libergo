@@ -48,6 +48,7 @@ func GetDictionaryWords(db *gorm.DB) []string {
 
 	for _, word := range dictionaryWords {
 		if !slices.Contains(retval, word.RuneglishWordText) {
+			fmt.Printf("Loading %s - %s\n", word.DictionaryWordText, word.RuneglishWordText)
 			retval = append(retval, word.RuneglishWordText)
 		}
 	}
