@@ -9,9 +9,12 @@ import (
 	"liberdatabase"
 	"log"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // main initializes the program, parses input flags, validates them, and performs decoding based on the cipher type provided.
@@ -133,9 +136,29 @@ func main() {
 			return
 		}
 
-		decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordlist, *text, dbConn)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+		// The wait group is used to wait for all the goroutines to finish
+		numWorkers := runtime.NumCPU()
+		wg := sync.WaitGroup{}
+		dbConns := make([]*gorm.DB, numWorkers)
+		wordArrays := SplitStringSliceIntoParts(wordlist, numWorkers)
+
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go func() {
+				dbConns[i], _ = liberdatabase.InitConnection()
+				decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordArrays[i], *text, dbConns[i])
+				if decodeErr != nil {
+					fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
+				}
+
+				wg.Done()
+			}()
+		}
+
+		wg.Wait()
+
+		for i := 0; i < numWorkers; i++ {
+			_ = liberdatabase.CloseConnection(dbConns[i])
 		}
 	case "autokey":
 		if *wordFile == "" {
@@ -148,9 +171,29 @@ func main() {
 			return
 		}
 
-		decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordlist, *text, dbConn)
-		if decodeErr != nil {
-			fmt.Printf("Failed to decode using Autokey cipher: %v", decodeErr)
+		// The wait group is used to wait for all the goroutines to finish
+		numWorkers := runtime.NumCPU()
+		wg := sync.WaitGroup{}
+		dbConns := make([]*gorm.DB, numWorkers)
+		wordArrays := SplitStringSliceIntoParts(wordlist, numWorkers)
+
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go func() {
+				dbConns[i], _ = liberdatabase.InitConnection()
+				decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordArrays[i], *text, dbConns[i])
+				if decodeErr != nil {
+					fmt.Printf("Failed to decode using autokey cipher: %v", decodeErr)
+				}
+
+				wg.Done()
+			}()
+		}
+
+		wg.Wait()
+
+		for i := 0; i < numWorkers; i++ {
+			_ = liberdatabase.CloseConnection(dbConns[i])
 		}
 	}
 
@@ -190,4 +233,43 @@ func ReadWordsFromTextFile(filePath string) ([]string, error) {
 	}
 
 	return words, nil
+}
+
+// SplitStringSliceIntoParts splits items into exactly `parts` contiguous slices,
+// distributing the elements as evenly as possible. Earlier parts receive one
+// extra element if the division is not even. If parts <= 0, it returns an empty result.
+// If parts > len(items), some parts will be empty.
+func SplitStringSliceIntoParts(items []string, parts int) [][]string {
+	if parts <= 0 {
+		return [][]string{}
+	}
+
+	n := len(items)
+	result := make([][]string, parts)
+
+	q := 0 // base size for each part
+	r := 0 // remainder (number of parts that get an extra item)
+	if parts > 0 {
+		q = n / parts
+		r = n % parts
+	}
+
+	idx := 0
+	for i := 0; i < parts; i++ {
+		size := q
+		if i < r {
+			size++
+		}
+
+		if size > 0 {
+			end := idx + size
+			result[i] = items[idx:end]
+			idx = end
+		} else {
+			// Ensure it's an empty (nil) slice; use []string{} if you prefer non-nil.
+			result[i] = nil
+		}
+	}
+
+	return result
 }
