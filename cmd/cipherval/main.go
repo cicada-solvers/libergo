@@ -130,6 +130,8 @@ func main() {
 			log.Fatal("The -wordfile flag is required for Vigenere cipher")
 		}
 
+		scoreList := liberdatabase.GetDictionaryWords(dbConn)
+
 		// Read words from the CSV file
 		wordlist, csvErr := ReadWordsFromTextFile(*wordFile)
 		if csvErr != nil {
@@ -146,7 +148,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				dbConns[i], _ = liberdatabase.InitConnection()
-				decodeErr = cipher.BulkDecodeVigenereCipherRaw(alphabetSet, wordArrays[i], *text, dbConns[i])
+				decodeErr = cipher.BulkDecodeVigenereCipherRaw(i, scoreList, alphabetSet, wordArrays[i], *text, dbConns[i])
 				if decodeErr != nil {
 					fmt.Printf("Failed to decode using Vigenere cipher: %v", decodeErr)
 				}
@@ -165,6 +167,8 @@ func main() {
 			log.Fatal("The -wordfile flag is required for autokey cipher")
 		}
 
+		scoreList := liberdatabase.GetDictionaryWords(dbConn)
+
 		// Read words from the CSV file
 		wordlist, csvErr := ReadWordsFromTextFile(*wordFile)
 		if csvErr != nil {
@@ -181,7 +185,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				dbConns[i], _ = liberdatabase.InitConnection()
-				decodeErr = cipher.BulkDecryptAutokeyCipherRaw(alphabetSet, wordArrays[i], *text, dbConns[i])
+				decodeErr = cipher.BulkDecryptAutokeyCipherRaw(i, scoreList, alphabetSet, wordArrays[i], *text, dbConns[i])
 				if decodeErr != nil {
 					fmt.Printf("Failed to decode using autokey cipher: %v", decodeErr)
 				}

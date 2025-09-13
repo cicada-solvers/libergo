@@ -12,11 +12,10 @@ import (
 )
 
 // BulkDecodeVigenereCipherRaw decodes the text using the Vigenere cipher in a brute force fashion.
-func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *gorm.DB) error {
-	maxScore := int64(0)
+func BulkDecodeVigenereCipherRaw(threadId int, scorelist, alphabet, wordList []string, text string, db *gorm.DB) error {
+	counter := int64(0)
 	id := uuid.NewString()
-	list := liberdatabase.GetDictionaryWords(db)
-	fmt.Printf("List Length: %d\n", len(list))
+	fmt.Printf("List Length: %d\n", len(scorelist))
 
 	for _, key := range wordList {
 		keyArray := strings.Split(key, "")
@@ -24,12 +23,7 @@ func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *g
 		latinText := runer.TransposeRuneToLatin(decodedText)
 
 		outputText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin:%s\n\n", decodedText, key, latinText)
-		score := ScoreTextWithList(outputText, list)
-
-		if score > maxScore {
-			fmt.Printf("New Max Score: %d - %s \n", score, outputText)
-			maxScore = score
-		}
+		score := ScoreTextWithList(outputText, scorelist)
 
 		output := liberdatabase.OutputData{
 			DocId: id,
@@ -37,6 +31,11 @@ func BulkDecodeVigenereCipherRaw(alphabet, wordList []string, text string, db *g
 			Score: score,
 		}
 		db.Create(&output)
+
+		counter++
+		if counter%1000 == 0 {
+			fmt.Printf("%d - Decoded %d/%d\n", threadId, counter, len(wordList))
+		}
 	}
 
 	return nil
