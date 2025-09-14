@@ -15,7 +15,7 @@ var charRepo *runelib.CharacterRepo
 // main is the entry point of the program.
 func main() {
 	textFlag := flag.String("text", "", "Text to shift")
-	shiftFlag := flag.Int("shift", 0, "Number of positions to shift")
+	shiftFlag := flag.Int("shift", 3, "Number of positions to shift")
 	textDirectionFlag := flag.String("direction", "left", "Direction to shift text (left or right)")
 	flag.Parse()
 
@@ -46,7 +46,7 @@ func main() {
 				direction = "left"
 			}
 
-			directionValue = int(math.Abs(float64(directionValue)))
+			directionValue = int(math.Abs(float64(*shiftFlag)))
 		}
 
 		fmt.Printf("Word: %s - Direction %s - Shift %d \n", word, direction, directionValue)

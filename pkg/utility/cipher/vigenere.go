@@ -33,7 +33,7 @@ func BulkDecodeVigenereCipherRaw(threadId int, scorelist, alphabet, wordList []s
 		db.Create(&output)
 
 		counter++
-		if counter%1000 == 0 {
+		if counter%10000 == 0 {
 			fmt.Printf("%d - Decoded %d/%d\n", threadId, counter, len(wordList))
 		}
 	}

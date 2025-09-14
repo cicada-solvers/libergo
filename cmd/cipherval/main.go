@@ -24,6 +24,7 @@ func main() {
 	alphabet := flag.String("alphabet", "rune", "The alphabet to use (rune or english)")
 	wordFile := flag.String("wordfile", "", "The text file of words to try for brute force decoding")
 	cipherType := flag.String("ciphertype", "caesar", "The cipher to use (vigenere, atbash, affine, autokey, caesar, trithemius)")
+	chars := flag.String("chars", "", "The custom alphabet to use")
 
 	// Parse the flags
 	flag.Parse()
@@ -46,6 +47,8 @@ func main() {
 	if strings.ToLower(*alphabet) == "rune" {
 		repo := runelib.NewCharacterRepo()
 		alphabetSet = repo.GetGematriaRunes()
+	} else if strings.ToLower(*alphabet) == "custom" {
+		alphabetSet = strings.Split(*chars, "")
 	} else {
 		alphabetSet = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
 			"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
