@@ -22,7 +22,7 @@ func BulkDecodeVigenereCipherRaw(threadId int, scorelist, alphabet, wordList []s
 		decodedText := DecodeVigenereCipher(alphabet, keyArray, strings.Split(text, ""))
 		latinText := runer.TransposeRuneToLatin(decodedText)
 
-		outputText := fmt.Sprintf("Decoded: %s\nKey: %s\nLatin:%s\n\n", decodedText, key, latinText)
+		outputText := fmt.Sprintf("Latin: %s\nKey: %s\nAlphabet: %v\nDecoded:%s\n", latinText, key, alphabet, decodedText)
 		score := ScoreTextWithList(outputText, scorelist)
 
 		output := liberdatabase.OutputData{
