@@ -36,10 +36,12 @@ func main() {
 	for _, c := range alphabetArray {
 		runeCounter := make(map[string]int)
 		tmpText := ""
+		totalCount := 0
 
 		if len(strings.Split(c, "")) > 0 {
+			tmpText = strings.ReplaceAll(*text, " ", "")
 			for _, r := range strings.Split(c, "") {
-				tmpText = strings.ReplaceAll(*text, r, "")
+				tmpText = strings.ReplaceAll(tmpText, r, "")
 			}
 		} else {
 			tmpText = strings.ReplaceAll(*text, c, "")
@@ -48,18 +50,24 @@ func main() {
 		tmpArray := strings.Split(tmpText, "")
 
 		for _, r := range tmpArray {
+			if !charRepo.IsRune(r, false) {
+				continue
+			}
+
 			if _, ok := runeCounter[r]; ok {
 				runeCounter[r]++
 			} else {
 				runeCounter[r] = 1
 			}
+
+			totalCount++
 		}
 
-		writeMapToExcel(runeCounter, *outputFile, c)
+		writeMapToExcel(runeCounter, *outputFile, c, totalCount)
 	}
 }
 
-func writeMapToExcel(mapOfRunes map[string]int, outputFileName string, runeVal string) {
+func writeMapToExcel(mapOfRunes map[string]int, outputFileName string, runeVal string, totalCount int) {
 	var (
 		f        *excelize.File
 		err      error
@@ -94,6 +102,10 @@ func writeMapToExcel(mapOfRunes map[string]int, outputFileName string, runeVal s
 		log.Printf("failed to set header: %v", err)
 		return
 	}
+	if err := f.SetCellValue(sheetName, "C1", "Percentage"); err != nil {
+		log.Printf("failed to set header: %v", err)
+		return
+	}
 
 	// Write rows sorted by rune for stable output
 	keys := make([]string, 0, len(mapOfRunes))
@@ -112,10 +124,21 @@ func writeMapToExcel(mapOfRunes map[string]int, outputFileName string, runeVal s
 			log.Printf("failed to write count at row %d: %v", row, err)
 			return
 		}
+
+		percentage := float64(mapOfRunes[k]) / float64(totalCount) * 100
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), fmt.Sprintf("%.2f", percentage)); err != nil {
+			log.Printf("failed to write percentage at row %d: %v", row, err)
+		}
 		row++
 	}
 
 	f.SetActiveSheet(idx)
+
+	// Remove Sheet 1
+	delError := f.DeleteSheet("Sheet1")
+	if delError != nil {
+		fmt.Printf("failed to delete Sheet 1: %v", delError)
+	}
 
 	if existing {
 		if err := f.Save(); err != nil {
