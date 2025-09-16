@@ -66,4 +66,5 @@ use (
 	cmd/schwifty
 	cmd/kasiski
 	cmd/querytool
+	cmd/runesub
 )
