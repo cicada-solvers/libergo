@@ -67,4 +67,6 @@ use (
 	cmd/kasiski
 	cmd/querytool
 	cmd/runesub
+	cmd/phonegen
+	cmd/bin2byte
 )
