@@ -12,7 +12,6 @@ import (
 
 func main() {
 	inPath := flag.String("dir", "", "Path to the input files to read bytes from")
-	outfileBase := "outfile"
 	flag.Usage = usage
 	flag.Parse()
 
@@ -23,11 +22,13 @@ func main() {
 
 	filesToArray, _ := listFilesRecursive(*inPath)
 
-	for counter, file := range filesToArray {
-		fmt.Printf("Processing file: %s\n", file)
+	for _, file := range filesToArray {
+		key := filepath.Base(file)
+
+		fmt.Printf("Processing file: %s\n", key)
 		data, _ := os.ReadFile(file)
 		dataToWrite := bytesToCSV(data)
-		writeBytesCSV(file, dataToWrite, fmt.Sprintf("%s_%d.txt", outfileBase, counter))
+		writeBytesCSV(file, dataToWrite, fmt.Sprintf("%s.txt", key))
 	}
 
 	fmt.Printf("Wrote files\n")
@@ -39,7 +40,7 @@ func usage() {
 }
 
 func listFilesRecursive(root string) ([]string, error) {
-	var files []string
+	files := make([]string, 8192)
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			// Skip entries we can't access but continue walking
@@ -98,7 +99,7 @@ func writeBytesCSV(filename string, data string, outputPath string) {
 	}(w)
 
 	// Write: filename,data\n as a CSV-like line
-	dataToWrite := fmt.Sprintf("%s|%s\n\n", filename, data)
+	dataToWrite := fmt.Sprintf("%s", data)
 	if _, writeError := w.WriteString(dataToWrite); writeError != nil {
 		fmt.Printf("write filename: %w", writeError)
 	}
