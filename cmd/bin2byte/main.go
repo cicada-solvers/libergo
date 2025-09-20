@@ -5,15 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 )
 
 func main() {
-	inPath := flag.String("in", "", "Path to the input file to read bytes from")
-	outPath := flag.String("out", "", "Path to the output CSV file (defaults to <input>.bytes.txt)")
+	inPath := flag.String("dir", "", "Path to the input files to read bytes from")
+	outfileBase := "outfile"
 	flag.Usage = usage
 	flag.Parse()
 
@@ -22,92 +21,85 @@ func main() {
 		os.Exit(2)
 	}
 
-	info, err := os.Stat(*inPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: cannot access input file: %v\n", err)
-		os.Exit(1)
-	}
-	if !info.Mode().IsRegular() {
-		fmt.Fprintf(os.Stderr, "Error: input is not a regular file\n")
-		os.Exit(1)
+	filesToArray, _ := listFilesRecursive(*inPath)
+
+	for counter, file := range filesToArray {
+		fmt.Printf("Processing file: %s\n", file)
+		data, _ := os.ReadFile(file)
+		dataToWrite := bytesToCSV(data)
+		writeBytesCSV(file, dataToWrite, fmt.Sprintf("%s_%d.txt", outfileBase, counter))
 	}
 
-	out := *outPath
-	if out == "" {
-		out = outputPathFor(*inPath)
-	}
-
-	if err := writeBytesCSV(*inPath, out); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Wrote byte CSV to: %s\n", out)
+	fmt.Printf("Wrote files\n")
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s -in <input-file> [-out <output-file>]\n", filepath.Base(os.Args[0]))
+	fmt.Printf("Usage: %s -in <input-file> [-out <output-file>]\n", filepath.Base(os.Args[0]))
 	flag.PrintDefaults()
 }
 
-func outputPathFor(inputPath string) string {
-	dir := filepath.Dir(inputPath)
-	base := filepath.Base(inputPath)
-	return filepath.Join(dir, base+".bytes.txt")
+func listFilesRecursive(root string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			// Skip entries we can't access but continue walking
+			_, _ = fmt.Fprintf(os.Stderr, "Skipping %s: %v\n", path, err)
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
 }
 
-func writeBytesCSV(inputPath, outputPath string) error {
-	in, err := os.Open(inputPath)
-	if err != nil {
-		return fmt.Errorf("open input: %w", err)
+// bytesToCSV converts a byte slice to a comma-separated list of decimal numbers.
+func bytesToCSV(b []byte) string {
+	if len(b) == 0 {
+		return ""
 	}
-	defer in.Close()
+	// Pre-size roughly: up to 4 chars per byte plus commas
+	out := make([]byte, 0, len(b)*4)
+	first := true
+	for _, v := range b {
+		if first {
+			first = false
+		} else {
+			out = append(out, ',')
+		}
+		out = strconv.AppendInt(out, int64(v), 10)
+	}
+	return string(out)
+}
 
-	out, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("create output: %w", err)
+func writeBytesCSV(filename string, data string, outputPath string) {
+	// Open output in append mode (create if missing)
+	out, openError := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if openError != nil {
+		fmt.Printf("open output: %w", openError)
 	}
 	defer func() {
-		if cerr := out.Close(); err == nil && cerr != nil {
-			err = cerr
+		if closeError := out.Close(); closeError == nil && closeError != nil {
+			fmt.Printf("close output: %w", closeError)
 		}
 	}()
 
-	reader := bufio.NewReader(in)
-	writer := bufio.NewWriter(out)
-	defer writer.Flush()
+	w := bufio.NewWriter(out)
+	defer func(w *bufio.Writer) {
+		flushErr := w.Flush()
+		if flushErr != nil {
+			flushErr = errors.New("flush writer: " + flushErr.Error())
+		}
+	}(w)
 
-	const bufSize = 64 * 1024
-	buf := make([]byte, bufSize)
-
-	first := true
-	for {
-		n, rerr := reader.Read(buf)
-		if n > 0 {
-			tmp := make([]byte, 0, n*4)
-			for i := 0; i < n; i++ {
-				if first {
-					first = false
-				} else {
-					tmp = append(tmp, ',')
-				}
-				tmp = strconv.AppendInt(tmp, int64(buf[i]), 10)
-			}
-			if _, werr := writer.Write(tmp); werr != nil {
-				return fmt.Errorf("write output: %w", werr)
-			}
-		}
-		if errors.Is(rerr, io.EOF) {
-			break
-		}
-		if rerr != nil {
-			return fmt.Errorf("read input: %w", rerr)
-		}
+	// Write: filename,data\n as a CSV-like line
+	dataToWrite := fmt.Sprintf("%s|%s\n\n", filename, data)
+	if _, writeError := w.WriteString(dataToWrite); writeError != nil {
+		fmt.Printf("write filename: %w", writeError)
 	}
-
-	if _, werr := writer.WriteString("\n"); werr != nil {
-		return fmt.Errorf("finalize output: %w", werr)
-	}
-
-	return nil
 }
