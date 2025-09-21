@@ -81,4 +81,5 @@ use (
 	cmd/runesub
 	cmd/phonegen
 	cmd/bin2byte
+	cmd/pngen
 )
