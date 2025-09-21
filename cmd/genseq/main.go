@@ -15,7 +15,7 @@ func main() {
 	titler.PrintTitle("Sequence Generator")
 
 	// Define the named parameters
-	maxNumber := flag.Int("max", 100, "The maximum number")
+	maxNumberString := flag.String("max", "100", "The maximum number")
 	sequenceType := flag.String("type", "default", "The type of sequence")
 	positional := flag.Bool("positional", false, "Whether the sequence is positional")
 	help := flag.Bool("help", false, "List supported sequences and describe flags")
@@ -58,9 +58,16 @@ func main() {
 	}
 
 	// Print the parameters to the console
-	fmt.Printf("Max Number: %d\n", *maxNumber)
+	fmt.Printf("Max Number: %s\n", *maxNumberString)
 	fmt.Printf("Sequence Type: %s\n", *sequenceType)
 	fmt.Printf("Positional: %t\n", *positional)
+
+	maxNumber := new(big.Int)
+	maxNumber, ok := maxNumber.SetString(*maxNumberString, 10)
+	if !ok {
+		fmt.Printf("Invalid max number: %s\n", *maxNumberString)
+		os.Exit(1)
+	}
 
 	// Generate and print the sequence based on the sequence type
 	var sequence *sequences.NumericSequence
@@ -68,31 +75,31 @@ func main() {
 
 	switch *sequenceType {
 	case "central_polygonal":
-		sequence, err = sequences.GetCentralPolygonalNumbersSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetCentralPolygonalNumbersSequence(maxNumber, *positional)
 	case "cubes":
-		sequence, err = sequences.GetCubesSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetCubesSequence(maxNumber, *positional)
 	case "natural":
-		sequence, err = sequences.GetNaturalSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetNaturalSequence(maxNumber, *positional)
 	case "prime":
-		sequence, err = sequences.GetPrimeSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetPrimeSequence(maxNumber, *positional)
 	case "fibonacci_prime":
-		sequence, err = sequences.GetFibonacciPrimeSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetFibonacciPrimeSequence(maxNumber, *positional)
 	case "cake":
-		sequence, err = sequences.GetCakeSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetCakeSequence(maxNumber, *positional)
 	case "catalan":
-		sequence, err = sequences.GetCatalanSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetCatalanSequence(maxNumber, *positional)
 	case "totient":
-		sequence, err = sequences.GetTotientSequence(big.NewInt(int64(*maxNumber)))
+		sequence, err = sequences.GetTotientSequence(maxNumber)
 	case "totient_prime":
-		sequence, err = sequences.GetTotientPrimeSequence(big.NewInt(int64(*maxNumber)))
+		sequence, err = sequences.GetTotientPrimeSequence(maxNumber)
 	case "fibonacci":
-		sequence, err = sequences.GetFibonacciSequence(big.NewInt(int64(*maxNumber)))
+		sequence, err = sequences.GetFibonacciSequence(maxNumber)
 	case "zekendorf":
-		sequence, err = sequences.GetZekendorfRepresentationSequence(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GetZekendorfRepresentationSequence(maxNumber, *positional)
 	case "lucas":
-		sequence, err = sequences.GenerateLucas(big.NewInt(int64(*maxNumber)), *positional)
+		sequence, err = sequences.GenerateLucas(maxNumber, *positional)
 	case "collatz":
-		sequence, err = sequences.GetCollatzSequence(int64(*maxNumber), *positional)
+		sequence, err = sequences.GetCollatzSequence(maxNumber.Int64(), *positional)
 	default:
 		fmt.Printf("Unknown sequence type: %s\n", *sequenceType)
 		os.Exit(1)
