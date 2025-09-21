@@ -1,4 +1,4 @@
-package hashinglib
+package blake
 
 import (
 	"encoding/binary"

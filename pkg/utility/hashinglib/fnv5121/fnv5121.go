@@ -1,0 +1,90 @@
+package fnv5121
+
+// FNV-1 (and FNV-1a) 512-bit hash implementation.
+
+import (
+	"encoding/binary"
+)
+
+// 512-bit offset basis for FNV-1/FNV-1a.
+//
+// Note: FNV defines big 512-bit constants. Here they are encoded as big-endian bytes
+// with only the low words non-zero according to the published parameters.
+var offset512 = [64]byte{
+	// ... high zeros ...
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x84, 0xF3,
+}
+
+// 512-bit FNV prime
+var prime512 = [64]byte{
+	// ... high zeros ...
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB3,
+}
+
+// Hash computes the FNV-1 512-bit hash and returns a 64-byte slice.
+func Hash(msg []byte) []byte {
+	h := offset512
+	for _, b := range msg {
+		mul512(&h, &prime512)
+		h[63] ^= b
+	}
+	out := make([]byte, 64)
+	copy(out, h[:])
+	return out
+}
+
+// HashA computes the FNV-1a 512-bit hash and returns a 64-byte slice.
+func HashA(msg []byte) []byte {
+	h := offset512
+	for _, b := range msg {
+		h[63] ^= b
+		mul512(&h, &prime512)
+	}
+	out := make([]byte, 64)
+	copy(out, h[:])
+	return out
+}
+
+// mul512: h = (h * p) mod 2^512, using big-endian base 2^32 limbs.
+func mul512(h *[64]byte, p *[64]byte) {
+	const limbs = 16
+	var a32, b32 [limbs]uint32
+	for i := 0; i < limbs; i++ {
+		a32[i] = binary.BigEndian.Uint32(h[i*4:])
+		b32[i] = binary.BigEndian.Uint32(p[i*4:])
+	}
+	var acc [limbs * 2]uint64
+	for i := 0; i < limbs; i++ {
+		ai := uint64(a32[i])
+		for j := 0; j < limbs; j++ {
+			acc[i+j] += ai * uint64(b32[j])
+		}
+	}
+	// propagate carries from least significant towards most significant
+	var carry uint64
+	for i := limbs*2 - 1; i >= 0; i-- {
+		acc[i] += carry
+		carry = acc[i] >> 32
+		acc[i] &= 0xFFFFFFFF
+	}
+	// keep low 512 bits (the least significant 16 limbs)
+	var out [64]byte
+	for i := 0; i < limbs; i++ {
+		binary.BigEndian.PutUint32(out[i*4:], uint32(acc[i+limbs]))
+	}
+	*h = out
+}

@@ -1,43 +1,49 @@
 package main
 
 import (
+	"blake"
 	"bufio"
+	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/hex"
+	"flag"
 	"fmt"
-	"github.com/jzelinskie/whirlpool"
-	"golang.org/x/crypto/blake2b"
-	"hashinglib"
+	"fnv5120"
+	"fnv5121"
+	"groestl"
+	"io"
+	jh2 "jh"
+	"keccak3"
+	"lsh"
+	"md6"
 	"os"
 	"runtime"
+	skein2 "skein"
+	"strconv"
+	"streebog"
+	"strings"
 	"sync"
+
+	"github.com/jzelinskie/whirlpool"
+	"golang.org/x/crypto/blake2b"
 )
 
 // main reads a file line by line and processes each line concurrently to match against a predefined hash value.
 func main() {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
 
-	// Check if the user provided an argument
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: checkmultihash <file-name>")
-		return
-	}
+	filename := flag.String("filename", "", "File to analyze")
+	isByteFile := flag.Bool("bytefile", false, "File contains hashes")
 
-	// Get the file name from the arguments
-	fileName := os.Args[1]
+	// Parse the flags
+	flag.Parse()
 
-	// Open the file
-	file, err := os.Open(fileName)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return
+	// Validate that text was provided
+	if *filename == "" {
+		fmt.Println("Error: No file provided for analysis")
+		flag.Usage()
+		os.Exit(1)
 	}
-	defer func(file *os.File) {
-		closeErr := file.Close()
-		if closeErr != nil {
-			fmt.Printf("Error closing file: %v\n", closeErr)
-		}
-	}(file)
 
 	// Create a channel to send lines
 	linesChan := make(chan string)
@@ -54,32 +60,82 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for line := range linesChan {
-				processLine(line, existingHash)
+				processLine(line, existingHash, *isByteFile)
 			}
 		}()
 	}
 
 	// Read lines from the file and send them to the channel
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		linesChan <- scanner.Text()
+	lines, fileError := ReadFileLinesBytewise(*filename)
+	if fileError != nil {
+		fmt.Printf("Error reading file: %v\n", fileError)
+		os.Exit(1)
 	}
-	close(linesChan)
 
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
-		return
+	for _, line := range lines {
+		linesChan <- line
 	}
+
+	close(linesChan)
 
 	// Wait for all workers to finish
 	wg.Wait()
 }
 
+// ReadFileLinesBytewise reads the file at path one byte at a time and returns its lines.
+// It treats '\n' as line separator and strips a preceding '\r' (handling CRLF).
+func ReadFileLinesBytewise(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	var (
+		lines []string
+		cur   []byte
+	)
+
+	for {
+		b, err := r.ReadByte()
+		if err != nil {
+			if err == io.EOF {
+				if len(cur) > 0 {
+					lines = append(lines, string(cur))
+				}
+				break
+			}
+			return nil, err
+		}
+
+		if b == '\n' {
+			// Trim trailing '\r' if present (CRLF)
+			if n := len(cur); n > 0 && cur[n-1] == '\r' {
+				cur = cur[:n-1]
+			}
+			lines = append(lines, string(cur))
+			cur = cur[:0]
+			continue
+		}
+		cur = append(cur, b)
+	}
+
+	return lines, nil
+}
+
 // processLine processes an input string by generating its hash values and compares them with an existing hash.
 // If a match is found, it outputs the matching hash type and value along with the input string.
-func processLine(inputString, existingHash string) {
+func processLine(inputString, existingHash string, isByteFile bool) {
 	// Convert the string to a byte array
-	byteArray := []byte(inputString)
+	var byteArray []byte
+
+	if isByteFile {
+		convertedString := strings.ReplaceAll(inputString, " ", "")
+		byteArray = convertByteCsvToByte(convertedString)
+	} else {
+		byteArray = convertByteCsvToByte(inputString)
+	}
 
 	hashes := generateHashes(byteArray)
 
@@ -90,6 +146,24 @@ func processLine(inputString, existingHash string) {
 	}
 }
 
+func convertByteCsvToByte(inputString string) []byte {
+	byteArray := make([]byte, 0)
+	byteStringArray := strings.Split(inputString, ",")
+	for _, byteStr := range byteStringArray {
+		s := strings.TrimSpace(byteStr)
+		if s == "" {
+			continue
+		}
+		v, err := strconv.ParseUint(s, 10, 8)
+		if err != nil {
+			// handle error as needed; here we skip invalid entries
+			continue
+		}
+		byteArray = append(byteArray, byte(v))
+	}
+	return byteArray
+}
+
 // generateHashes computes hash values for the input data using SHA-512, Whirlpool-512, Blake2b-512, and Blake-512 algorithms.
 // It returns a map where keys are hash algorithm names and values are corresponding hash strings.
 func generateHashes(data []byte) map[string]string {
@@ -97,6 +171,14 @@ func generateHashes(data []byte) map[string]string {
 
 	sha512Hash := sha512.Sum512(data)
 	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
+
+	sha3512Hash := sha3.New512()
+	_, err := sha3512Hash.Write(data)
+	if err != nil {
+		return nil
+	}
+	sha3Hash := sha3512Hash.Sum(nil)
+	hashes["SHA3-512"] = hex.EncodeToString(sha3Hash)
 
 	whirlpoolHash := whirlpool.New()
 	whirlpoolHash.Write(data)
@@ -106,8 +188,56 @@ func generateHashes(data []byte) map[string]string {
 	blake2bHash := blake2b.Sum512(data)
 	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
 
-	blake512Hash := hashinglib.Blake512Hash(data)
+	blake512Hash := blake.Blake512Hash(data)
 	hashes["Blake-512"] = hex.EncodeToString(blake512Hash)
+
+	jh := jh2.NewJH512()
+	jh.Write(data)
+	jhHash := jh.Sum(nil)
+	hashes["JH-512"] = hex.EncodeToString(jhHash)
+
+	skein := skein2.NewSkein512()
+	skein.Write(data)
+	skeinHash := skein.Sum(nil)
+	hashes["Skein-512"] = hex.EncodeToString(skeinHash)
+
+	grostl := groestl.NewGroestl512()
+	grostl.Write(data)
+	grostlHash := grostl.Sum(nil)
+	hashes["Groestl-512"] = hex.EncodeToString(grostlHash)
+
+	keccak3512 := keccak3.Keccak3_512(data)
+	hashes["Keccak3-512"] = hex.EncodeToString(keccak3512)
+
+	//whirlpool0 := whirlpool2.Whirlpool0(data)
+	//hashes["Whirlpool-0"] = hex.EncodeToString(whirlpool0)
+	//
+	//whirlpoolT := whirlpool2.WhirlpoolT(data)
+	//hashes["Whirlpool-T"] = hex.EncodeToString(whirlpoolT)
+
+	//cube := cube2.CubeHash512(data)
+	//hashes["Cube-512"] = hex.EncodeToString(cube)
+
+	streebogHash := streebog.Hash512(data)
+	hashes["Streebog-512"] = hex.EncodeToString(streebogHash)
+
+	fnv5120hash := fnv5120.Hash512(data)
+	hashes["FNV5120-512"] = hex.EncodeToString(fnv5120hash)
+
+	fnv5120ahash := fnv5120.Hash512a(data)
+	hashes["FNV5120A-512"] = hex.EncodeToString(fnv5120ahash)
+
+	fnv5121hash := fnv5121.Hash(data)
+	hashes["FNV5121-512"] = hex.EncodeToString(fnv5121hash)
+
+	fnv5121ahash := fnv5121.HashA(data)
+	hashes["FNV5121A-512"] = hex.EncodeToString(fnv5121ahash)
+
+	md6hash := md6.Sum512(data)
+	hashes["MD6-512"] = hex.EncodeToString(md6hash)
+
+	lshHash := lsh.Sum512(data)
+	hashes["LSHH-512"] = hex.EncodeToString(lshHash)
 
 	return hashes
 }

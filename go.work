@@ -12,6 +12,18 @@ use (
 	pkg/utility/titler
 	pkg/utility/cipher
 	pkg/lgstructs
+	pkg/utility/hashinglib/whirlpool
+	pkg/utility/hashinglib/skein
+	pkg/utility/hashinglib/keccak3
+	pkg/utility/hashinglib/jh
+	pkg/utility/hashinglib/groestl
+	pkg/utility/hashinglib/cube
+	pkg/utility/hashinglib/blake
+	pkg/utility/hashinglib/streebog
+	pkg/utility/hashinglib/fnv5120
+	pkg/utility/hashinglib/fnv5121
+	pkg/utility/hashinglib/lsh
+	pkg/utility/hashinglib/md6
 	cmd/genseq
 	cmd/isprime
 	cmd/rencode
