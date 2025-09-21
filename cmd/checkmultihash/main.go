@@ -89,7 +89,12 @@ func ReadFileLinesBytewise(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		closeError := f.Close()
+		if closeError != nil {
+			fmt.Printf("Error: %v\n", closeError)
+		}
+	}(f)
 
 	r := bufio.NewReader(f)
 	var (
