@@ -237,7 +237,7 @@ func generateHashes(data []byte) map[string]string {
 	hashes["MD6-512"] = hex.EncodeToString(md6hash)
 
 	lshHash := lsh.Sum512(data)
-	hashes["LSHH-512"] = hex.EncodeToString(lshHash)
+	hashes["LSH-512"] = hex.EncodeToString(lshHash)
 
 	return hashes
 }
