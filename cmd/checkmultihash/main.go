@@ -21,6 +21,8 @@ import (
 	"sync"
 )
 
+var linesChan chan string
+
 // main reads a file line by line and processes each line concurrently to match against a predefined hash value.
 func main() {
 	existingHash := "36367763ab73783c7af284446c59466b4cd653239a311cb7116d4618dee09a8425893dc7500b464fdaf1672d7bef5e891c6e2274568926a49fb4f45132c2a8b4"
@@ -39,7 +41,7 @@ func main() {
 	}
 
 	// Create a channel to send lines
-	linesChan := make(chan string)
+	linesChan = make(chan string)
 
 	// Use a WaitGroup to wait for all goroutines to finish
 	var wg sync.WaitGroup
@@ -59,17 +61,14 @@ func main() {
 	}
 
 	// Read lines from the file and send them to the channel
-	lines, fileError := ReadFileLinesBytewise(*filename)
-	if fileError != nil {
-		fmt.Printf("Error reading file: %v\n", fileError)
-		os.Exit(1)
-	}
-
-	for _, line := range lines {
-		linesChan <- line
-	}
-
-	close(linesChan)
+	go func() {
+		defer close(linesChan)
+		fileError := ReadFileLinesBytewise(*filename)
+		if fileError != nil {
+			fmt.Printf("Error reading file: %v\n", fileError)
+			os.Exit(1)
+		}
+	}()
 
 	// Wait for all workers to finish
 	wg.Wait()
@@ -77,10 +76,10 @@ func main() {
 
 // ReadFileLinesBytewise reads the file at path one byte at a time and returns its lines.
 // It treats '\n' as line separator and strips a preceding '\r' (handling CRLF).
-func ReadFileLinesBytewise(path string) ([]string, error) {
+func ReadFileLinesBytewise(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func(f *os.File) {
 		closeError := f.Close()
@@ -91,8 +90,7 @@ func ReadFileLinesBytewise(path string) ([]string, error) {
 
 	r := bufio.NewReader(f)
 	var (
-		lines []string
-		cur   []byte
+		cur []byte
 	)
 
 	for {
@@ -100,11 +98,11 @@ func ReadFileLinesBytewise(path string) ([]string, error) {
 		if err != nil {
 			if err == io.EOF {
 				if len(cur) > 0 {
-					lines = append(lines, string(cur))
+					linesChan <- string(cur)
 				}
 				break
 			}
-			return nil, err
+			return err
 		}
 
 		if b == '\n' {
@@ -112,14 +110,14 @@ func ReadFileLinesBytewise(path string) ([]string, error) {
 			if n := len(cur); n > 0 && cur[n-1] == '\r' {
 				cur = cur[:n-1]
 			}
-			lines = append(lines, string(cur))
+			linesChan <- string(cur)
 			cur = cur[:0]
 			continue
 		}
 		cur = append(cur, b)
 	}
 
-	return lines, nil
+	return nil
 }
 
 // processLine processes an input string by generating its hash values and compares them with an existing hash.
@@ -132,7 +130,7 @@ func processLine(inputString, existingHash string, isByteFile bool) {
 		convertedString := strings.ReplaceAll(inputString, " ", "")
 		byteArray = convertByteCsvToByte(convertedString)
 	} else {
-		byteArray = convertByteCsvToByte(inputString)
+		byteArray = []byte(inputString)
 	}
 
 	hashes := generateHashes(byteArray)
