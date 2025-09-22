@@ -3,8 +3,6 @@ package main
 import (
 	"blake"
 	"bufio"
-	"crypto/sha3"
-	"crypto/sha512"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -13,19 +11,14 @@ import (
 	"groestl"
 	"io"
 	jh2 "jh"
-	"keccak3"
 	"lsh"
 	"md6"
 	"os"
 	"runtime"
 	skein2 "skein"
 	"strconv"
-	"streebog"
 	"strings"
 	"sync"
-
-	"github.com/jzelinskie/whirlpool"
-	"golang.org/x/crypto/blake2b"
 )
 
 // main reads a file line by line and processes each line concurrently to match against a predefined hash value.
@@ -174,25 +167,6 @@ func convertByteCsvToByte(inputString string) []byte {
 func generateHashes(data []byte) map[string]string {
 	hashes := make(map[string]string)
 
-	sha512Hash := sha512.Sum512(data)
-	hashes["SHA-512"] = hex.EncodeToString(sha512Hash[:])
-
-	sha3512Hash := sha3.New512()
-	_, err := sha3512Hash.Write(data)
-	if err != nil {
-		return nil
-	}
-	sha3Hash := sha3512Hash.Sum(nil)
-	hashes["SHA3-512"] = hex.EncodeToString(sha3Hash)
-
-	whirlpoolHash := whirlpool.New()
-	whirlpoolHash.Write(data)
-	whirlHash := whirlpoolHash.Sum(nil)
-	hashes["Whirlpool-512"] = hex.EncodeToString(whirlHash[:])
-
-	blake2bHash := blake2b.Sum512(data)
-	hashes["Blake2b-512"] = hex.EncodeToString(blake2bHash[:])
-
 	blake512Hash := blake.Blake512Hash(data)
 	hashes["Blake-512"] = hex.EncodeToString(blake512Hash)
 
@@ -210,21 +184,6 @@ func generateHashes(data []byte) map[string]string {
 	grostl.Write(data)
 	grostlHash := grostl.Sum(nil)
 	hashes["Groestl-512"] = hex.EncodeToString(grostlHash)
-
-	keccak3512 := keccak3.Keccak3_512(data)
-	hashes["Keccak3-512"] = hex.EncodeToString(keccak3512)
-
-	//whirlpool0 := whirlpool2.Whirlpool0(data)
-	//hashes["Whirlpool-0"] = hex.EncodeToString(whirlpool0)
-	//
-	//whirlpoolT := whirlpool2.WhirlpoolT(data)
-	//hashes["Whirlpool-T"] = hex.EncodeToString(whirlpoolT)
-
-	//cube := cube2.CubeHash512(data)
-	//hashes["Cube-512"] = hex.EncodeToString(cube)
-
-	streebogHash := streebog.Hash512(data)
-	hashes["Streebog-512"] = hex.EncodeToString(streebogHash)
 
 	fnv5120hash := fnv5120.Hash512(data)
 	hashes["FNV5120-512"] = hex.EncodeToString(fnv5120hash)
