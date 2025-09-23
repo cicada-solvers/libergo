@@ -103,8 +103,9 @@ func ReadFileLinesBytewise(path string) error {
 				if len(cur) > 0 {
 					linesChan <- string(cur)
 					counter++
-					fmt.Printf("\r%d", counter)
-
+					if counter%100000 == 0 {
+						fmt.Printf("\r%d", counter)
+					}
 				}
 				break
 			}
@@ -118,7 +119,9 @@ func ReadFileLinesBytewise(path string) error {
 			}
 			linesChan <- string(cur)
 			counter++
-			fmt.Printf("\r%d", counter)
+			if counter%1000000 == 0 {
+				fmt.Printf("\r%d", counter)
+			}
 			cur = cur[:0]
 			continue
 		}
