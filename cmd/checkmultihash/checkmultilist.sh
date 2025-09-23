@@ -16,7 +16,7 @@ for file in *.txt; do
       echo "Processing file: $file"
       wc -l "$file"
       # Call checkmultihash with filename and bytefile flags
-      ./checkmultihash --filename "$file" --bytefile "$bytefile_flag" >> output.dat
+      ./checkmultihash --filename "$file" --bytefile "$bytefile_flag"
   else
     echo "No .txt files found in the current directory."
     break

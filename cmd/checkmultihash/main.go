@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"fnv5120"
-	"fnv5121"
 	"groestl"
 	"io"
 	jh2 "jh"
@@ -72,11 +71,15 @@ func main() {
 
 	// Wait for all workers to finish
 	wg.Wait()
+
+	fmt.Printf("\n")
 }
 
 // ReadFileLinesBytewise reads the file at path one byte at a time and returns its lines.
 // It treats '\n' as line separator and strips a preceding '\r' (handling CRLF).
 func ReadFileLinesBytewise(path string) error {
+	counter := int64(0)
+
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -99,6 +102,9 @@ func ReadFileLinesBytewise(path string) error {
 			if err == io.EOF {
 				if len(cur) > 0 {
 					linesChan <- string(cur)
+					counter++
+					fmt.Printf("\r%d", counter)
+
 				}
 				break
 			}
@@ -111,6 +117,8 @@ func ReadFileLinesBytewise(path string) error {
 				cur = cur[:n-1]
 			}
 			linesChan <- string(cur)
+			counter++
+			fmt.Printf("\r%d", counter)
 			cur = cur[:0]
 			continue
 		}
@@ -188,12 +196,6 @@ func generateHashes(data []byte) map[string]string {
 
 	fnv5120ahash := fnv5120.Hash512a(data)
 	hashes["FNV5120A-512"] = hex.EncodeToString(fnv5120ahash)
-
-	fnv5121hash := fnv5121.Hash(data)
-	hashes["FNV5121-512"] = hex.EncodeToString(fnv5121hash)
-
-	fnv5121ahash := fnv5121.HashA(data)
-	hashes["FNV5121A-512"] = hex.EncodeToString(fnv5121ahash)
 
 	md6hash := md6.Sum512(data)
 	hashes["MD6-512"] = hex.EncodeToString(md6hash)
