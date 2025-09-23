@@ -44,26 +44,28 @@ func appendStingsToFile(file *os.File, strings []string) error {
 
 func getFormats(code string, prefix int, number int) []string {
 	return []string{
-		fmt.Sprintf("%s%03d%04d", code, prefix, number),
-		fmt.Sprintf("%s-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("(%s)-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("(%s)%03d-%04d", code, prefix, number),
-		fmt.Sprintf("(%s) %03d-%04d", code, prefix, number),
-		fmt.Sprintf("%s.%03d.%04d", code, prefix, number),
+		//fmt.Sprintf("%s%03d%04d", code, prefix, number),
+		//fmt.Sprintf("%s-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("(%s)-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("(%s)%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("(%s) %03d-%04d", code, prefix, number),
+		//fmt.Sprintf("%s.%03d.%04d", code, prefix, number),
+		//
+		//fmt.Sprintf("1%s%03d%04d", code, prefix, number),
+		//fmt.Sprintf("1%s-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("1(%s)-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("1(%s)%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("1(%s) %03d-%04d", code, prefix, number),
+		//fmt.Sprintf("1%s.%03d.%04d", code, prefix, number),
+		//
+		//fmt.Sprintf("+1%s%03d%04d", code, prefix, number),
+		//fmt.Sprintf("+1%s-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("+1(%s)-%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("+1(%s)%03d-%04d", code, prefix, number),
+		//fmt.Sprintf("+1(%s) %03d-%04d", code, prefix, number),
+		//fmt.Sprintf("+1%s.%03d.%04d", code, prefix, number),
 
-		fmt.Sprintf("1%s%03d%04d", code, prefix, number),
-		fmt.Sprintf("1%s-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("1(%s)-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("1(%s)%03d-%04d", code, prefix, number),
-		fmt.Sprintf("1(%s) %03d-%04d", code, prefix, number),
-		fmt.Sprintf("1%s.%03d.%04d", code, prefix, number),
-
-		fmt.Sprintf("+1%s%03d%04d", code, prefix, number),
-		fmt.Sprintf("+1%s-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("+1(%s)-%03d-%04d", code, prefix, number),
-		fmt.Sprintf("+1(%s)%03d-%04d", code, prefix, number),
-		fmt.Sprintf("+1(%s) %03d-%04d", code, prefix, number),
-		fmt.Sprintf("+1%s.%03d.%04d", code, prefix, number),
+		fmt.Sprintf("+1 %s-%03d-%04d", code, prefix, number),
 	}
 }
 
