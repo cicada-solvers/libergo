@@ -82,4 +82,5 @@ use (
 	cmd/phonegen
 	cmd/bin2byte
 	cmd/pngen
+	cmd/primevscollatz
 )

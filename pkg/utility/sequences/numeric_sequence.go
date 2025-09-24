@@ -1,6 +1,8 @@
 package sequences
 
-import "math/big"
+import (
+	"math/big"
+)
 
 // NumericSequence represents a sequence of numbers.
 type NumericSequence struct {
