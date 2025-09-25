@@ -67,19 +67,19 @@ func (g *GoldbachSets) GetNextPrime(number int64, currentSet, primeSet []int64) 
 	}
 }
 
-func (g *GoldbachSets) SortAddendValues(one, two, three int64) []int64 {
-	// Sort the values in ascending order
-	if one > two {
-		one, two = two, one
-	}
-	if two > three {
-		two, three = three, two
-	}
-	if one > two {
-		one, two = two, one
+func (g *GoldbachSets) SortAddendValues(a, b, c int64) []int64 {
+	result := []int64{a, b, c}
+
+	// Simple bubble sort for just 3 elements
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 2-i; j++ {
+			if result[j] > result[j+1] {
+				result[j], result[j+1] = result[j+1], result[j]
+			}
+		}
 	}
 
-	return []int64{one, two, three}
+	return result
 }
 
 func (g *GoldbachSets) ContainsSetAlready(set GoldbachSet) bool {
