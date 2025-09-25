@@ -24,7 +24,7 @@ func main() {
 	numberChannel := make(chan int64)
 
 	// Determine the number of workers (CPU count × 2)
-	numWorkers := runtime.NumCPU()
+	numWorkers := runtime.NumCPU() * 2
 	conns = make([]*gorm.DB, numWorkers)
 	fmt.Printf("Using %d worker goroutines\n", numWorkers)
 
@@ -44,6 +44,7 @@ func main() {
 				gbs := numeric.NewGoldbachSets()
 				gbs.Solve(num)
 				if len(gbs.GoldBachSets) == 0 {
+					fmt.Printf("No set for number: %d\n", num)
 					continue
 				}
 
@@ -66,7 +67,10 @@ func main() {
 					}
 				}
 
-				liberdatabase.AddGoldbachAddends(conns[workerID], dbAddends)
+				if len(dbAddends) > 0 {
+					liberdatabase.AddGoldbachAddends(conns[workerID], dbAddends)
+				}
+				dbAddends = []liberdatabase.GoldbachAddend{}
 			}
 
 			wg.Done()
