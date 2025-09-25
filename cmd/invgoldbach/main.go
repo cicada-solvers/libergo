@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"liberdatabase"
-	"math"
 	"math/big"
 	"numeric"
 	"runtime"
@@ -78,7 +77,7 @@ func main() {
 	}
 
 	go func() {
-		largestNumber := int64(math.MaxInt32)
+		largestNumber := int64(250000)
 		for i := int64(6); i <= largestNumber; i++ {
 			if !numeric.IsNumberEven(i) {
 				numberChannel <- i
