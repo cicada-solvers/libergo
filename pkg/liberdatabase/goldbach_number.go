@@ -1,6 +1,8 @@
 package liberdatabase
 
 import (
+	"math"
+
 	"gorm.io/gorm"
 )
 
@@ -10,9 +12,11 @@ import (
 // IsEven is a boolean indicating whether the number is even (always true for this type).
 type GoldbachNumber struct {
 	gorm.Model
-	Number  int64 `gorm:"column:number"`
-	IsEven  bool  `gorm:"column:is_even"`
-	IsPrime bool  `gorm:"column:is_prime"`
+	Number        int64   `gorm:"column:number"`
+	IsEven        bool    `gorm:"column:is_even"`
+	IsPrime       bool    `gorm:"column:is_prime"`
+	SquareRoot    float64 `gorm:"column:square_root"`
+	SquareRootInt int64   `gorm:"column:square_root"`
 }
 
 // AddGoldbachNumber adds a GoldbachNumberEven entry to the database with the given number and even status.
@@ -20,9 +24,11 @@ type GoldbachNumber struct {
 // Returns the created GoldbachNumberEven object.
 func AddGoldbachNumber(db *gorm.DB, number int64, isEven bool, isPrime bool) GoldbachNumber {
 	goldbachNumber := GoldbachNumber{
-		Number:  number,
-		IsEven:  isEven,
-		IsPrime: isPrime,
+		Number:        number,
+		IsEven:        isEven,
+		IsPrime:       isPrime,
+		SquareRoot:    math.Sqrt(float64(number)),
+		SquareRootInt: int64(math.Sqrt(float64(number))),
 	}
 
 	db.Create(&goldbachNumber)
