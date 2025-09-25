@@ -23,6 +23,7 @@ type GoldbachSet struct {
 	AddendThree int64
 }
 
+// Solve finds all Goldbach sets for the given number.
 func (g *GoldbachSets) Solve(number int64) {
 	var primeNumbers []int64
 
@@ -36,6 +37,7 @@ func (g *GoldbachSets) Solve(number int64) {
 	g.GetGoldBachSets(number, primeNumbers)
 }
 
+// GetGoldBachSets finds all Goldbach sets for the given number and prime set.
 func (g *GoldbachSets) GetGoldBachSets(number int64, primeSet []int64) {
 	for _, prime := range primeSet {
 		firstSet := []int64{prime}
@@ -43,6 +45,7 @@ func (g *GoldbachSets) GetGoldBachSets(number int64, primeSet []int64) {
 	}
 }
 
+// GetNextPrime recursively finds the next prime number in the given prime set.
 func (g *GoldbachSets) GetNextPrime(number int64, currentSet, primeSet []int64) {
 	if len(currentSet) < 3 {
 		for _, prime := range primeSet {
@@ -67,6 +70,7 @@ func (g *GoldbachSets) GetNextPrime(number int64, currentSet, primeSet []int64) 
 	}
 }
 
+// SortAddendValues sorts the given addend values.
 func (g *GoldbachSets) SortAddendValues(a, b, c int64) []int64 {
 	result := []int64{a, b, c}
 
@@ -82,6 +86,7 @@ func (g *GoldbachSets) SortAddendValues(a, b, c int64) []int64 {
 	return result
 }
 
+// ContainsSetAlready checks if the given GoldbachSet is already contained in the list of GoldbachSets.
 func (g *GoldbachSets) ContainsSetAlready(set GoldbachSet) bool {
 	for _, goldBachSet := range g.GoldBachSets {
 		if goldBachSet.Number == set.Number && goldBachSet.AddendOne == set.AddendOne && goldBachSet.AddendTwo == set.AddendTwo && goldBachSet.AddendThree == set.AddendThree {
