@@ -36,7 +36,7 @@ func main() {
 		conns[i], _ = liberdatabase.InitConnection()
 		go func(workerID int) {
 			for num := range numberChannel {
-				fmt.Printf("Processing number %d\n", num)
+				//fmt.Printf("Processing number %d\n", num)
 				// Adding the initial number to the database.
 				liberdatabase.AddGoldbachNumber(conns[workerID], num, numeric.IsNumberEven(num), sequences.IsPrime(big.NewInt(num)))
 
