@@ -16,7 +16,7 @@ type GoldbachNumber struct {
 	IsEven        bool    `gorm:"column:is_even"`
 	IsPrime       bool    `gorm:"column:is_prime"`
 	SquareRoot    float64 `gorm:"column:square_root"`
-	SquareRootInt int64   `gorm:"column:square_root"`
+	SquareRootInt int64   `gorm:"column:square_root_int"`
 }
 
 // AddGoldbachNumber adds a GoldbachNumberEven entry to the database with the given number and even status.
