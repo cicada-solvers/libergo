@@ -2,30 +2,30 @@ package main
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"liberdatabase"
+	"math"
+	"math/big"
 	"numeric"
 	"runtime"
+	"sequences"
 	"sync"
+
+	"gorm.io/gorm"
 )
+
+var conns []*gorm.DB
 
 // main is the entry point of the program. It manages database setup, worker initialization, and Goldbach processing workflow.
 func main() {
 	// Initialize database
 	_, _ = liberdatabase.InitTables()
-	conn, _ := liberdatabase.InitConnection()
-	defer func(db *gorm.DB) {
-		err := liberdatabase.CloseConnection(db)
-		if err != nil {
-			fmt.Println("Error closing database connection:", err)
-		}
-	}(conn)
 
 	// Create a channel for numbers to be processed
 	numberChannel := make(chan int64)
 
 	// Determine the number of workers (CPU count × 2)
-	numWorkers := runtime.NumCPU() * 2
+	numWorkers := runtime.NumCPU()
+	conns = make([]*gorm.DB, numWorkers)
 	fmt.Printf("Using %d worker goroutines\n", numWorkers)
 
 	// Use WaitGroup to wait for all workers to finish
@@ -33,43 +33,45 @@ func main() {
 
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
+		conns[i], _ = liberdatabase.InitConnection()
 		go func(workerID int) {
 			for num := range numberChannel {
-				gbp := numeric.NewGoldbachPairs()
-				primeList := liberdatabase.GetPrimeListLessThanValue(conn, num)
+				fmt.Printf("Processing number %d\n", num)
+				// Adding the initial number to the database.
+				liberdatabase.AddGoldbachNumber(conns[workerID], num, numeric.IsNumberEven(num), sequences.IsPrime(big.NewInt(num)))
 
-				solveError := gbp.SolveForNumber(num, &primeList)
-				if solveError != nil {
-					fmt.Println("Error solving for number:", num, solveError)
-					fmt.Println("----------------------------------------")
-				} else {
-					pairCount := len(gbp.GetGoldbachPairs())
-					fmt.Println("Number:", num, pairCount)
-					fmt.Println("----------------------------------------")
+				// Add factors to the database
+				gbs := numeric.NewGoldbachSets()
+				gbs.Solve(num)
+				if len(gbs.GoldBachSets) == 0 {
+					continue
+				}
 
-					// Now we need to add them to the database
-					goldbachNumber := liberdatabase.AddGoldbachNumber(conn, num, true)
-					var addends []liberdatabase.GoldbachAddendEven
-					for _, pair := range gbp.GetGoldbachPairs() {
-						addend := liberdatabase.GoldbachAddendEven{
-							GoldbachId: goldbachNumber.Id,
-							AddendOne:  pair.AddendOne,
-							AddendTwo:  pair.AddendTwo,
-						}
-
-						addends = append(addends, addend)
+				fmt.Printf("Number %d has %d Goldbach sets\n", num, len(gbs.GoldBachSets))
+				var dbAddends []liberdatabase.GoldbachAddend
+				for counter, addend := range gbs.GoldBachSets {
+					GoldbachAddend := liberdatabase.GoldbachAddend{
+						GoldbachNumber: num,
+						AddendOne:      addend.AddendOne,
+						AddendTwo:      addend.AddendTwo,
+						AddendThree:    addend.AddendThree,
+						SetNumber:      counter,
 					}
 
-					liberdatabase.AddGoldbachAddends(conn, addends)
+					dbAddends = append(dbAddends, GoldbachAddend)
 				}
+
+				liberdatabase.AddGoldbachAddends(conns[workerID], dbAddends)
 			}
+
+			wg.Done()
 		}(i)
 	}
 
 	go func() {
-		largestNumber := int64(2000000)
-		for i := int64(4); i <= largestNumber; i++ {
-			if numeric.IsNumberEven(i) {
+		largestNumber := int64(math.MaxInt32)
+		for i := int64(6); i <= largestNumber; i++ {
+			if !numeric.IsNumberEven(i) {
 				numberChannel <- i
 			}
 		}

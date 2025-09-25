@@ -79,12 +79,12 @@ func InitDatabase() (*gorm.DB, error) {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
-	dbCreateError = conn.AutoMigrate(&GoldbachNumberEven{})
+	dbCreateError = conn.AutoMigrate(&GoldbachNumber{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
-	dbCreateError = conn.AutoMigrate(&GoldbachAddendEven{})
+	dbCreateError = conn.AutoMigrate(&GoldbachAddend{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
@@ -202,12 +202,12 @@ func InitTables() (*gorm.DB, error) {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
-	dbCreateError = conn.AutoMigrate(&GoldbachNumberEven{})
+	dbCreateError = conn.AutoMigrate(&GoldbachNumber{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
-	dbCreateError = conn.AutoMigrate(&GoldbachAddendEven{})
+	dbCreateError = conn.AutoMigrate(&GoldbachAddend{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}

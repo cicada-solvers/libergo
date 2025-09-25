@@ -1,0 +1,93 @@
+package numeric
+
+import (
+	"sequences"
+)
+
+// NewGoldbachSets creates and returns a new instance of GoldbachPairs with an empty list of pairs.
+func NewGoldbachSets() *GoldbachSets {
+	return &GoldbachSets{}
+}
+
+// GoldbachSets represents a collection of GoldbachPair, storing pairs for computations related to Goldbach's conjecture.
+type GoldbachSets struct {
+	GoldBachSets []GoldbachSet
+}
+
+// GoldbachSet represents a pair of integers whose sum equals a given even number, based on Goldbach's conjecture.
+// Number specifies the even number, while AddendOne and AddendTwo are the integers forming the sum.
+type GoldbachSet struct {
+	Number      int64
+	AddendOne   int64
+	AddendTwo   int64
+	AddendThree int64
+}
+
+func (g *GoldbachSets) Solve(number int64) {
+	var primeNumbers []int64
+
+	// Get all prime numbers up to the number
+	for i := int64(2); i < number; i++ {
+		if sequences.IsPrime64(i) {
+			primeNumbers = append(primeNumbers, i)
+		}
+	}
+
+	g.GetGoldBachSets(number, primeNumbers)
+}
+
+func (g *GoldbachSets) GetGoldBachSets(number int64, primeSet []int64) {
+	for _, prime := range primeSet {
+		firstSet := []int64{prime}
+		g.GetNextPrime(number, firstSet, primeSet)
+	}
+}
+
+func (g *GoldbachSets) GetNextPrime(number int64, currentSet, primeSet []int64) {
+	if len(currentSet) < 3 {
+		for _, prime := range primeSet {
+			currentSet = append(currentSet, prime)
+			g.GetNextPrime(number, currentSet, primeSet)
+			currentSet = currentSet[:len(currentSet)-1]
+		}
+	} else {
+		if currentSet[0]+currentSet[1]+currentSet[2] == number {
+			currentSet = g.SortAddendValues(currentSet[0], currentSet[1], currentSet[2])
+			completeSet := GoldbachSet{
+				Number:      number,
+				AddendOne:   currentSet[0],
+				AddendTwo:   currentSet[1],
+				AddendThree: currentSet[2],
+			}
+
+			if !g.ContainsSetAlready(completeSet) {
+				g.GoldBachSets = append(g.GoldBachSets, completeSet)
+			}
+		}
+	}
+}
+
+func (g *GoldbachSets) SortAddendValues(one, two, three int64) []int64 {
+	// Sort the values in ascending order
+	if one > two {
+		one, two = two, one
+	}
+	if two > three {
+		two, three = three, two
+	}
+	if one > two {
+		one, two = two, one
+	}
+
+	return []int64{one, two, three}
+}
+
+func (g *GoldbachSets) ContainsSetAlready(set GoldbachSet) bool {
+	for _, goldBachSet := range g.GoldBachSets {
+		if goldBachSet.Number == set.Number && goldBachSet.AddendOne == set.AddendOne && goldBachSet.AddendTwo == set.AddendTwo && goldBachSet.AddendThree == set.AddendThree {
+			return true
+		}
+	}
+
+	return false
+}
