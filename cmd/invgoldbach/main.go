@@ -59,6 +59,11 @@ func main() {
 					}
 
 					dbAddends = append(dbAddends, GoldbachAddend)
+
+					if len(dbAddends) >= 500 {
+						liberdatabase.AddGoldbachAddends(conns[workerID], dbAddends)
+						dbAddends = []liberdatabase.GoldbachAddend{}
+					}
 				}
 
 				liberdatabase.AddGoldbachAddends(conns[workerID], dbAddends)
