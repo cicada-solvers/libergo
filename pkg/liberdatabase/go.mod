@@ -1,6 +1,8 @@
 module liberdatabase
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.6
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
