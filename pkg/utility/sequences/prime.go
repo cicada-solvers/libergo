@@ -25,7 +25,7 @@ func IsPrime(number *big.Int) bool {
 		return true
 	}
 
-	if number.Cmp(big.NewInt(3)) > 0 && number.Cmp(big.NewInt(249989)) <= 0 {
+	if number.Cmp(big.NewInt(3)) > 0 && number.Cmp(big.NewInt(158981)) <= 0 {
 		return IsNumberInPrimeList(number.Int64())
 	}
 
