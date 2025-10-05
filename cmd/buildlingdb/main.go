@@ -81,6 +81,7 @@ func main() {
 	var wgStatistics sync.WaitGroup
 	connections = make(map[int]*gorm.DB, numWorkers)
 	for i := 0; i < numWorkers; i++ {
+		connections[i], _ = liberdatabase.InitConnection()
 		wgStatistics.Add(1)
 		go processWordStatistics(i, &wgStatistics)
 	}
@@ -136,6 +137,11 @@ func processWordStatistics(workerId int, wg *sync.WaitGroup) {
 			liberdatabase.AddWordStatistics(connections[0], wordBatch)
 			wordBatch = []liberdatabase.WordStatistics{}
 		}
+	}
+
+	if len(wordBatch) > 0 {
+		liberdatabase.AddWordStatistics(connections[0], wordBatch)
+		wordBatch = []liberdatabase.WordStatistics{}
 	}
 
 	wg.Done()
@@ -313,6 +319,8 @@ func calculateWordPercentages(dbConn *gorm.DB, fileId string) {
 		}
 	}
 
-	liberdatabase.AddDocumentWordStatistics(dbConn, percentages)
-	percentages = []liberdatabase.DocumentWordStatistics{}
+	if len(percentages) > 0 {
+		liberdatabase.AddDocumentWordStatistics(dbConn, percentages)
+		percentages = []liberdatabase.DocumentWordStatistics{}
+	}
 }
