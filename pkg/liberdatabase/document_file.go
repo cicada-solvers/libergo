@@ -7,8 +7,9 @@ import (
 
 // DocumentFile represents a file in a document and its associated file type.
 type DocumentFile struct {
-	FileId   string `gorm:"index:idx_file_id"`
-	FileName string `gorm:"index:idx_file_name"`
+	FileId    string `gorm:"index:idx_file_id"`
+	FileName  string `gorm:"index:idx_file_name"`
+	WordCount int64  `gorm:"column:word_count"`
 }
 
 // TableName specifies the name of the database table associated with the DocumentFile model.
@@ -48,8 +49,9 @@ func AddDocumentFile(db *gorm.DB, fileName string) DocumentFile {
 	id := uuid.New().String()
 
 	df := DocumentFile{
-		FileId:   id,
-		FileName: fileName,
+		FileId:    id,
+		FileName:  fileName,
+		WordCount: 0,
 	}
 
 	db.Create(&df)
@@ -57,8 +59,7 @@ func AddDocumentFile(db *gorm.DB, fileName string) DocumentFile {
 	return df
 }
 
-func GetAllDocumentFiles(db *gorm.DB) []DocumentFile {
-	var dfs []DocumentFile
-	db.Find(&dfs)
-	return dfs
+func UpdateDocumentWordCount(db *gorm.DB, fileId string, wordCount int64) {
+	db.Model(&DocumentFile{}).Where("file_id = ?", fileId).Update("word_count", wordCount)
+	return
 }

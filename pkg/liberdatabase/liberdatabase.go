@@ -124,31 +124,6 @@ func InitDatabase() (*gorm.DB, error) {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}
 
-	dbCreateError = conn.AutoMigrate(&LexDocument{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentLine{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentWord{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentLineTest{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&WordStatistics{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
 	dbCreateError = conn.AutoMigrate(&DictionaryWord{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
@@ -243,31 +218,6 @@ func InitTables() (*gorm.DB, error) {
 	}
 
 	dbCreateError = conn.AutoMigrate(&DocumentWordStatistics{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocument{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentLine{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentWord{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&LexDocumentLineTest{})
-	if dbCreateError != nil {
-		fmt.Printf("Error creating table: %v\n", dbCreateError)
-	}
-
-	dbCreateError = conn.AutoMigrate(&WordStatistics{})
 	if dbCreateError != nil {
 		fmt.Printf("Error creating table: %v\n", dbCreateError)
 	}

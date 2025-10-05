@@ -23,7 +23,6 @@ type FileStruct struct {
 
 var fileList []FileStruct
 var fileChannel chan string
-var wordChannel chan liberdatabase.DocumentWord
 var connections map[int]*gorm.DB
 
 // Create letterMap once at initialization instead of for each call
@@ -40,7 +39,6 @@ func init() {
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
 func main() {
 	fileChannel = make(chan string, 16384) // Increased buffer size
-	wordChannel = make(chan liberdatabase.DocumentWord, 16384)
 
 	dir := flag.String("dir", "", "The text to decode")
 
@@ -77,74 +75,10 @@ func main() {
 
 	wg.Wait()
 
-	// Get All the Words
-	var wgStatistics sync.WaitGroup
-	connections = make(map[int]*gorm.DB, numWorkers)
-	for i := 0; i < numWorkers; i++ {
-		connections[i], _ = liberdatabase.InitConnection()
-		wgStatistics.Add(1)
-		go processWordStatistics(i, &wgStatistics)
-	}
-
-	dbConn, _ := liberdatabase.InitConnection()
-
-	go func() {
-		fmt.Printf("Truncating word statistics\n")
-		liberdatabase.DeleteAllWordStatistics(dbConn)
-		currentFileId := uint(0)
-		fmt.Printf("Getting all distinct words\n")
-		distinctWords := liberdatabase.GetAllDistinctWords(dbConn, 0)
-
-		for len(distinctWords) > 0 {
-			for _, dw := range distinctWords {
-				if dw.ID > currentFileId {
-					currentFileId = dw.ID
-				}
-
-				wordChannel <- dw
-			}
-
-			fmt.Printf("Getting more distinct words\n")
-			distinctWords = liberdatabase.GetAllDistinctWords(dbConn, currentFileId)
-		}
-		close(wordChannel)
-	}()
-
-	wgStatistics.Wait()
-
 	// Close the DB connections
 	for i := 0; i < numWorkers; i++ {
 		_ = liberdatabase.CloseConnection(connections[i])
 	}
-
-	_ = liberdatabase.CloseConnection(dbConn)
-}
-
-func processWordStatistics(workerId int, wg *sync.WaitGroup) {
-	wordBatch := make([]liberdatabase.WordStatistics, 0, 500)
-
-	for word := range wordChannel {
-		fmt.Printf("Processing word %s\n", word.Word)
-
-		average := liberdatabase.GetAveraegePercentageOfTextByWord(connections[workerId], word.Word)
-
-		wordBatch = append(wordBatch, liberdatabase.WordStatistics{
-			Word:                    word.Word,
-			AveragePercentageOfText: average,
-		})
-
-		if len(wordBatch) >= 500 {
-			liberdatabase.AddWordStatistics(connections[0], wordBatch)
-			wordBatch = []liberdatabase.WordStatistics{}
-		}
-	}
-
-	if len(wordBatch) > 0 {
-		liberdatabase.AddWordStatistics(connections[0], wordBatch)
-		wordBatch = []liberdatabase.WordStatistics{}
-	}
-
-	wg.Done()
 }
 
 // walkAndProcess traverses the directory tree starting at root and processes only .txt files using processTextFile.
@@ -243,26 +177,33 @@ func processTextFile(path string, workerId int) error {
 		return fmt.Errorf("error reading file %s: %w", path, scanError)
 	}
 
+	totalWordCount := int64(0)
 	tempWords := make([]liberdatabase.DocumentWord, 0, len(mapOfWords))
 	for word, count := range mapOfWords {
+		tempWord := liberdatabase.DocumentWord{
+			FileId:    df.FileId,
+			Word:      word,
+			WordCount: count,
+		}
+
+		totalWordCount += count
+
+		tempWords = append(tempWords, tempWord)
+
 		if len(tempWords) >= 500 {
 			liberdatabase.AddDocumentWord(dbConn, tempWords)
 			tempWords = []liberdatabase.DocumentWord{}
-		} else {
-			tempWord := liberdatabase.DocumentWord{
-				FileId:    df.FileId,
-				Word:      word,
-				WordCount: count,
-			}
-
-			tempWords = append(tempWords, tempWord)
 		}
 	}
 
-	liberdatabase.AddDocumentWord(dbConn, tempWords)
-	tempWords = []liberdatabase.DocumentWord{}
+	if len(tempWords) > 0 {
+		liberdatabase.AddDocumentWord(dbConn, tempWords)
+		tempWords = []liberdatabase.DocumentWord{}
+	}
 
-	calculateWordPercentages(dbConn, df.FileId)
+	liberdatabase.UpdateDocumentWordCount(dbConn, df.FileId, totalWordCount)
+
+	calculateWordPercentages(dbConn, df.FileId, totalWordCount)
 
 	return nil
 }
@@ -293,17 +234,12 @@ func getAllWords(line string) []string {
 	return words
 }
 
-func calculateWordPercentages(dbConn *gorm.DB, fileId string) {
+func calculateWordPercentages(dbConn *gorm.DB, fileId string, totalWordCount int64) {
 	words := liberdatabase.GetDistinctWords(dbConn, fileId)
-	totalCount := int64(0)
 	percentages := make([]liberdatabase.DocumentWordStatistics, 0, len(words))
 
 	for _, word := range words {
-		totalCount += word.WordCount
-	}
-
-	for _, word := range words {
-		wordPercent := (float64(word.WordCount) / float64(totalCount)) * 100
+		wordPercent := (float64(word.WordCount) / float64(totalWordCount)) * 100
 
 		documentPercent := liberdatabase.DocumentWordStatistics{
 			Word:             word.Word,
