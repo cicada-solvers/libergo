@@ -79,8 +79,6 @@ func main() {
 		} else {
 			fmt.Println("Gem Sum Not Implemented Yet")
 		}
-
-		fmt.Printf("%s\n", highestPercentQuote)
 	}
 
 	if scanError := scanner.Err(); scanError != nil {
@@ -88,4 +86,5 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("%s\n", highestPercentQuote)
 }
