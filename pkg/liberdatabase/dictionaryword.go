@@ -78,10 +78,6 @@ func GetDictionaryWordsByRuneLength(db *gorm.DB, length int) []string {
 
 func getAllWords(line string) []string {
 	lettersArray := strings.Split("ᛝᛟᛇᛡᛠᚫᚦᚠᚢᚩᚱᚳᚷᚹᚻᚾᛁᛄᛈᛉᛋᛏᛒᛖᛗᛚᛞᚪᚣ'", "")
-	letterMap := make(map[rune]bool, len(lettersArray))
-	for _, letter := range lettersArray {
-		letterMap[rune(letter[0])] = true
-	}
 	var words []string
 	var wordBuilder strings.Builder
 
@@ -89,9 +85,9 @@ func getAllWords(line string) []string {
 	words = make([]string, 0, 16) // Assuming average of ~16 words per line
 
 	// Iterate through runes directly
-	for _, r := range line {
-		if letterMap[r] {
-			wordBuilder.WriteRune(r)
+	for _, r := range strings.Split(line, "") {
+		if slices.Contains(lettersArray, r) {
+			wordBuilder.WriteString(r)
 		} else if wordBuilder.Len() > 0 {
 			words = append(words, wordBuilder.String())
 			wordBuilder.Reset()
