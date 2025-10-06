@@ -58,6 +58,7 @@ use (
 	cmd/winchafftext
 	cmd/wordlecheat
 	cmd/ziggy
+	cmd/quoteomatic
 	pkg/internal/config
 	pkg/lgstructs
 	pkg/liberdatabase

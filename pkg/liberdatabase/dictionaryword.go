@@ -76,6 +76,53 @@ func GetDictionaryWordsByRuneLength(db *gorm.DB, length int) []string {
 	return retval
 }
 
+func getAllWords(line string) []string {
+	lettersArray := strings.Split("ᛝᛟᛇᛡᛠᚫᚦᚠᚢᚩᚱᚳᚷᚹᚻᚾᛁᛄᛈᛉᛋᛏᛒᛖᛗᛚᛞᚪᚣ'", "")
+	letterMap := make(map[rune]bool, len(lettersArray))
+	for _, letter := range lettersArray {
+		letterMap[rune(letter[0])] = true
+	}
+	var words []string
+	var wordBuilder strings.Builder
+
+	// Pre-allocate space for words to reduce reallocations
+	words = make([]string, 0, 16) // Assuming average of ~16 words per line
+
+	// Iterate through runes directly
+	for _, r := range line {
+		if letterMap[r] {
+			wordBuilder.WriteRune(r)
+		} else if wordBuilder.Len() > 0 {
+			words = append(words, wordBuilder.String())
+			wordBuilder.Reset()
+		}
+	}
+
+	// Add the last word if the line ends with a letter
+	if wordBuilder.Len() > 0 {
+		words = append(words, wordBuilder.String())
+	}
+
+	return words
+}
+
+func GetRuneLinePattern(line string) []int {
+	patternArray := make([]int, 0)
+
+	words := getAllWords(line)
+	for _, word := range words {
+		wordArray := strings.Split(word, "")
+
+		if len(wordArray) == 0 {
+			continue
+		}
+
+		patternArray = append(patternArray, len(wordArray))
+	}
+
+	return patternArray
+}
+
 // GetRunePattern gets the rune pattern for the dictionary word
 func GetRunePattern(word string) string {
 	patternDictionary := make(map[int]string)
