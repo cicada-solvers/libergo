@@ -4,6 +4,7 @@ import (
 	runelib "characterrepo"
 	"fmt"
 	"math"
+	"runer"
 	"slices"
 	"strconv"
 	"strings"
@@ -100,6 +101,25 @@ func getAllWords(line string) []string {
 	}
 
 	return words
+}
+
+func GetRuneLineSumPattern(line string) []int64 {
+	sumArray := make([]int64, 0)
+
+	words := getAllWords(line)
+	for _, word := range words {
+		wordArray := strings.Split(word, "")
+
+		if len(wordArray) == 0 {
+			continue
+		}
+
+		gemSum := runer.CalculateGemSum(word, runer.Runes, false)
+
+		sumArray = append(sumArray, gemSum)
+	}
+
+	return sumArray
 }
 
 func GetRuneLinePattern(line string) []int {

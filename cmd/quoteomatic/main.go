@@ -46,8 +46,6 @@ func main() {
 		quoteParts := strings.Split(line, "|")
 		quote := quoteParts[1]
 
-		fmt.Printf("Checking Quote: %s - %s\n", quoteParts[0], quoteParts[1])
-
 		quoteRunes := runer.PrepLatinToRune(quote)
 		quoteRunes = runer.TransposeLatinToRune(quoteRunes, false)
 
@@ -56,28 +54,39 @@ func main() {
 			textPattern := liberdatabase.GetRuneLinePattern(*textInFlag)
 			matchCount := 0
 
-			shortestLength := 0
-			if len(quotePattern) < len(textPattern) {
-				shortestLength = len(quotePattern)
-			} else {
-				shortestLength = len(textPattern)
-			}
-
-			for i := 0; i < shortestLength; i++ {
-				if quotePattern[i] == textPattern[i] {
-					matchCount++
+			if len(quotePattern) == len(textPattern) {
+				for i := 0; i < len(textPattern); i++ {
+					if quotePattern[i] == textPattern[i] {
+						matchCount++
+					}
 				}
 			}
 
-			matchPercentage := float64(matchCount) / float64(shortestLength) * 100
+			matchPercentage := float64(matchCount) / float64(len(textPattern)) * 100
 
 			if matchPercentage > highestPercent {
 				highestPercent = matchPercentage
-				highestPercentQuote = fmt.Sprintf("Highest Percentage: %s - %f (%d)\n Quote: %s\n", quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %s - %f (%d)\nQuote: %s\n\n", *textInFlag, quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+			}
+		} else {
+			quotePattern := liberdatabase.GetRuneLineSumPattern(quoteRunes)
+			textPattern := liberdatabase.GetRuneLineSumPattern(*textInFlag)
+			matchCount := 0
+
+			if len(quotePattern) == len(textPattern) {
+				for i := 0; i < len(textPattern); i++ {
+					if quotePattern[i] == textPattern[i] {
+						matchCount++
+					}
+				}
 			}
 
-		} else {
-			fmt.Println("Gem Sum Not Implemented Yet")
+			matchPercentage := float64(matchCount) / float64(len(textPattern)) * 100
+
+			if matchPercentage > highestPercent {
+				highestPercent = matchPercentage
+				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %s - %f (%d)\nQuote: %s\n\n", *textInFlag, quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+			}
 		}
 	}
 
