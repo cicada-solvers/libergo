@@ -23,6 +23,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	highestPercent := 0.0
+	highestPercentQuote := ""
+
 	quoteFile := fmt.Sprintf("%s.txt", *authorFlag)
 
 	file, err := os.Open(quoteFile)
@@ -67,10 +70,17 @@ func main() {
 			}
 
 			matchPercentage := float64(matchCount) / float64(shortestLength) * 100
-			fmt.Printf("Match Percentage: %s - %f (%d)\n", quoteParts[0], matchPercentage, matchCount)
+
+			if matchPercentage > highestPercent {
+				highestPercent = matchPercentage
+				highestPercentQuote = fmt.Sprintf("Highest Percentage: %s - %f (%d)\n Quote: %s\n", quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+			}
+
 		} else {
 			fmt.Println("Gem Sum Not Implemented Yet")
 		}
+
+		fmt.Printf("%s\n", highestPercentQuote)
 	}
 
 	if scanError := scanner.Err(); scanError != nil {
