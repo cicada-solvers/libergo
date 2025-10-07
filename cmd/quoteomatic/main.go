@@ -7,7 +7,6 @@ import (
 	"liberdatabase"
 	"os"
 	"runer"
-	"strings"
 )
 
 func main() {
@@ -43,10 +42,7 @@ func main() {
 			continue
 		}
 
-		quoteParts := strings.Split(line, "|")
-		quote := quoteParts[1]
-
-		quoteRunes := runer.PrepLatinToRune(quote)
+		quoteRunes := runer.PrepLatinToRune(line)
 		quoteRunes = runer.TransposeLatinToRune(quoteRunes, false)
 
 		if *patternOrGemSumFlag == "pattern" {
@@ -66,7 +62,7 @@ func main() {
 
 			if matchPercentage > highestPercent {
 				highestPercent = matchPercentage
-				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %s - %f (%d)\nQuote: %s\n\n", *textInFlag, quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %f (%d)\nQuote: %s\n\n", *textInFlag, matchPercentage, matchCount, line)
 			}
 		} else {
 			quotePattern := liberdatabase.GetRuneLineSumPattern(quoteRunes)
@@ -85,7 +81,7 @@ func main() {
 
 			if matchPercentage > highestPercent {
 				highestPercent = matchPercentage
-				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %s - %f (%d)\nQuote: %s\n\n", *textInFlag, quoteParts[0], matchPercentage, matchCount, quoteParts[1])
+				highestPercentQuote = fmt.Sprintf("Rune Text: %s \nHighest Percentage: %f (%d)\nQuote: %s\n\n", *textInFlag, matchPercentage, matchCount, line)
 			}
 		}
 	}
@@ -95,5 +91,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", highestPercentQuote)
+	if highestPercent > 0.0 {
+		fmt.Printf("%s\n", highestPercentQuote)
+	}
 }
