@@ -1,5 +1,6 @@
 
 base60
+bin2byte
 bin2rune
 binfile
 binstring
@@ -37,16 +38,22 @@ mob
 numfile
 numstring
 permute
+phonegen
+pngen
 primeaddressgen
 primedb
+primevscollatz
 querytool
+quoteomatic
 railit
 rdcheck
 rdtext
+reconstest
 rencode
 repeata
 rune2bin
 runedonkey
+runesub
 schwifty
 winchafftext
 wordlecheat

@@ -1,3 +1,3 @@
 module bin2byte
 
-go 1.24
+go 1.25

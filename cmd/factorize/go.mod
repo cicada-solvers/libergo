@@ -1,8 +1,6 @@
 module factorize
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25
 
 require (
 	github.com/google/uuid v1.6.0
@@ -12,5 +10,5 @@ require (
 require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 )

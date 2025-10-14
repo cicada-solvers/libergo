@@ -1,4 +1,4 @@
-go 1.24.6
+go 1.25
 
 use (
 	cmd/base60
@@ -46,9 +46,11 @@ use (
 	cmd/primedb
 	cmd/primevscollatz
 	cmd/querytool
+	cmd/quoteomatic
 	cmd/railit
 	cmd/rdcheck
 	cmd/rdtext
+	cmd/reconstest
 	cmd/rencode
 	cmd/repeata
 	cmd/rune2bin
@@ -58,7 +60,6 @@ use (
 	cmd/winchafftext
 	cmd/wordlecheat
 	cmd/ziggy
-	cmd/quoteomatic
 	pkg/internal/config
 	pkg/lgstructs
 	pkg/liberdatabase

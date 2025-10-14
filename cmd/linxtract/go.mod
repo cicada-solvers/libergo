@@ -1,7 +1,5 @@
 module linxtract
 
-go 1.24.0
+go 1.25
 
-toolchain go1.24.6
-
-require golang.org/x/net v0.44.0
+require golang.org/x/net v0.46.0

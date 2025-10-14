@@ -1,8 +1,6 @@
 module rdcheck
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25
 
 require (
 	github.com/jdkato/prose/v2 v2.0.0
@@ -14,7 +12,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mingrammer/commonregex v1.0.1 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
