@@ -60,6 +60,8 @@ use (
 	cmd/winchafftext
 	cmd/wordlecheat
 	cmd/ziggy
+	cmd/libcomp
+	cmd/gghex
 	pkg/internal/config
 	pkg/lgstructs
 	pkg/liberdatabase
