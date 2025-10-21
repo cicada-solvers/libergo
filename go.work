@@ -22,7 +22,6 @@ use (
 	cmd/delexify
 	cmd/detangle
 	cmd/dpattern
-	cmd/factorize
 	cmd/fanalysis
 	cmd/gemproduct
 	cmd/gemsum
@@ -61,7 +60,6 @@ use (
 	cmd/wordlecheat
 	cmd/ziggy
 	cmd/libcomp
-	cmd/gghex
 	pkg/internal/config
 	pkg/lgstructs
 	pkg/liberdatabase
