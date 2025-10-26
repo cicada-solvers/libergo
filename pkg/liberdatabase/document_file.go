@@ -7,9 +7,11 @@ import (
 
 // DocumentFile represents a file in a document and its associated file type.
 type DocumentFile struct {
-	FileId    string `gorm:"index:idx_file_id"`
-	FileName  string `gorm:"index:idx_file_name"`
-	WordCount int64  `gorm:"column:word_count"`
+	FileId              string `gorm:"index:idx_file_id"`
+	FileName            string `gorm:"index:idx_file_name"`
+	WordCount           int64  `gorm:"column:word_count"`
+	TotalCharacterCount int64  `gorm:"column:total_character_count"`
+	TotalRuneCount      int64  `gorm:"column:total_rune_count"`
 }
 
 // TableName specifies the name of the database table associated with the DocumentFile model.
@@ -62,4 +64,12 @@ func AddDocumentFile(db *gorm.DB, fileName string) DocumentFile {
 func UpdateDocumentWordCount(db *gorm.DB, fileId string, wordCount int64) {
 	db.Model(&DocumentFile{}).Where("file_id = ?", fileId).Update("word_count", wordCount)
 	return
+}
+
+func UpdateTotalCharacterCount(db *gorm.DB, fileId string, totalCharacterCount int64) {
+	db.Model(&DocumentFile{}).Where("file_id = ?", fileId).Update("total_character_count", totalCharacterCount)
+}
+
+func UpdateTotalRuneCount(db *gorm.DB, fileId string, totalRuneCount int64) {
+	db.Model(&DocumentFile{}).Where("file_id = ?", fileId).Update("total_rune_count", totalRuneCount)
 }

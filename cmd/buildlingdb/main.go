@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	runelib "characterrepo"
 	"flag"
 	"fmt"
 	"io/fs"
 	"liberdatabase"
 	"os"
 	"path/filepath"
+	"runer"
 	"runtime"
 	"sort"
 	"strings"
@@ -21,6 +23,8 @@ type FileStruct struct {
 	Size     int64
 }
 
+var charRepo *runelib.CharacterRepo
+var isCharExtract *bool
 var fileList []FileStruct
 var fileChannel chan string
 var connections map[int]*gorm.DB
@@ -38,9 +42,11 @@ func init() {
 
 // main is the entry point of the application, initializes database connection, parses command-line flags, and processes text files.
 func main() {
+	charRepo = runelib.NewCharacterRepo()
 	fileChannel = make(chan string, 16384) // Increased buffer size
 
 	dir := flag.String("dir", "", "The text to decode")
+	isCharExtract = flag.Bool("charextract", false, "Extract characters from text")
 
 	// Parse the flags
 	flag.Parse()
@@ -114,10 +120,19 @@ func sortFileListAscending() {
 
 func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 	for document := range fileChannel {
-		err := processTextFile(document, workerId)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error processing file %s: %v\n", document, err)
-			continue
+
+		if *isCharExtract {
+			err := processCharacters(document, workerId)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Error processing file %s: %v\n", document, err)
+				continue
+			}
+		} else {
+			err := processTextFile(document, workerId)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Error processing file %s: %v\n", document, err)
+				continue
+			}
 		}
 
 		// Remove file after processing
@@ -125,6 +140,123 @@ func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 	}
 
 	wg.Done()
+}
+
+// processCharacters processes a text file and extracts characters from it.
+func processCharacters(path string, workerId int) error {
+	mapOfCharacters := make(map[string]int64)
+	mapOfRunes := make(map[string]int64)
+	fmt.Printf("Processing file %s\n", path)
+	dbConn := connections[workerId]
+
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	var df liberdatabase.DocumentFile
+	if liberdatabase.DoesDocumentFileExist(dbConn, path) {
+		df, _ = liberdatabase.GetDocumentFile(dbConn, path)
+		liberdatabase.DeleteCharactersByFileId(dbConn, df.FileId)
+	} else {
+		df = liberdatabase.AddDocumentFile(dbConn, path)
+	}
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if len(line) == 0 {
+			continue
+		}
+
+		line = strings.ToUpper(line)
+		line = runer.PrepLatinToRune(line)
+		runes := runer.TransposeLatinToRune(line, false)
+		runeArray := strings.Split(runes, "")
+		lineArray := strings.Split(line, "")
+		for _, character := range lineArray {
+			if charRepo.IsLetterInAlphabet(character) {
+				_, keyExists := mapOfCharacters[character]
+				if keyExists {
+					mapOfCharacters[character]++
+				} else {
+					mapOfCharacters[character] = 1
+				}
+			}
+		}
+
+		for _, character := range runeArray {
+			if charRepo.IsRune(character, false) {
+				_, keyExists := mapOfRunes[character]
+				if keyExists {
+					mapOfRunes[character]++
+				} else {
+					mapOfRunes[character] = 1
+				}
+			}
+		}
+	}
+
+	if scanError := scanner.Err(); scanError != nil {
+		return fmt.Errorf("error reading file %s: %w", path, scanError)
+	}
+
+	totalCharacterCount := int64(0)
+	characterArray := make([]liberdatabase.DocumentCharacter, 0, len(mapOfCharacters))
+	for character, count := range mapOfCharacters {
+		documentCharacter := liberdatabase.DocumentCharacter{
+			FileId:         df.FileId,
+			Character:      character,
+			CharacterCount: count,
+			CharacterType:  "RUNEGLISH",
+		}
+
+		totalCharacterCount += count
+
+		characterArray = append(characterArray, documentCharacter)
+	}
+
+	if len(characterArray) > 0 {
+		liberdatabase.AddDocumentCharacters(dbConn, characterArray)
+		characterArray = []liberdatabase.DocumentCharacter{}
+	}
+
+	totalRuneCount := int64(0)
+	runeArray := make([]liberdatabase.DocumentCharacter, 0, len(mapOfRunes))
+	for character, count := range mapOfRunes {
+		documentCharacter := liberdatabase.DocumentCharacter{
+			FileId:         df.FileId,
+			Character:      character,
+			CharacterCount: count,
+			CharacterType:  "RUNE",
+		}
+
+		totalRuneCount += count
+
+		runeArray = append(runeArray, documentCharacter)
+	}
+
+	if len(characterArray) > 0 {
+		liberdatabase.AddDocumentCharacters(dbConn, characterArray)
+		characterArray = []liberdatabase.DocumentCharacter{}
+	}
+
+	if len(runeArray) > 0 {
+		liberdatabase.AddDocumentCharacters(dbConn, runeArray)
+		characterArray = []liberdatabase.DocumentCharacter{}
+	}
+
+	liberdatabase.UpdateTotalCharacterCount(dbConn, df.FileId, totalCharacterCount)
+	liberdatabase.UpdateTotalRuneCount(dbConn, df.FileId, totalRuneCount)
+
+	return nil
 }
 
 func processTextFile(path string, workerId int) error {
