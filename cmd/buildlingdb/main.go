@@ -32,6 +32,7 @@ var connections map[int]*gorm.DB
 // Create letterMap once at initialization instead of for each call
 var letterMap map[rune]bool
 
+// init initializes the letterMap
 func init() {
 	lettersArray := strings.Split("abcdefghijklmnopqrstuvwxyz'", "")
 	letterMap = make(map[rune]bool, len(lettersArray))
@@ -112,12 +113,14 @@ func getFileList(root string) error {
 	})
 }
 
+// sortFileListAscending sorts the fileList in ascending order by file size.
 func sortFileListAscending() {
 	sort.Slice(fileList, func(i, j int) bool {
 		return fileList[i].Size < fileList[j].Size
 	})
 }
 
+// processTextFileChannel processes text files from the fileChannel.
 func processTextFileChannel(workerId int, wg *sync.WaitGroup) {
 	for document := range fileChannel {
 
@@ -256,9 +259,12 @@ func processCharacters(path string, workerId int) error {
 	liberdatabase.UpdateTotalCharacterCount(dbConn, df.FileId, totalCharacterCount)
 	liberdatabase.UpdateTotalRuneCount(dbConn, df.FileId, totalRuneCount)
 
+	calculatePercentageOfText(dbConn, df.FileId)
+
 	return nil
 }
 
+// processTextFile processes a text file and extracts words from it.
 func processTextFile(path string, workerId int) error {
 	mapOfWords := make(map[string]int64)
 	fmt.Printf("Processing file %s\n", path)
@@ -366,6 +372,7 @@ func getAllWords(line string) []string {
 	return words
 }
 
+// calculateWordPercentages calculates the percentage of each word in a document and stores it in the database.
 func calculateWordPercentages(dbConn *gorm.DB, fileId string, totalWordCount int64) {
 	words := liberdatabase.GetDistinctWords(dbConn, fileId)
 	percentages := make([]liberdatabase.DocumentWordStatistics, 0, len(words))
@@ -390,5 +397,24 @@ func calculateWordPercentages(dbConn *gorm.DB, fileId string, totalWordCount int
 	if len(percentages) > 0 {
 		liberdatabase.AddDocumentWordStatistics(dbConn, percentages)
 		percentages = []liberdatabase.DocumentWordStatistics{}
+	}
+}
+
+// calculatePercentageOfText calculates the percentage of each character in a document and stores it in the database.
+func calculatePercentageOfText(dbConn *gorm.DB, fileId string) {
+	document, _ := liberdatabase.GetDocumentFileById(dbConn, fileId)
+
+	// Calculate for latin characters
+	characters := liberdatabase.GetDocumentCharactersByFileIdAndCharacterType(dbConn, document.FileId, "RUNEGLISH")
+	for _, character := range characters {
+		percentageOfText := (float64(character.CharacterCount) / float64(document.TotalCharacterCount)) * 100
+		liberdatabase.UpdatePercentageOfText(dbConn, document.FileId, character.Character, percentageOfText)
+	}
+
+	// Calculate for latin characters
+	characters = liberdatabase.GetDocumentCharactersByFileIdAndCharacterType(dbConn, document.FileId, "RUNE")
+	for _, character := range characters {
+		percentageOfText := (float64(character.CharacterCount) / float64(document.TotalRuneCount)) * 100
+		liberdatabase.UpdatePercentageOfText(dbConn, document.FileId, character.Character, percentageOfText)
 	}
 }

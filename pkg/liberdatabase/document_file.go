@@ -45,6 +45,23 @@ func GetDocumentFile(db *gorm.DB, fileName string) (DocumentFile, error) {
 	return df, nil
 }
 
+func GetDocumentFileById(db *gorm.DB, fileId string) (DocumentFile, error) {
+	var df DocumentFile
+	result := db.Where("file_id = ?", fileId).First(&df)
+	if result.Error != nil {
+		return df, result.Error
+	}
+
+	return df, nil
+}
+
+// GetAllDocumentFiles retrieves all DocumentFile records from the database.
+func GetAllDocumentFiles(db *gorm.DB) []DocumentFile {
+	var df []DocumentFile
+	db.Find(&df)
+	return df
+}
+
 // AddDocumentFile creates a new DocumentFile record in the database with the specified fileName and fileType.
 // It generates a unique ID for the record and returns the newly created DocumentFile object.
 func AddDocumentFile(db *gorm.DB, fileName string) DocumentFile {
