@@ -1,0 +1,16 @@
+name: Sync Fork with Upstream
+    on:
+      schedule:
+        - cron: '0 0 * * *' # Runs daily at midnight UTC
+      workflow_dispatch: # Allows manual triggering of the workflow
+    jobs:
+      sync:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Sync Fork
+            uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+            with:
+              target_repo_token: ${{ secrets.UPSTREAM_TOKEN }}
+              upstream_repository: 'cmbsolver/libergo' # Replace with the actual upstream repo
+              upstream_branch: 'main' # Replace with the upstream branch to sync from
+              target_branch: 'main' # Replace with the branch in your fork to sync to
