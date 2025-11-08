@@ -55,6 +55,13 @@ func GetDocumentFileById(db *gorm.DB, fileId string) (DocumentFile, error) {
 	return df, nil
 }
 
+// GetDocumentFilesBetweenRuneLengths retrieves all DocumentFile records from the database with a totalRuneCount between the specified min and max values.
+func GetDocumentFilesBetweenRuneLengths(db *gorm.DB, minRuneCount int64, maxRuneCount int64) []DocumentFile {
+	var df []DocumentFile
+	db.Where("total_rune_count >= ? AND total_rune_count <= ?", minRuneCount, maxRuneCount).Find(&df)
+	return df
+}
+
 // GetAllDocumentFiles retrieves all DocumentFile records from the database.
 func GetAllDocumentFiles(db *gorm.DB) []DocumentFile {
 	var df []DocumentFile

@@ -77,6 +77,20 @@ func GetDictionaryWordsByRuneLength(db *gorm.DB, length int) []string {
 	return retval
 }
 
+func GetDictionaryWordsByRuneglishLength(db *gorm.DB, length int) []string {
+	var dictionaryWords []DictionaryWord
+	var retval []string
+	db.Where("dict_runeglish_length = ?", length).Distinct().Find(&dictionaryWords)
+
+	for _, word := range dictionaryWords {
+		if !slices.Contains(retval, word.RuneglishWordText) {
+			retval = append(retval, word.RuneglishWordText)
+		}
+	}
+
+	return retval
+}
+
 func getAllWords(line string) []string {
 	lettersArray := strings.Split("ᛝᛟᛇᛡᛠᚫᚦᚠᚢᚩᚱᚳᚷᚹᚻᚾᛁᛄᛈᛉᛋᛏᛒᛖᛗᛚᛞᚪᚣ'", "")
 	var words []string

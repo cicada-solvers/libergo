@@ -10,6 +10,12 @@ type DocumentCharacter struct {
 	PercentageOfText float64 `gorm:"column:percentage_of_text"`
 }
 
+type DocumentCharacterAverages struct {
+	Character     string  `gorm:"column:character"`
+	Average       float64 `gorm:"column:average_percentage"`
+	CharacterType string  `gorm:"column:character_type"`
+}
+
 func (DocumentCharacter) TableName() string {
 	return "document_characters"
 }
@@ -18,6 +24,20 @@ func GetDocumentCharactersByFileIdAndCharacterType(db *gorm.DB, fileId string, c
 	var characters = make([]DocumentCharacter, 0)
 	db.Where("file_id = ? AND character_type = ?", fileId, characterType).Find(&characters)
 	return characters
+}
+
+func GetAveragePercentageByDocumentIds(db *gorm.DB, documentIds []string, characterType string) []DocumentCharacterAverages {
+	var retval = make([]DocumentCharacterAverages, 0)
+	db.Table("document_characters").Select("character, character_type, AVG(percentage_of_text) as average_percentage").
+		Where("file_id IN (?) AND character_type = ?", documentIds, characterType).Find(&retval)
+	return retval
+}
+
+func GetAveragePercentageByCharacterTypes(db *gorm.DB, characterType string) []DocumentCharacterAverages {
+	var retval = make([]DocumentCharacterAverages, 0)
+	db.Table("document_characters").Select("character, character_type, AVG(percentage_of_text) as average_percentage").
+		Where("character_type = ?", characterType).Find(&retval)
+	return retval
 }
 
 func AddDocumentCharacters(db *gorm.DB, characters []DocumentCharacter) {
