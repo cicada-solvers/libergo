@@ -33,6 +33,19 @@ func main() {
 		}
 	}
 
+	if *view == "runeglishlength" {
+		length := int64(0)
+		if *params != "" {
+			length, _ = strconv.ParseInt(*params, 10, 64)
+		}
+
+		list := liberdatabase.GetDictionaryWordsByRuneglishLength(dbconn, int(length))
+
+		for _, word := range list {
+			fmt.Printf("%s\n", word)
+		}
+	}
+
 	_ = liberdatabase.CloseConnection(dbconn)
 	return
 }
