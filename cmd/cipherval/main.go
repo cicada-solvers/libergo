@@ -49,6 +49,9 @@ func main() {
 		alphabetSet = repo.GetGematriaRunes()
 	} else if strings.ToLower(*alphabet) == "custom" {
 		alphabetSet = strings.Split(*chars, "")
+	} else if strings.ToLower(*alphabet) == "runglish" {
+		alphabetSet = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M",
+			"N", "O", "P", "R", "S", "T", "U", "W", "X", "Y"}
 	} else {
 		alphabetSet = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
 			"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
