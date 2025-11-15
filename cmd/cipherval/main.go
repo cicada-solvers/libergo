@@ -182,7 +182,7 @@ func main() {
 		}
 
 		// The wait group is used to wait for all the goroutines to finish
-		numWorkers := runtime.NumCPU()
+		numWorkers := runtime.NumCPU() * 2
 		wg := sync.WaitGroup{}
 		dbConns := make([]*gorm.DB, numWorkers)
 		wordArrays := SplitStringSliceIntoParts(wordlist, numWorkers)
