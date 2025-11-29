@@ -5,8 +5,49 @@ import (
 	"math/big"
 )
 
+// GetFibonacciSequenceFromPos generates the Fibonacci sequence up to maxNumber starting from the second element.
+func GetFibonacciSequenceFromPos(position int64) (*NumericSequence, error) {
+	if position < 1 {
+		return nil, errors.New("position must be greater than 1")
+	}
+
+	if position <= 2 {
+		fauxSequence := []*big.Int{big.NewInt(1)}
+
+		return &NumericSequence{
+			Name:     "Fibonacci",
+			Number:   big.NewInt(position),
+			Sequence: fauxSequence,
+		}, nil
+	}
+
+	sequence := []*big.Int{big.NewInt(1), big.NewInt(1)}
+	for {
+		next := new(big.Int).Add(sequence[len(sequence)-1], sequence[len(sequence)-2])
+		sequence = append(sequence, next)
+
+		if int64(len(sequence)) == position {
+			break
+		}
+	}
+
+	tmpVal := sequence[position-1]
+	sequence = sequence[:0]
+	sequence = append(sequence, tmpVal)
+
+	return &NumericSequence{
+		Name:     "Fibonacci",
+		Number:   big.NewInt(position),
+		Sequence: sequence,
+	}, nil
+}
+
 // GetFibonacciSequence generates the Fibonacci sequence up to maxNumber.
-func GetFibonacciSequence(maxNumber *big.Int) (*NumericSequence, error) {
+func GetFibonacciSequence(maxNumber *big.Int, isPositional bool) (*NumericSequence, error) {
+	if isPositional {
+		return GetFibonacciSequenceFromPos(maxNumber.Int64())
+	}
+
 	if maxNumber.Cmp(big.NewInt(1)) < 0 {
 		return nil, errors.New("maxNumber must be greater than 0")
 	}
@@ -33,7 +74,7 @@ func GetZekendorfRepresentationSequence(maxNumber *big.Int, isPositional bool) (
 	remainder := new(big.Int).Set(maxNumber)
 
 	for remainder.Cmp(big.NewInt(0)) > 0 {
-		fibSequence, err := GetFibonacciSequence(remainder)
+		fibSequence, err := GetFibonacciSequence(remainder, false)
 		if err != nil {
 			return nil, err
 		}

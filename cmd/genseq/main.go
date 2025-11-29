@@ -93,7 +93,7 @@ func main() {
 	case "totient_prime":
 		sequence, err = sequences.GetTotientPrimeSequence(maxNumber)
 	case "fibonacci":
-		sequence, err = sequences.GetFibonacciSequence(maxNumber)
+		sequence, err = sequences.GetFibonacciSequence(maxNumber, *positional)
 	case "zekendorf":
 		sequence, err = sequences.GetZekendorfRepresentationSequence(maxNumber, *positional)
 	case "lucas":
